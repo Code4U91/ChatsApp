@@ -12,8 +12,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class ChatManager @Inject constructor(
@@ -21,8 +19,6 @@ class ChatManager @Inject constructor(
     private val firestoreDb: FirebaseFirestore,
     @ApplicationContext private val context: Context
 ) {
-
-
     private val activeListeners = mutableMapOf<String, ListenerRegistration>()
     private var isUserInChatScreen: (String) -> Boolean = { false }
     private var currentChatList: List<ChatItemData> = emptyList()
@@ -82,8 +78,6 @@ class ChatManager @Inject constructor(
                             return@addSnapshotListener
                         }
 
-
-
                         snapshot?.documents?.forEach docLoop@{ doc ->
 
                             val message = doc.toObject(Message::class.java) ?: return@docLoop
@@ -120,8 +114,6 @@ class ChatManager @Inject constructor(
             }
         }
     }
-
-
 
     // provides chatId list sorted by the last message activity
     private fun fetchCurrentUserParticipantChats(

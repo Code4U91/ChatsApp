@@ -21,8 +21,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -57,7 +60,6 @@ class ChatsViewModel @Inject constructor(
 
     private val _activeChatList = MutableStateFlow<List<ChatItemData>>(emptyList())
     val activeChatList = _activeChatList.asStateFlow()
-
 
 
     init {

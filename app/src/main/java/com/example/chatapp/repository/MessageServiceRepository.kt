@@ -184,13 +184,13 @@ class MessageServiceRepository @Inject constructor(
         messageText: String,
         otherUserId: String,
         fetchedChatId: String,
-
         ) {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             val currentUserId = currentUser.uid
 
             val chatId = chatIdCreator(currentUserId, otherUserId, fetchedChatId)
+
 
             val chatRef = firestoreDb.collection(CHATS_COLLECTION)
                 .document(chatId)
@@ -246,6 +246,7 @@ class MessageServiceRepository @Inject constructor(
         fetchedChatId: String,
         onMessageFetched: (List<Message>) -> Unit
     ): ListenerRegistration? {
+
         val user = auth.currentUser
         if (user != null) {
             val currentUserId = user.uid
@@ -320,7 +321,7 @@ class MessageServiceRepository @Inject constructor(
     }
 
 
-    private fun chatIdCreator(
+        fun chatIdCreator(
         currentUserId: String,
         friendUserId: String,
         fetchedChatId: String
