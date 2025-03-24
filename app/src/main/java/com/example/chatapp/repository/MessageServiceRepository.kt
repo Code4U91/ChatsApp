@@ -130,12 +130,12 @@ class MessageServiceRepository @Inject constructor(
 
     }
 
-    fun fetchFriendList(onFriendUpdated: (List<DocumentSnapshot>, Int) -> Unit) { // added listener
+    fun fetchFriendList(onFriendUpdated: (List<DocumentSnapshot>, Int) -> Unit): ListenerRegistration? { // added listener
 
         val user = auth.currentUser
         if (user != null) {
 
-            val friendListListener = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
+            return firestoreDb.collection(USERS_COLLECTION).document(user.uid)
                 .collection(FRIEND_COLLECTION)
                 .addSnapshotListener { snapshot, error ->
 
@@ -148,10 +148,9 @@ class MessageServiceRepository @Inject constructor(
                     }
                 }
 
-            listenerRegistration.add(friendListListener)
         }
 
-
+        return null
     }
 
 

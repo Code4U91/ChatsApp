@@ -359,9 +359,9 @@ class ChatsViewModel @Inject constructor(
         )
     }
 
-    fun fetchFriendList(onFriendUpdated: (List<DocumentSnapshot>) -> Unit) {
+    fun fetchFriendList(onFriendUpdated: (List<DocumentSnapshot>) -> Unit): ListenerRegistration? {
 
-        messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
+       return messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
             onFriendUpdated(friendDocument)
             _totalFriend.value = updatedTotalFriend
         }

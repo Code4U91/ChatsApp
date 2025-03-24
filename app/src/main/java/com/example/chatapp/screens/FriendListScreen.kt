@@ -25,12 +25,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,9 +43,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
+import com.example.chatapp.FriendData
 import com.example.chatapp.dialogBox.AddFriendDialogBox
 import com.example.chatapp.FriendScreenUiItem
 import com.example.chatapp.viewmodel.ChatsViewModel
+import okhttp3.internal.filterList
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -54,18 +58,30 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
         mutableStateOf(false)
     }
 
-    var friendList by rememberSaveable {
-        // mutableStateOf<List<DocumentSnapshot>>(emptyList()) // can't parse when app is minimized or in background
-        mutableStateOf<List<String>>(emptyList())
-    }
+    val friendList by produceState(initialValue = emptyList()) {
 
-    LaunchedEffect(Unit) {
-        viewmodel.fetchFriendList { updatedFriendList ->
-            friendList = updatedFriendList.map { it.id }
+        val listener = viewmodel.fetchFriendList {
+            friendListData ->
+            value = friendListData.map { it.id }
+        }
+
+        awaitDispose {
+
+            listener?.remove()
         }
     }
 
 
+    var searchQuery by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var showSearchBar by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val filteredFriendList = friendList.filter { it.trim().contains(searchQuery.trim(), ignoreCase = true) }
+        .sortedBy { it.lowercase() }
 
 
     val totalFriends by viewmodel.totalFriend.collectAsState()
@@ -77,27 +93,39 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
         FriendScreenUiItem(icon = Icons.Default.Groups, itemDescription = "New group")
     )
 
+
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
         topBar = {
             TopAppBar(
                 title = {
-                    Column(
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
 
-                        Text(
-                            text = "Select contact",
-                            fontSize = 18.sp,
-                        )
-                        Text(
-                            text = "$totalFriends contacts",
-                            fontSize = 12.sp
-                        )
 
+                    if (showSearchBar)
+                    {
+                        TextField(value = searchQuery,
+                            onValueChange = { searchQuery = it},
+                            placeholder = { Text(text = "Search in friend list..")},
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
+                    else{
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
 
+                            Text(
+                                text = "Select contact",
+                                fontSize = 18.sp,
+                            )
+                            Text(
+                                text = "$totalFriends contacts",
+                                fontSize = 12.sp
+                            )
 
+                        }
+                    }
                 },
                 navigationIcon = {
 
@@ -112,7 +140,10 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
 
                 },
                 actions = {
-                    IconButton(onClick = { /* doSomething() */ }) {
+                    IconButton(onClick = {
+                        showSearchBar = !showSearchBar
+                        if (!showSearchBar) searchQuery = ""
+                    }) {
                         Icon(
                             imageVector = Icons.Filled.Search,
                             contentDescription = "Localized description"
@@ -169,7 +200,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                items(friendList)
+                items(filteredFriendList)
                 { friendId ->
 
                     ChatItem(
