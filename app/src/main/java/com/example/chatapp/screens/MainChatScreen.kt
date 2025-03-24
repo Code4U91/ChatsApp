@@ -1,0 +1,457 @@
+package com.example.chatapp.screens
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import coil3.compose.AsyncImage
+import com.example.chatapp.Message
+import com.example.chatapp.appInstance
+import com.example.chatapp.formatOnlineStatusTime
+import com.example.chatapp.getDateLabelForMessage
+import com.example.chatapp.getMessageIconColor
+import com.example.chatapp.getMessageStatusIcon
+import com.example.chatapp.getTimeOnly
+import com.example.chatapp.toLocalDate
+import com.example.chatapp.viewmodel.ChatsViewModel
+import com.google.firebase.firestore.ListenerRegistration
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MainChatScreen(
+    viewmodel: ChatsViewModel,
+    navController: NavHostController,
+    otherId: String,
+    chatId: String
+) {
+
+    var messageText by rememberSaveable {
+        mutableStateOf("")
+    }
+
+
+    var messageList by remember {
+        mutableStateOf<List<Message>>(emptyList())
+    }
+
+    val friendData by viewmodel.friendData.collectAsState()
+
+    var onlineStatus by remember {
+        mutableStateOf("")
+    }
+
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+
+    currentBackStackEntry?.destination?.route
+
+    val currentChatId by viewmodel.currentOpenChatId.collectAsState()
+
+    val listState = rememberLazyListState()
+
+    val context = LocalContext.current
+
+
+    val appInstance = context.appInstance()
+
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    var messageListener by remember {
+        mutableStateOf<ListenerRegistration?>(null)
+    }
+
+
+
+    LaunchedEffect(otherId, chatId) {
+
+        messageListener?.remove()
+
+        // fetches message using either chatId or otherId, uses chatId if its not empty
+        // if empty creates chatId using otherId and then fetches data if available
+        val listener = viewmodel.fetchMessage(otherId, chatId)
+        { messages ->
+            messageList = messages
+
+            if (viewmodel.hasUnseenMessages(messages) && currentChatId == chatId && appInstance.isInForeground) {
+                viewmodel.markAllMessageAsSeen(chatId)
+            }
+
+        }
+
+        messageListener = listener
+
+        viewmodel.fetchOnlineStatus(otherId)
+        { updatedOnlineStatus ->
+
+            onlineStatus = when (updatedOnlineStatus) {
+                1L -> "Online"
+
+
+                0L -> "failed to fetch online status"
+
+
+                else -> "last seen " + formatOnlineStatusTime(updatedOnlineStatus)
+            }
+
+        }
+    }
+
+    DisposableEffect(lifecycleOwner, chatId) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                if (viewmodel.hasUnseenMessages(messageList) && currentChatId == chatId && appInstance.isInForeground) {
+                    viewmodel.markAllMessageAsSeen(chatId)
+                }
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+
+        onDispose {
+            messageListener?.remove()
+            messageListener = null
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+
+
+    Scaffold(
+        modifier = Modifier
+            .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+        topBar = {
+            TopAppBar(
+                navigationIcon = {
+                    IconButton(onClick = {
+
+                        navController.popBackStack()
+
+                    }) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBackIosNew,
+                            contentDescription = "back button"
+                        )
+                    }
+                },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically, // Align items properly
+                        horizontalArrangement = Arrangement.spacedBy(8.dp), // Space between items
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        AsyncImage(
+                            model = friendData?.photoUrl ?: "",
+                            contentDescription = "Profile picture",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(0.dp, Color.Transparent, CircleShape)
+                        )
+
+                        Column {
+                            // Profile user name
+                            Text(
+                                text = friendData?.name ?: "",
+                                fontSize = 18.sp,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+
+                            Text(
+                                text = onlineStatus,
+                                fontSize = 12.sp,
+                                color = Color.Gray,
+                            )
+                        }
+
+                    }
+                }
+            )
+        }
+
+
+    ) { innerPadding ->
+
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+
+            HorizontalDivider()
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxSize()
+            )
+            {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(10.dp),
+                    reverseLayout = true,
+                    state = listState
+                ) {
+
+
+                    itemsIndexed(messageList, key = { _, message -> message.messageId
+                    }) { index, message ->
+
+
+                        val nextMessage = messageList.getOrNull(index + 1)
+
+                        val nextMsgDate = messageList.getOrNull(index + 1)
+
+
+                        val currentMessageDate = message.timeStamp?.toLocalDate()
+                        val previousMessageDate = nextMsgDate?.timeStamp?.toLocalDate()
+
+                        val isCurrentUser = viewmodel.isCurrentUserASender(message.senderId ?: "")
+
+
+                        val isNewGroup = nextMessage?.senderId != message.senderId
+
+
+                        //Message bubble
+                        ChatBubble(message = message, isCurrentUser, isNewGroup)
+
+                        if (isNewGroup) {
+                            Spacer(modifier = Modifier.height(10.dp))
+                        }
+
+                        // date label
+                        if (currentMessageDate != previousMessageDate) {
+                            currentMessageDate?.let { date ->
+
+                                val dateLabel = getDateLabelForMessage(date)
+                                DateChip(dateLabel = dateLabel)
+                            }
+                        }
+
+
+                    }
+
+                }
+            }
+
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 10.dp)
+                    .imePadding()
+
+
+            ) {
+
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = { newText ->
+                        messageText = newText
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(4.dp),
+                    shape = CircleShape,
+                    placeholder = { Text(text = "Message") }
+                )
+
+                IconButton(
+                    onClick = {
+
+                        // sends or uploads the message
+                        // if the chat already exists uses chatId (if not empty)
+                        // if chat already doesn't exists creates new chat user otherId
+                        if (messageText.isNotEmpty()) {
+
+                            viewmodel.sendMessageToOneFriend(messageText, otherId, chatId)
+                            messageText = ""
+                        }
+
+                    },
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Send,
+                        contentDescription = "Send message button",
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+            }
+        }
+
+    }
+
+}
+
+
+@Composable
+fun ChatBubble(
+    message: Message,
+    isCurrentUser: Boolean,
+    isNewGroup: Boolean
+) {
+    val bubbleShape = if (isNewGroup) {
+        RoundedCornerShape(
+            topStart = if (isCurrentUser) 12.dp else 0.dp,
+            topEnd = if (isCurrentUser) 0.dp else 12.dp,
+            bottomStart = 12.dp,
+            bottomEnd = 12.dp
+        )
+    } else {
+        RoundedCornerShape(8.dp)
+    }
+
+    // Select icon and color based on message status
+    val statusIcon = getMessageStatusIcon(message.status)
+
+    val iconColor = getMessageIconColor(message.status)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom
+    ) {
+
+        if (isCurrentUser) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text(
+                    text = getTimeOnly(message.timeStamp!!),
+                    color = Color.Gray,
+                    fontSize = 8.sp,
+                    modifier = Modifier
+                        .offset(y = 4.dp)
+                )
+
+                statusIcon.let {
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    Icon(
+                        imageVector = it,
+                        contentDescription = message.status,
+                        tint = iconColor,
+                        modifier = Modifier
+                            .size(12.dp)
+                            .offset(y = 4.dp)
+                    )
+                }
+            }
+
+        }
+
+        Box(
+            modifier = Modifier
+                .wrapContentWidth()
+                .widthIn(max = 300.dp)
+                .background(
+                    color = if (isCurrentUser) Color(0xFFDCF8C6) else Color.LightGray,
+                    shape = bubbleShape
+                )
+                .padding(8.dp)
+        ) {
+            Text(
+                text = message.messageContent.orEmpty(),
+                fontSize = 16.sp,
+                color = Color.Black
+            )
+        }
+
+        if (!isCurrentUser) {
+            Text(
+                text = getTimeOnly(message.timeStamp!!),
+                color = Color.Gray,
+                fontSize = 8.sp,
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .offset(y = 4.dp)
+            )
+
+
+        }
+    }
+}
+
+
+@Composable
+fun DateChip(dateLabel: String) {
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
+    ) {
+
+        Card(
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.padding(vertical = 5.dp)
+        ) {
+
+            Text(
+                text = dateLabel,
+                modifier = Modifier.padding(5.dp),
+                color = Color.Gray,
+                style = MaterialTheme.typography.labelMedium
+            )
+        }
+    }
+}
+
