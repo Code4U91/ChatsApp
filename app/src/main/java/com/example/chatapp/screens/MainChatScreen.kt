@@ -5,6 +5,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -71,6 +73,7 @@ import com.example.chatapp.getTimeOnly
 import com.example.chatapp.toLocalDate
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.google.firebase.firestore.ListenerRegistration
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -127,7 +130,7 @@ fun MainChatScreen(
         { messages ->
             messageList = messages
 
-            if (viewmodel.hasUnseenMessages(messages) && currentChatId == chatId && appInstance.isInForeground) {
+            if (viewmodel.hasUnseenMessages(messageList) && currentChatId == chatId && appInstance.isInForeground) {
                 viewmodel.markAllMessageAsSeen(chatId)
             }
 
@@ -242,55 +245,14 @@ fun MainChatScreen(
                     .fillMaxSize()
             )
             {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
-                    reverseLayout = true,
-                    state = listState
-                ) {
 
-
-                    itemsIndexed(messageList, key = { _, message -> message.messageId
-                    }) { index, message ->
-
-
-                        val nextMessage = messageList.getOrNull(index + 1)
-
-                        val nextMsgDate = messageList.getOrNull(index + 1)
-
-
-                        val currentMessageDate = message.timeStamp?.toLocalDate()
-                        val previousMessageDate = nextMsgDate?.timeStamp?.toLocalDate()
-
-                        val isCurrentUser = viewmodel.isCurrentUserASender(message.senderId ?: "")
-
-
-                        val isNewGroup = nextMessage?.senderId != message.senderId
-
-
-                        //Message bubble
-                        ChatBubble(message = message, isCurrentUser, isNewGroup)
-
-                        if (isNewGroup) {
-                            Spacer(modifier = Modifier.height(10.dp))
-                        }
-
-                        // date label
-                        if (currentMessageDate != previousMessageDate) {
-                            currentMessageDate?.let { date ->
-
-                                val dateLabel = getDateLabelForMessage(date)
-                                DateChip(dateLabel = dateLabel)
-                            }
-                        }
-
-
-                    }
-
-                }
+                ChatLazyColumn(
+                    messageList = messageList,
+                    listState = listState,
+                    isCurrentUser = { senderId -> viewmodel.isCurrentUserASender(senderId) },
+                    getDateLabel = { date -> getDateLabelForMessage(date) }
+                )
             }
-
 
             Row(
                 modifier = Modifier
@@ -338,6 +300,57 @@ fun MainChatScreen(
 
     }
 
+}
+
+@Composable
+fun ChatLazyColumn(
+    messageList: List<Message>,
+    listState: LazyListState = rememberLazyListState(),
+    isCurrentUser: (String) -> Boolean,
+    getDateLabel: (LocalDate) -> String,
+    contentPadding: PaddingValues = PaddingValues(10.dp)
+) {
+    LaunchedEffect(messageList.firstOrNull()?.messageId) {
+        if (messageList.isNotEmpty() && listState.firstVisibleItemIndex <= 2) {
+            listState.animateScrollToItem(0)
+        }
+    }
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(contentPadding),
+        reverseLayout = true,
+        state = listState
+    ) {
+        itemsIndexed(
+            items = messageList,
+            key = { _, message -> message.messageId }
+        ) { index, message ->
+
+            val nextMessage = messageList.getOrNull(index + 1)
+            val currentMessageDate = message.timeStamp?.toLocalDate()
+            val previousMessageDate = nextMessage?.timeStamp?.toLocalDate()
+
+            val isNewGroup = nextMessage?.senderId != message.senderId
+
+            ChatBubble(
+                message = message,
+                isCurrentUser = isCurrentUser(message.senderId ?: ""),
+                isNewGroup = isNewGroup
+            )
+
+            if (isNewGroup) {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (currentMessageDate != previousMessageDate) {
+                currentMessageDate?.let { date ->
+                    DateChip(dateLabel = getDateLabel(date))
+                }
+            }
+        }
+    }
 }
 
 
