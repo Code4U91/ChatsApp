@@ -136,7 +136,7 @@ class ChatManager @Inject constructor(
                     val chatList = snapshots?.documents?.mapNotNull { doc ->
 
                         val participants =
-                            doc.get("participants") as? List<String> ?: return@mapNotNull null
+                            doc.get("participants")  as? List<String> ?: return@mapNotNull null
 
                         val otherId = participants.firstOrNull { it != currentUserId }
 

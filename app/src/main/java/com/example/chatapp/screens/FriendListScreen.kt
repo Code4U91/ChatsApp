@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.ArrowBackIosNew
@@ -26,6 +27,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,21 +35,24 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.chatapp.FriendData
-import com.example.chatapp.dialogBox.AddFriendDialogBox
 import com.example.chatapp.FriendScreenUiItem
+import com.example.chatapp.dialogBox.AddFriendDialogBox
 import com.example.chatapp.viewmodel.ChatsViewModel
-import okhttp3.internal.filterList
+import kotlinx.coroutines.delay
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -60,9 +65,8 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
 
     val friendList by produceState(initialValue = emptyList()) {
 
-        val listener = viewmodel.fetchFriendList {
-            friendListData ->
-            value = friendListData.map { it.id }
+        val listener = viewmodel.fetchFriendList { friendListData ->
+            value = friendListData.map { it }
         }
 
         awaitDispose {
@@ -80,8 +84,9 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
         mutableStateOf(false)
     }
 
-    val filteredFriendList = friendList.filter { it.trim().contains(searchQuery.trim(), ignoreCase = true) }
-        .sortedBy { it.lowercase() }
+    val filteredFriendList =
+        friendList.filter { it.friendName.trim().contains(searchQuery.trim(), ignoreCase = true) }
+            .sortedBy { it.friendName.lowercase() }
 
 
     val totalFriends by viewmodel.totalFriend.collectAsState()
@@ -100,17 +105,54 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
             TopAppBar(
                 title = {
 
+                    if (showSearchBar) {
 
-                    if (showSearchBar)
-                    {
-                        TextField(value = searchQuery,
-                            onValueChange = { searchQuery = it},
-                            placeholder = { Text(text = "Search in friend list..")},
+                        val keyboardController = LocalSoftwareKeyboardController.current
+
+                        val focusRequester = remember { FocusRequester() }
+
+                        LaunchedEffect(Unit) {
+                            delay(200)
+                            focusRequester.requestFocus()
+                            keyboardController?.show()
+                        }
+
+                        TextField(
+                            value = searchQuery,
+                            onValueChange = { searchQuery = it },
+                            placeholder = { Text(text = "Search in friend list..") },
                             singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
+                            leadingIcon = {
+
+                                IconButton(onClick = {
+
+                                    showSearchBar = false
+                                    searchQuery = ""
+
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Default.ArrowBackIosNew,
+                                        contentDescription = "back button"
+                                    )
+                                }
+                            },
+                            shape = RoundedCornerShape(30.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .focusRequester(focusRequester),
+                            colors = TextFieldDefaults.colors(
+
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                disabledIndicatorColor = Color.Transparent,
+                                errorIndicatorColor = Color.Transparent,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                errorContainerColor = Color.Transparent
+                            )
                         )
-                    }
-                    else{
+                    } else {
                         Column(
                             modifier = Modifier.fillMaxWidth()
                         ) {
@@ -129,28 +171,34 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                 },
                 navigationIcon = {
 
-                    IconButton(onClick = {
-                        navController.popBackStack()
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBackIosNew,
-                            contentDescription = "Localized description"
-                        )
+                    if (!showSearchBar) {
+
+                        IconButton(onClick = {
+
+                            navController.popBackStack()
+
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.ArrowBackIosNew,
+                                contentDescription = "Localized description"
+                            )
+                        }
                     }
 
                 },
                 actions = {
-                    IconButton(onClick = {
-                        showSearchBar = !showSearchBar
-                        if (!showSearchBar) searchQuery = ""
-                    }) {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = "Localized description"
-                        )
+
+                    if (!showSearchBar) {
+                        IconButton(onClick = {
+                            showSearchBar = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Localized description"
+                            )
+                        }
                     }
                 },
-
 
                 )
 
@@ -201,13 +249,14 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                 }
 
                 items(filteredFriendList)
-                { friendId ->
+                { friendList ->
 
-                    ChatItem(
-                        showLastMsgTime = false,
-                        friendId = friendId,
+                    ChatItemAndFriendListItem(
+                        chatItemWithMsg = false,
+                        friendId = friendList.friendId,
                         navController = navController,
-                        viewmodel = viewmodel
+                        viewmodel = viewmodel,
+                        oldFriendName = friendList.friendName
                     )
 
                 }

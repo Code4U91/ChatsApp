@@ -3,6 +3,7 @@ package com.example.chatapp.repository
 import com.example.chatapp.CHATS_COLLECTION
 import com.example.chatapp.FRIEND_COLLECTION
 import com.example.chatapp.FriendData
+import com.example.chatapp.FriendListData
 import com.example.chatapp.MESSAGE_COLLECTION
 import com.example.chatapp.Message
 import com.example.chatapp.USERS_COLLECTION
@@ -10,7 +11,6 @@ import com.example.chatapp.UserData
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
@@ -84,19 +84,24 @@ class MessageServiceRepository @Inject constructor(
                     ).document(friendUserId)
 
                 userFriendRef.get()
-                    .addOnSuccessListener { friend ->
-                        if (!friend.exists()) {
+                    .addOnSuccessListener { friendListDoc ->
+                        if (!friendListDoc.exists()) {
 
                             // Checking if the friends user id exists and have account
                             val userRef =
                                 firestoreDb.collection(USERS_COLLECTION).document(friendUserId)
                             userRef.get()
-                                .addOnSuccessListener { document ->
-                                    if (document.exists()) {
+                                .addOnSuccessListener { friendDataDoc ->
+
+                                    if (friendDataDoc.exists()) {
+
+                                        val friendName = friendDataDoc.get("name") as String
 
                                         val friendData = mapOf(
-                                            "friendId" to friendUserId
+                                            "friendName" to  friendName
                                         )
+
+                                        // adding a friend
                                         firestoreDb.collection(USERS_COLLECTION)
                                             .document(user.uid)
                                             .collection(FRIEND_COLLECTION)
@@ -130,7 +135,7 @@ class MessageServiceRepository @Inject constructor(
 
     }
 
-    fun fetchFriendList(onFriendUpdated: (List<DocumentSnapshot>, Int) -> Unit): ListenerRegistration? { // added listener
+    fun fetchFriendList(onFriendUpdated: (List<FriendListData>, Int) -> Unit): ListenerRegistration? { // added listener
 
         val user = auth.currentUser
         if (user != null) {
@@ -144,13 +149,28 @@ class MessageServiceRepository @Inject constructor(
                     }
 
                     if (snapshot != null) {
-                        onFriendUpdated(snapshot.documents, snapshot.size())
+
+                        val friendList = snapshot.documents.mapNotNull { doc ->
+
+                            doc.toObject(FriendListData::class.java)?.copy(
+                                friendId = doc.id
+                            )
+                        }
+
+                        onFriendUpdated(friendList, snapshot.size())
                     }
                 }
 
         }
 
         return null
+    }
+
+    fun updateFriendNameOnFriendList(friendName: String, currentUserId: String, friendId: String)
+    {
+        firestoreDb.collection(USERS_COLLECTION).document(currentUserId).collection(
+            FRIEND_COLLECTION).document(friendId)
+            .update("friendName", friendName)
     }
 
 
@@ -320,7 +340,7 @@ class MessageServiceRepository @Inject constructor(
     }
 
 
-        fun chatIdCreator(
+        private fun chatIdCreator(
         currentUserId: String,
         friendUserId: String,
         fetchedChatId: String

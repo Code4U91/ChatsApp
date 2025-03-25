@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,44 +86,44 @@ fun AllChatScreen(
 
                 items(activeChatList, key = { it.chatId }) { chatItemData ->
 
-                    ChatItem(
-                        showLastMsgTime = true,
+                    ChatItemAndFriendListItem(
+                        chatItemWithMsg = true,
                         friendId = chatItemData.otherUserId ?: "",
                         viewmodel = viewmodel,
                         navController = navController,
                         chatId = chatItemData.chatId,
                         lastMessageTimStamp = chatItemData.lastMessageTimeStamp,
-                        lastMessage = chatItemData.lastMessage?:"",
+                        lastMessage = chatItemData.lastMessage ?: "",
                     )
                 }
             }
         }
-
-
     }
 }
 
 
 @Composable
-fun ChatItem(
-    showLastMsgTime: Boolean,
+fun ChatItemAndFriendListItem(
+    chatItemWithMsg: Boolean,
     friendId: String,
     viewmodel: ChatsViewModel,
     navController: NavHostController,
     chatId: String = "",
     lastMessageTimStamp: Timestamp? = null,
     lastMessage: String = "",
+    oldFriendName: String? = null
 
-    ) {
+) {
 
 
-    // won't change friend data if this ui goes off like going to main chat screen etc
-    val friendData by produceState<FriendData?>(initialValue = null, friendId)
+    //  auto offs if ui goes out of view, may be similar to launched effect but used to observe state, snapshot etc
+    val friendData by produceState<FriendData?>(initialValue = null, key1 = friendId)
     {
         val listener = viewmodel.fetchFriendData(friendId)
         { data ->
             value = data
         }
+
 
         awaitDispose {
 
@@ -139,12 +140,28 @@ fun ChatItem(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
+    LaunchedEffect(oldFriendName, friendData?.name) {
+
+        val updatedFriendName = friendData?.name
+
+        if (oldFriendName != null) {
+            updatedFriendName?.let {
+
+                if (oldFriendName != updatedFriendName) {
+                    // change friend name on the friend list data on the friendList document of the user
+                    viewmodel.updateFriendName(updatedFriendName, friendData?.uid ?: "")
+                }
+            }
+        }
+
+    }
+
     if (friendData == null) {
 
 
         // Placeholder / Skeleton Loader
 
-        ChatItemPlaceholder(showLastMsgTime = showLastMsgTime)
+        ChatItemPlaceholder(showLastMsgTime = chatItemWithMsg)
 
 
     } else {
@@ -213,7 +230,7 @@ fun ChatItem(
 
 
                 Text(
-                    text = if (showLastMsgTime) lastMessage else friendData?.about
+                    text = if (chatItemWithMsg) lastMessage else friendData?.about
                         ?: "",
                     fontSize = 16.sp,
                     color = Color.Gray,
@@ -223,7 +240,7 @@ fun ChatItem(
 
             }
 
-            if (showLastMsgTime) {
+            if (chatItemWithMsg) {
                 // Last messaged date/time
 
                 Text(

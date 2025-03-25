@@ -53,3 +53,8 @@ data class ChatItemData(
     val lastMessage: String? = "",
     val lastMessageTimeStamp: Timestamp? = Timestamp.now()
 )
+
+data class FriendListData(
+    val friendId: String = "",
+    val friendName: String = ""
+)

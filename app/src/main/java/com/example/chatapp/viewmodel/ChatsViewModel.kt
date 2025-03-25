@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.ChatItemData
 import com.example.chatapp.FriendData
+import com.example.chatapp.FriendListData
 import com.example.chatapp.Message
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.UserData
@@ -16,16 +17,12 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.userProfileChangeRequest
-import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -359,7 +356,7 @@ class ChatsViewModel @Inject constructor(
         )
     }
 
-    fun fetchFriendList(onFriendUpdated: (List<DocumentSnapshot>) -> Unit): ListenerRegistration? {
+    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
 
        return messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
             onFriendUpdated(friendDocument)
@@ -454,6 +451,16 @@ class ChatsViewModel @Inject constructor(
             _activeChatList.value = chatList
         }
 
+    }
+
+    fun updateFriendName(friendName: String, friendId: String)
+    {
+        val userID = auth.currentUser?.uid
+
+        userID?.let {currentUserId ->
+
+            messageServiceRepository.updateFriendNameOnFriendList(friendName,currentUserId, friendId)
+        }
     }
 
     override fun onCleared() {

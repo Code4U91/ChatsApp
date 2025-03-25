@@ -69,7 +69,6 @@ fun SignInScreenUI(
     val authState by viewmodel.authState.collectAsState()
 
     LaunchedEffect(authState) {
-        Log.i("ResultShow1", "$authState")
 
         if (authState is AuthState.Error) {
             Toast.makeText(
@@ -80,27 +79,6 @@ fun SignInScreenUI(
 
             viewmodel.updateAuthState(AuthState.Unauthenticated) // clearing up error msg
         }
-
-//        when (authState) {
-//
-//            is AuthState.Authenticated -> {
-//                navController.navigate("main_graph")
-//                {
-//                    popUpTo(0) { inclusive = true }
-//                }
-//            }
-//
-//            is AuthState.Error -> {
-//                Toast.makeText(
-//                    context,
-//                    "${(authState as AuthState.Error).message}",
-//                    Toast.LENGTH_SHORT
-//                ).show()
-//                viewmodel.updateAuthState(AuthState.DoNothing) // clearing up error msg
-//            }
-//
-//            else -> {}
-//        }
 
     }
 
@@ -143,13 +121,6 @@ fun SignInScreenUI(
                 CircularProgressIndicator()
             }
 
-//            when (authState) {
-//                AuthState.Loading -> {
-//                    CircularProgressIndicator()
-//                }
-//
-//                else -> {}
-//            }
 
         }
     }
