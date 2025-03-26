@@ -22,7 +22,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -69,7 +68,7 @@ fun CallScreen(
 
             Log.i("AgoraDebugCallScreen", "Remote user joined: $uid")
             val remoteView = SurfaceView(context).apply {
-                setZOrderMediaOverlay(false)
+                setZOrderMediaOverlay(true)
             }
 
             callViewModel.setUpRemoteVideo(
@@ -79,12 +78,12 @@ fun CallScreen(
             remoteSurfaceView.value = remoteView
         }
 
+        //callViewModel.joinChannel(null, channelName)
 
         callViewModel.startLocalVideo(
-            VideoCanvas(localSurfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0)
+            localSurfaceView
         )
         callViewModel.joinChannel(null, channelName)
-        //callViewModel.toggleSpeaker(true)
 
         onDispose {
 

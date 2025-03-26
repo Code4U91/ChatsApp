@@ -1,11 +1,11 @@
 package com.example.chatapp.viewmodel
 
 import android.util.Log
+import android.view.SurfaceView
 import androidx.lifecycle.ViewModel
 import com.example.chatapp.AGORA_APP_ID
 import com.example.chatapp.repository.AgoraSetUpRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.agora.rtc2.Constants
 import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.video.VideoCanvas
 import javax.inject.Inject
@@ -22,14 +22,15 @@ class CallViewModel @Inject constructor(
         agoraRepo.initializeAgoraEngine(AGORA_APP_ID, rtcEventHandler)
     }
 
-    fun startLocalVideo(surfaceView: VideoCanvas)
+    fun startLocalVideo(surfaceView: SurfaceView)
     {
         agoraRepo.startLocalVideo(surfaceView)
     }
 
     fun joinChannel(token: String?, channelName: String)
     {
-        agoraRepo.joinChannel(token, channelName)
+
+        agoraRepo.joinChannel(channelName)
 
     }
 
