@@ -23,9 +23,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -40,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.screens.AllChatScreen
+import com.example.chatapp.screens.CallScreen
 import com.example.chatapp.screens.FriendListScreen
 import com.example.chatapp.screens.MainChatScreen
 import com.example.chatapp.screens.ProfileSettingScreen
@@ -98,11 +96,17 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
         viewModel.setCurrentOpenChatId(currentChatId)
     }
 
+    val noBottomBarRouteList = listOf(
+        "MainChat/{friendId}/{chatId}",
+        "FriendListScreen",
+        "CallScreen/{channelName}"
+    )
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (currentRoute != "MainChat/{friendId}/{chatId}" && currentRoute != "FriendListScreen") {
+            if (currentRoute !in noBottomBarRouteList ) {
                 BottomNavigationBar(navController, viewModel)
             }
         },
@@ -155,6 +159,23 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
                 if (!friendId.isNullOrEmpty()) {
                     MainChatScreen(viewModel, navController, friendId, chatId ?: "")
                 }
+            }
+
+            composable("CallScreen/{channelName}",
+                arguments = listOf(
+                    navArgument("channelName"){ type = NavType.StringType},
+                  //  navArgument("token"){type = NavType.StringType}
+                )
+            )
+            {backStackEntry ->
+                val channelName = backStackEntry.arguments?.getString("channelName") ?: ""
+             //   val token = backStackEntry.arguments?.getString("token") ?: ""
+
+                CallScreen(channelName)
+                {
+                    navController.popBackStack()
+                }
+
             }
         }
     }

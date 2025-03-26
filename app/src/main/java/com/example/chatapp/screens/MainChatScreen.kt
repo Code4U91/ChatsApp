@@ -30,6 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -72,6 +73,8 @@ import com.example.chatapp.getMessageStatusIcon
 import com.example.chatapp.getTimeOnly
 import com.example.chatapp.toLocalDate
 import com.example.chatapp.viewmodel.ChatsViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.firebase.firestore.ListenerRegistration
 import java.time.LocalDate
 
@@ -222,6 +225,16 @@ fun MainChatScreen(
                             )
                         }
 
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+
+                            CallButton {
+                                navController.navigate("CallScreen/$chatId")
+                            }
+                        }
+
                     }
                 }
             )
@@ -352,6 +365,33 @@ fun ChatLazyColumn(
         }
     }
 }
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun CallButton(onStartCall: () -> Unit) {
+
+    val multiplePermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+            android.Manifest.permission.CAMERA,
+            android.Manifest.permission.RECORD_AUDIO,
+            android.Manifest.permission.BLUETOOTH
+        )
+    )
+    IconButton(onClick = {
+        if (multiplePermissionsState.allPermissionsGranted) {
+            onStartCall()
+        } else {
+            multiplePermissionsState.launchMultiplePermissionRequest()
+        }
+    }) {
+
+        Icon(imageVector = Icons.Default.Call, contentDescription = "call button")
+
+    }
+
+}
+
+
 
 
 @Composable

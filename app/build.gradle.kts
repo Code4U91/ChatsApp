@@ -106,6 +106,13 @@ dependencies {
 
     implementation (libs.firebase.messaging)
 
+    //agora for video call
+    implementation ("io.agora.rtc:full-sdk:4.5.1")
+
+    //
+    implementation ("com.google.accompanist:accompanist-permissions:0.34.0")
+
+
 
 
 
