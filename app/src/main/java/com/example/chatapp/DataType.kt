@@ -8,7 +8,8 @@ data class UserData(
      val name : String? = "",
      val photoUrl : String? = "",
      val email : String? = "",
-    val about : String? = ""
+    val about : String? = "",
+    val fcmToken : String? = ""
  )
 
 data class ProfileItem(

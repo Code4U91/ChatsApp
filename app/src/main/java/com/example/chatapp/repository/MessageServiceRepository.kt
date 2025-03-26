@@ -1,5 +1,6 @@
 package com.example.chatapp.repository
 
+import android.util.Log
 import com.example.chatapp.CHATS_COLLECTION
 import com.example.chatapp.FRIEND_COLLECTION
 import com.example.chatapp.FriendData
@@ -14,11 +15,13 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.google.firebase.messaging.FirebaseMessaging
 import javax.inject.Inject
 
 class MessageServiceRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
+    private val firebaseMessaging: FirebaseMessaging
 ) {
 
 
@@ -359,6 +362,33 @@ class MessageServiceRepository @Inject constructor(
         }
 
     }
+
+    fun createFirebaseCloudMessageToken(token: (String) -> Unit) {
+        firebaseMessaging.token.addOnSuccessListener {upToDateToken ->
+            token(upToDateToken)
+        }
+    }
+
+    fun updateFcmTokenIfNeeded(savedToken: String?)
+    {
+        val user = auth.currentUser?: return
+
+        firebaseMessaging.token.addOnSuccessListener { currentToken ->
+
+            val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
+
+            savedToken?.let {
+                if (it != currentToken)
+                {
+                    userDoc.update("fcmToken", currentToken)
+
+                    Log.i("FCMCheck", "onUpdate ran : $currentToken")
+                }
+            }
+
+        }
+    }
+
 
     fun clearMessageListeners() {
         listenerRegistration.forEach { it.remove() }

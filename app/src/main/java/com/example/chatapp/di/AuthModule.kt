@@ -5,6 +5,7 @@ import androidx.credentials.CredentialManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,5 +40,12 @@ object AuthModule {
     fun realTimeDb() : FirebaseDatabase
     {
         return FirebaseDatabase.getInstance()
+    }
+
+    @Provides
+    @Singleton
+    fun firebaseMessaging(): FirebaseMessaging
+    {
+        return FirebaseMessaging.getInstance()
     }
 }

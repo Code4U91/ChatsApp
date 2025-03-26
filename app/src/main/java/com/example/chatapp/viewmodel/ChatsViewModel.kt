@@ -23,6 +23,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -70,12 +71,18 @@ class ChatsViewModel @Inject constructor(
                     startGlobalListener()
                     fetchUserData()
                     setOnlineStatus() // marks as true
+
+                    userData.filterNotNull().collect { user ->
+                        messageServiceRepository.updateFcmTokenIfNeeded(user.fcmToken)
+                    }
                 }
 
             }
         }
 
     }
+
+
 
 
     fun checkAuthStatus(user: FirebaseUser? = auth.currentUser) {

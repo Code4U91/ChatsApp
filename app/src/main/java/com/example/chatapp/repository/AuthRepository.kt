@@ -21,6 +21,7 @@ import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -30,6 +31,7 @@ class AuthRepository @Inject constructor(
     private val credentialManager: CredentialManager,
     private val firestoreDb: FirebaseFirestore,
     private val realTimeDb: FirebaseDatabase,
+    private val firebaseMessaging: FirebaseMessaging,
     @ApplicationContext private val context: Context,
 ) {
 
@@ -153,7 +155,6 @@ class AuthRepository @Inject constructor(
     }
 
 
-
     private fun uploadUserDataInFireStore(userName: String, user: FirebaseUser, photoUrl: String) {
 
         val userRef = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
@@ -163,14 +164,18 @@ class AuthRepository @Inject constructor(
             // check if the user database already exists or not
             if (!document.exists()) {
 
-                val newUser = mapOf(
-                    "name" to userName,
-                    "email" to user.email,
-                    "photoUrl" to photoUrl,
-                    "uid" to user.uid,
-                    "about" to "...."
-                )
-                userRef.set(newUser)
+                firebaseMessaging.token.addOnSuccessListener { task ->
+
+                    val newUser = mapOf(
+                        "name" to userName,
+                        "email" to user.email,
+                        "photoUrl" to photoUrl,
+                        "uid" to user.uid,
+                        "about" to "....",
+                        "fcmToken" to task
+                    )
+                    userRef.set(newUser)
+                }
             }
         }
 
@@ -186,7 +191,6 @@ class AuthRepository @Inject constructor(
         }
 
     }
-
 
 
     fun listenForOnlineStatus(userId: String, onStatusChanged: (Long) -> Unit) {

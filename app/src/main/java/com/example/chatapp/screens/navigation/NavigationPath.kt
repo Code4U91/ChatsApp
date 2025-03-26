@@ -177,6 +177,7 @@ fun BottomNavigationBar(navController: NavHostController, viewmodel: ChatsViewMo
     val userData by viewmodel.userData.collectAsState()
 
 
+
     NavigationBar {
 
         navItemList.forEach { screen ->
