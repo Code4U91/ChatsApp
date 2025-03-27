@@ -22,6 +22,14 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+
+        // remove this if it cause error on some android versions
+        // ABI Filtering - Keep only necessary architectures
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
+        }
+
+
     }
 
     buildTypes {
