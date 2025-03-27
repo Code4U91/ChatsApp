@@ -1,14 +1,11 @@
 package com.example.chatapp.viewmodel
 
-import android.util.Log
 import android.view.SurfaceView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.AGORA_APP_ID
 import com.example.chatapp.repository.AgoraSetUpRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.agora.rtc2.IRtcEngineEventHandler
-import io.agora.rtc2.video.VideoCanvas
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -33,15 +30,17 @@ class CallViewModel @Inject constructor(
     private val _callEnded = MutableStateFlow(false)
     val callEnded: StateFlow<Boolean> get() = _callEnded
 
-    fun joinChannel(token: String?, channelId: String, uid: Int) {
-        viewModelScope.launch {
-            agoraRepo.joinChannel(token, channelId, uid)
-        }
-    }
 
 
     init {
         agoraRepo.initializeAgora(AGORA_APP_ID)
+    }
+
+
+    fun joinChannel(token: String?, channelId: String, uid: Int) {
+        viewModelScope.launch {
+            agoraRepo.joinChannel(token, channelId, uid)
+        }
     }
 
     fun leaveChannel() {

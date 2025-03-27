@@ -44,16 +44,6 @@ class AgoraSetUpRepo @Inject constructor(
                     enableVideo()
                 }
 
-//                override fun onRemoteVideoStateChanged(
-//                    uid: Int,
-//                    state: Int,
-//                    reason: Int,
-//                    elapsed: Int
-//                ) {
-//                    super.onRemoteVideoStateChanged(uid, state, reason, elapsed)
-//                    _remoteUserJoined.value = uid
-//                }
-
                 override fun onUserOffline(uid: Int, reason: Int) {
                     _remoteUserLeft.value = true
                 }
