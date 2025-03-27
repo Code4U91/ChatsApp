@@ -2,26 +2,37 @@ package com.example.chatapp.screens
 
 import android.util.Log
 import android.view.SurfaceView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.CallEnd
+import androidx.compose.material.icons.filled.FlipCameraAndroid
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.filled.VideocamOff
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -45,139 +56,117 @@ fun CallScreen(
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
 
     val context = LocalContext.current
+    val isJoined by callViewModel.isJoined.collectAsState()
+    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()
+    val isMuted by callViewModel.isMuted.collectAsState()
+    val isSpeakerEnabled by callViewModel.isSpeakerEnabled.collectAsState()
 
-    val localSurfaceView = remember {
-       SurfaceView(context).apply {
-           setZOrderMediaOverlay(true)
-       }
+    // Create SurfaceViews for Local and Remote video
+    val localView = remember { SurfaceView(context) }
+    val remoteView = remember { SurfaceView(context) }
+
+    val callEnded by callViewModel.callEnded.collectAsState()
+
+    LaunchedEffect(Unit) {
+        callViewModel.joinChannel(null, channelName, 0)
     }
 
-    val remoteSurfaceView = remember {
-        mutableStateOf<SurfaceView?>(null)
-    }
-    val isMicMuted = remember { mutableStateOf(false) }
-    val isVideoMuted = remember { mutableStateOf(false) }
-    val isSpeakerOn = remember { mutableStateOf(true) }
+    LaunchedEffect(isJoined) {
 
-
-    DisposableEffect(Unit) {
-
-        callViewModel.initializeAgora()
-
-        callViewModel.setRemoteVideoListener { uid ->
-
-            Log.i("AgoraDebugCallScreen", "Remote user joined: $uid")
-            val remoteView = SurfaceView(context).apply {
-                setZOrderMediaOverlay(true)
-            }
-
-            callViewModel.setUpRemoteVideo(
-                uid,
-                VideoCanvas(remoteView, VideoCanvas.RENDER_MODE_HIDDEN, uid)
-            )
-            remoteSurfaceView.value = remoteView
+        if (isJoined)
+        {
+            callViewModel.setUpLocalVideo(localView)
         }
+    }
 
-        //callViewModel.joinChannel(null, channelName)
-
-        callViewModel.startLocalVideo(
-            localSurfaceView
-        )
-        callViewModel.joinChannel(null, channelName)
-
-        onDispose {
-
-            callViewModel.leaveChannel()
-            callViewModel.callEnd()
-
+    LaunchedEffect(remoteUserJoined) {
+        remoteUserJoined?.let { uid ->
+            callViewModel.setUpRemoteVideo(remoteView, uid)
+            callViewModel.setUpLocalVideo(localView)
         }
     }
 
 
 
-
-
+    LaunchedEffect(remoteUserLeft, callEnded) {
+        if (remoteUserLeft || callEnded) {
+            onCallEnd()
+        }
+    }
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize().padding(it)) {
-            remoteSurfaceView.value?.let { remoteView ->
-                AndroidView(factory = { remoteView }, modifier = Modifier.fillMaxSize())
+            if (isJoined) {
+                // Remote video (Large)
+                Box(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    if (remoteUserJoined != null) {
+                        AndroidView(factory = { remoteView }, modifier = Modifier.fillMaxSize())
+                    } else {
+                        Text(
+                            text = "Waiting for other user to join...",
+                            modifier = Modifier.align(Alignment.Center),
+                            color = Color.White
+                        )
+                    }
+                }
+
+                // Local video (Mini-screen) - Floating at bottom end
+                if (remoteUserJoined != null)
+                {
+                    Box(
+                        modifier = Modifier
+                            .size(120.dp)
+                            .align(Alignment.TopEnd)
+                            .padding(16.dp)
+                            .background(Color.Black, shape = RoundedCornerShape(8.dp))
+                    ) {
+                        AndroidView(factory = { localView }, modifier = Modifier.fillMaxSize())
+                    }
+                }
+
+            } else {
+                Text(
+                    text = "Joining Channel...",
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color.White
+                )
             }
 
-            // Local video preview
-            AndroidView(
-                factory = { localSurfaceView },
-                modifier = Modifier
-                    .size(120.dp)
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
-            )
-
-            // Controls (mic, video, end call)
-            Box(
+            // Control Buttons
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .navigationBarsPadding(),
-                contentAlignment = Alignment.Center
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                IconButton(onClick = { callViewModel.muteAudio() }) {
+                    Icon(
+                        imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                        contentDescription = "Mute",
+                        tint = Color.White
+                    )
+                }
 
-                    // Toggle mic
-                    IconButton(onClick = {
-                        isMicMuted.value = !isMicMuted.value
-                        callViewModel.muteLocalAudio(isMicMuted.value)
-                    }) {
-                        Icon(
-                            imageVector = if (isMicMuted.value) Icons.Default.MicOff else Icons.Default.Mic,
-                            contentDescription = "Toggle Mic",
-                            tint = if (isMicMuted.value) Color.Gray else Color.White,
-                            modifier = Modifier.size(40.dp).padding(end = 6.dp)
-                        )
-                    }
+                IconButton(onClick = { callViewModel.toggleSpeaker() }) {
+                    Icon(
+                        imageVector = if (isSpeakerEnabled) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
+                        contentDescription = "Speaker",
+                        tint = Color.White
+                    )
+                }
 
-                    // Toggle video
-                    IconButton(onClick = {
-                        isVideoMuted.value = !isVideoMuted.value
-                        callViewModel.muteLocalVideo(isVideoMuted.value)
-                    }) {
-                        Icon(
-                            imageVector = if (isVideoMuted.value) Icons.Default.VideocamOff else Icons.Default.Videocam,
-                            contentDescription = "Toggle Video",
-                            tint = if (isVideoMuted.value) Color.Gray else Color.White,
-                            modifier = Modifier.size(40.dp).padding(end = 6.dp)
-                        )
-                    }
+                IconButton(onClick = { callViewModel.switchCamera() }) {
+                    Icon(imageVector = Icons.Default.FlipCameraAndroid, contentDescription = "Switch Camera", tint = Color.White)
+                }
 
-
-                    // End call button
-                    IconButton(onClick = onCallEnd) {
-                        Icon(
-                            imageVector = Icons.Default.CallEnd,
-                            contentDescription = "End Call",
-                            tint = Color.Red,
-                            modifier = Modifier.size(50.dp).padding(end = 6.dp)
-                        )
-                    }
-
-
-
-                    // Toggle speaker
-                    IconButton(onClick = {
-                        isSpeakerOn.value = !isSpeakerOn.value
-                        callViewModel.toggleSpeaker(isSpeakerOn.value)
-                    }) {
-                        Icon(
-                            imageVector = if (isSpeakerOn.value) Icons.AutoMirrored.Filled.VolumeUp else Icons.AutoMirrored.Filled.VolumeOff,
-                            contentDescription = "Toggle Speaker",
-                            tint = if (isSpeakerOn.value) Color.White else Color.Gray,
-                            modifier = Modifier.size(40.dp).padding(end = 6.dp)
-                        )
-                    }
-
+                IconButton(onClick = {
+                     callViewModel.leaveChannel()
+                }) {
+                    Icon(imageVector = Icons.Default.CallEnd, contentDescription = "End Call", tint = Color.Red)
                 }
             }
         }

@@ -3,11 +3,15 @@ package com.example.chatapp.viewmodel
 import android.util.Log
 import android.view.SurfaceView
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.chatapp.AGORA_APP_ID
 import com.example.chatapp.repository.AgoraSetUpRepo
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.video.VideoCanvas
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -15,112 +19,65 @@ class CallViewModel @Inject constructor(
     private val agoraRepo: AgoraSetUpRepo
 ) : ViewModel() {
 
-    private var onRemoteUserJoined: ((Int) -> Unit)? = null
 
-    fun initializeAgora()
-    {
-        agoraRepo.initializeAgoraEngine(AGORA_APP_ID, rtcEventHandler)
-    }
+    val isJoined: StateFlow<Boolean> =  agoraRepo.isJoined
+    val remoteUserJoined: StateFlow<Int?> = agoraRepo.remoteUserJoined
+    val remoteUserLeft: StateFlow<Boolean> = agoraRepo.remoteUserLeft
 
-    fun startLocalVideo(surfaceView: SurfaceView)
-    {
-        agoraRepo.startLocalVideo(surfaceView)
-    }
+    private val _isMuted = MutableStateFlow(false)
+    val isMuted: StateFlow<Boolean> get() = _isMuted
 
-    fun joinChannel(token: String?, channelName: String)
-    {
+    private val _isSpeakerEnabled = MutableStateFlow(false)
+    val isSpeakerEnabled: StateFlow<Boolean> get() = _isSpeakerEnabled
 
-        agoraRepo.joinChannel(channelName)
+    private val _callEnded = MutableStateFlow(false)
+    val callEnded: StateFlow<Boolean> get() = _callEnded
 
-    }
-
-    fun leaveChannel(){
-        agoraRepo.leaveChannel()
-    }
-
-    fun setUpRemoteVideo(uid: Int, remoteVideoCanvas: VideoCanvas)
-    {
-        agoraRepo.setUpRemoteVideo(uid,remoteVideoCanvas)
-
-    }
-
-    fun setRemoteVideoListener(listener: (Int) -> Unit) {
-        onRemoteUserJoined =  listener
-    }
-
-    fun toggleSpeaker(enable: Boolean) {
-       agoraRepo.toggleSpeaker(enable)
+    fun joinChannel(token: String?, channelId: String, uid: Int) {
+        viewModelScope.launch {
+            agoraRepo.joinChannel(token, channelId, uid)
+        }
     }
 
 
-    fun muteLocalAudio(mute: Boolean)
-    {
-        agoraRepo.muteLocalAudioStream(mute)
+    init {
+        agoraRepo.initializeAgora(AGORA_APP_ID)
     }
 
-    fun muteLocalVideo(mute: Boolean)
-    {
-        agoraRepo.muteLocalVideoStream(mute)
-    }
-
-
-    fun callEnd()
-    {
-        agoraRepo.destroy()
-    }
-
-
-
-    private val rtcEventHandler = object : IRtcEngineEventHandler()
-    {
-//        override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
-//            super.onJoinChannelSuccess(channel, uid, elapsed)
-//            Log.i("AgoraDebug", "Joined channel: $channel with uid: $uid")
-//        }
-
-        override fun onUserJoined(uid: Int, elapsed: Int) {
-            super.onUserJoined(uid, elapsed)
-            Log.i("AgoraDebug", "Remote user joined: $uid")
-            onRemoteUserJoined?.invoke(uid)
+    fun leaveChannel() {
+        viewModelScope.launch {
+            agoraRepo.leaveChannel()
+            _callEnded.value = true
         }
 
-//        override fun onUserOffline(uid: Int, reason: Int) {
-//            super.onUserOffline(uid, reason)
-//            callEnd()
-//            Log.i("AgoraDebug", "User offline: $uid Reason: $reason")
-//        }
+    }
 
-//        @Deprecated("Deprecated in Java")
-//        override fun onFirstRemoteVideoDecoded(uid: Int, width: Int, height: Int, elapsed: Int) {
-//            Log.i("AgoraDebug", "First remote video decoded: $uid")
-//            onRemoteUserJoined?.invoke(uid)
-//        }
+    fun setUpLocalVideo(surfaceView: SurfaceView)
+    {
+        agoraRepo.setupLocalVideo(surfaceView)
+    }
 
+    fun setUpRemoteVideo(surfaceView: SurfaceView, uid: Int)
+    {
+        agoraRepo.setupRemoteVideo(surfaceView,uid)
+    }
 
+    fun muteAudio() {
+        _isMuted.value = !_isMuted.value
+        agoraRepo.muteAudio(_isMuted.value)
+    }
 
-//        override fun onRemoteVideoStateChanged(
-//            uid: Int,
-//            state: Int,
-//            reason: Int,
-//            elapsed: Int
-//        ) {
-//            super.onRemoteVideoStateChanged(uid, state, reason, elapsed)
-//            if (state == Constants.REMOTE_VIDEO_STATE_DECODING && reason == Constants.REMOTE_VIDEO_STATE_REASON_REMOTE_UNMUTED) {
-//                Log.i("AgoraDebug", "Remote video decoded for UID: $uid")
-//                if (state == Constants.REMOTE_VIDEO_STATE_DECODING) {
-//                    onRemoteUserJoined?.invoke(uid)
-//                }
-//            }
-//        }
+    fun toggleSpeaker() {
+        _isSpeakerEnabled.value = !_isSpeakerEnabled.value
+        agoraRepo.enableSpeaker(_isSpeakerEnabled.value)
+    }
 
+    fun switchCamera() {
+        agoraRepo.switchCamera()
+    }
 
-//        override fun onUserEnableVideo(uid: Int, enabled: Boolean) {
-//            super.onUserEnableVideo(uid, enabled)
-//            Log.i("AgoraDebug", "User $uid video enabled: $enabled")
-//            if (enabled) {
-//                onRemoteUserJoined?.invoke(uid)
-//            }
-//        }
-
+    override fun onCleared() {
+        super.onCleared()
+        agoraRepo.destroy()
     }
 }

@@ -1,6 +1,7 @@
 package com.example.chatapp.repository
 
 import android.content.Context
+import android.util.Log
 import android.view.SurfaceView
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.agora.rtc2.ChannelMediaOptions
@@ -8,26 +9,58 @@ import io.agora.rtc2.Constants
 import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.RtcEngine
 import io.agora.rtc2.video.VideoCanvas
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 class AgoraSetUpRepo @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
 
+
     private var rtcEngine: RtcEngine? = null
 
+    private val _isJoined = MutableStateFlow(false)
+    val isJoined: StateFlow<Boolean> get() = _isJoined
 
+    private val _remoteUserJoined = MutableStateFlow<Int?>(null)
+    val remoteUserJoined: StateFlow<Int?> get() = _remoteUserJoined
 
-    fun initializeAgoraEngine(
-        appId: String,
-        eventHandler: IRtcEngineEventHandler)
-    {
-        if (rtcEngine == null)
-        {
-            rtcEngine = RtcEngine.create(context, appId, eventHandler)
+    private val _remoteUserLeft = MutableStateFlow(false)
+    val remoteUserLeft: StateFlow<Boolean> get() = _remoteUserLeft
 
+    fun initializeAgora(appId: String) {
+        try {
+            rtcEngine = RtcEngine.create(context, appId, object : IRtcEngineEventHandler() {
+
+                override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
+                    super.onJoinChannelSuccess(channel, uid, elapsed)
+
+                    _isJoined.value = true
+                }
+                override fun onUserJoined(uid: Int, elapsed: Int) {
+                    Log.d("AgoraDebug", "Remote user joined: $uid")
+                    _remoteUserJoined.value = uid
+                    enableVideo()
+                }
+
+//                override fun onRemoteVideoStateChanged(
+//                    uid: Int,
+//                    state: Int,
+//                    reason: Int,
+//                    elapsed: Int
+//                ) {
+//                    super.onRemoteVideoStateChanged(uid, state, reason, elapsed)
+//                    _remoteUserJoined.value = uid
+//                }
+
+                override fun onUserOffline(uid: Int, reason: Int) {
+                    _remoteUserLeft.value = true
+                }
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
-
     }
 
     private fun enableVideo() {
@@ -37,60 +70,56 @@ class AgoraSetUpRepo @Inject constructor(
         }
     }
 
+    fun joinChannel(token: String?, channelName: String, uid: Int) {
 
-    fun toggleSpeaker(enable: Boolean) {
-        rtcEngine?.setDefaultAudioRoutetoSpeakerphone(enable)
-        rtcEngine?.setEnableSpeakerphone(enable)
-    }
-
-    fun setSpeakerphoneOn(enable: Boolean) {
-        rtcEngine?.setEnableSpeakerphone(enable)
-    }
-
-    fun muteLocalAudioStream(mute: Boolean)
-    {
-        rtcEngine?.muteLocalAudioStream(mute)
-    }
-
-    fun muteLocalVideoStream(mute: Boolean)
-    {
-        rtcEngine?.muteLocalVideoStream(mute)
-    }
-
-    fun startLocalVideo(surfaceView: SurfaceView)
-    {
-        rtcEngine?.setupLocalVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_FIT, 0))
-        //rtcEngine?.startPreview()
-
-    }
-
-    fun joinChannel(channelName: String) {
         val options = ChannelMediaOptions().apply {
             clientRoleType = Constants.CLIENT_ROLE_BROADCASTER
             channelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION
             publishMicrophoneTrack = true
             publishCameraTrack = true
         }
-        rtcEngine?.joinChannel(null, channelName, 0, options)
-        enableVideo()
+
+        rtcEngine?.joinChannel(token, channelName, 0, options)
     }
 
-    fun leaveChannel()
-    {
+    fun leaveChannel() {
         rtcEngine?.leaveChannel()
+        _isJoined.value = false
+        _remoteUserJoined.value =  null
     }
 
-    fun setUpRemoteVideo(uid: Int, remoteVideoCanvas: VideoCanvas)
-    {
-        rtcEngine?.setupRemoteVideo(remoteVideoCanvas)
-       // rtcEngine?.muteRemoteAudioStream(uid, false)
+    fun setupLocalVideo(surfaceView: SurfaceView) {
+        rtcEngine?.setupLocalVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0))
     }
 
-    fun destroy()
-    {
-        rtcEngine?.let {
-            RtcEngine.destroy()
-            rtcEngine = null
+    fun setupRemoteVideo(surfaceView: SurfaceView, uid: Int) {
+        rtcEngine?.setupRemoteVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, uid))
+    }
+
+    fun switchCamera() {
+        rtcEngine?.switchCamera()
+    }
+
+    fun muteAudio(mute: Boolean) {
+        rtcEngine?.muteLocalAudioStream(mute)
+    }
+
+    fun enableSpeaker(enabled: Boolean) {
+        rtcEngine?.setEnableSpeakerphone(enabled)
+    }
+
+    fun destroy() {
+        rtcEngine?.apply {
+            leaveChannel()  // Step 1: Leave the channel
+            stopPreview()   // Step 2: Stop camera preview (if started)
+            disableVideo()  // Step 3: Disable video
+            disableAudio()  // Step 3: Disable audio
         }
+
+        RtcEngine.destroy() // Step 4: Destroy the global instance
+        rtcEngine = null   // Step 5: Release the reference
+
+        Log.i("AgoraDebug", "Called On Destroy")
     }
+
 }
