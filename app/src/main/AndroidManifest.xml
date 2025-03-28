@@ -12,6 +12,9 @@
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <!-- For Android 12.0 or higher, the following permissions are also required -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE"/>

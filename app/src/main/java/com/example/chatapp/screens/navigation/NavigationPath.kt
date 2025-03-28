@@ -99,7 +99,7 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
     val noBottomBarRouteList = listOf(
         "MainChat/{friendId}/{chatId}",
         "FriendListScreen",
-        "CallScreen/{channelName}"
+        "CallScreen/{channelName}/{callType}"
     )
 
 
@@ -161,17 +161,19 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
                 }
             }
 
-            composable("CallScreen/{channelName}",
+            composable("CallScreen/{channelName}/{callType}",
                 arguments = listOf(
                     navArgument("channelName"){ type = NavType.StringType},
+                    navArgument("callType"){type = NavType.StringType}
                   //  navArgument("token"){type = NavType.StringType}
                 )
             )
             {backStackEntry ->
                 val channelName = backStackEntry.arguments?.getString("channelName") ?: ""
+                val callType = backStackEntry.arguments?.getString("callType") ?:""
              //   val token = backStackEntry.arguments?.getString("token") ?: ""
 
-                CallScreen(channelName)
+                CallScreen(channelName, callType)
                 {
                     navController.popBackStack()
                 }

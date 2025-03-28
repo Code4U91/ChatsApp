@@ -10,7 +10,7 @@ import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.RtcEngine
 import io.agora.rtc2.video.VideoCanvas
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
 class AgoraSetUpRepo @Inject constructor(
@@ -21,13 +21,13 @@ class AgoraSetUpRepo @Inject constructor(
     private var rtcEngine: RtcEngine? = null
 
     private val _isJoined = MutableStateFlow(false)
-    val isJoined: StateFlow<Boolean> get() = _isJoined
+    val isJoined = _isJoined.asStateFlow()
 
     private val _remoteUserJoined = MutableStateFlow<Int?>(null)
-    val remoteUserJoined: StateFlow<Int?> get() = _remoteUserJoined
+    val remoteUserJoined = _remoteUserJoined.asStateFlow()
 
     private val _remoteUserLeft = MutableStateFlow(false)
-    val remoteUserLeft: StateFlow<Boolean> get() = _remoteUserLeft
+    val remoteUserLeft = _remoteUserLeft.asStateFlow()
 
     fun initializeAgora(appId: String) {
         try {
@@ -38,10 +38,12 @@ class AgoraSetUpRepo @Inject constructor(
 
                     _isJoined.value = true
                 }
+
                 override fun onUserJoined(uid: Int, elapsed: Int) {
                     Log.d("AgoraDebug", "Remote user joined: $uid")
                     _remoteUserJoined.value = uid
-                    enableVideo()
+
+                    //enableVideo()
                 }
 
                 override fun onUserOffline(uid: Int, reason: Int) {
@@ -53,33 +55,62 @@ class AgoraSetUpRepo @Inject constructor(
         }
     }
 
-    private fun enableVideo() {
+
+      fun enableVideo() {
         rtcEngine?.apply {
             enableVideo()
-            startPreview()
+            startPreview() // might not needed
         }
     }
 
-    fun joinChannel(token: String?, channelName: String, uid: Int) {
+    private fun enableAudioOnly()
+    {
+        rtcEngine?.apply {
+            disableVideo()
+            setEnableSpeakerphone(false)
+        }
+    }
+
+    fun toggleSpeakerphone(isEnabled: Boolean) {
+        rtcEngine?.setEnableSpeakerphone(isEnabled)
+    }
+
+    fun joinChannel(token: String?, channelName: String, callType: String) {
 
         val options = ChannelMediaOptions().apply {
             clientRoleType = Constants.CLIENT_ROLE_BROADCASTER
             channelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION
             publishMicrophoneTrack = true
-            publishCameraTrack = true
+
+            if (callType == "video")
+            {
+                publishCameraTrack = true
+                enableVideo()
+            } else {
+                publishCameraTrack = false
+               // rtcEngine?.disableVideo()
+                enableAudioOnly()
+            }
+
         }
 
         rtcEngine?.joinChannel(token, channelName, 0, options)
     }
 
     fun leaveChannel() {
-        rtcEngine?.leaveChannel()
+
+        rtcEngine?.apply {
+            leaveChannel()
+            disableVideo()
+            muteAllRemoteAudioStreams(false)
+        }
         _isJoined.value = false
-        _remoteUserJoined.value =  null
+        _remoteUserJoined.value = null
     }
 
     fun setupLocalVideo(surfaceView: SurfaceView) {
         rtcEngine?.setupLocalVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0))
+
     }
 
     fun setupRemoteVideo(surfaceView: SurfaceView, uid: Int) {
@@ -90,20 +121,24 @@ class AgoraSetUpRepo @Inject constructor(
         rtcEngine?.switchCamera()
     }
 
-    fun muteAudio(mute: Boolean) {
+    fun muteLocalAudio(mute: Boolean) {
         rtcEngine?.muteLocalAudioStream(mute)
     }
 
-    fun enableSpeaker(enabled: Boolean) {
-        rtcEngine?.setEnableSpeakerphone(enabled)
+    fun muteRemoteAudio(enabled: Boolean) {
+
+        rtcEngine?.muteAllRemoteAudioStreams(enabled)
+
     }
+
 
     fun destroy() {
         rtcEngine?.apply {
             leaveChannel()  // Step 1: Leave the channel
             stopPreview()   // Step 2: Stop camera preview (if started)
             disableVideo()  // Step 3: Disable video
-            disableAudio()  // Step 3: Disable audio
+            disableAudio() // Step 3: Disable audio
+            setEnableSpeakerphone(true)
         }
 
         RtcEngine.destroy() // Step 4: Destroy the global instance

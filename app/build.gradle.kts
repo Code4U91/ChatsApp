@@ -23,11 +23,13 @@ android {
             useSupportLibrary = true
         }
 
-        // remove this if it cause error on some android versions
+        // remove this if it cause error on some android versions, currently works fine on most
+        // tested on android version 9 huawei y9
+        // canceled for testing it on emulators
         // ABI Filtering - Keep only necessary architectures
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
-        }
+//        ndk {
+//            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
+//        }
 
 
     }
@@ -115,7 +117,11 @@ dependencies {
     implementation (libs.firebase.messaging)
 
     //agora for video call
-    implementation ("io.agora.rtc:full-sdk:4.5.1")
+   // implementation ("io.agora.rtc:full-sdk:4.5.1")
+
+    // light version
+    implementation ("io.agora.rtc:lite-sdk:4.5.1") // remove this and use full version if creating issue
+
 
     //
     implementation ("com.google.accompanist:accompanist-permissions:0.34.0")

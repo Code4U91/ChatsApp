@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -225,14 +226,21 @@ fun MainChatScreen(
                             )
                         }
 
-                        Box(
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.CenterEnd
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
                         ) {
 
-                            CallButton {
-                                navController.navigate("CallScreen/$chatId")
+                            VideoCallButton {
+                                navController.navigate("CallScreen/$chatId/video")
                             }
+
+                            VoiceCallButton {
+
+                                navController.navigate("CallScreen/$chatId/voice")
+                            }
+
                         }
 
                     }
@@ -368,7 +376,31 @@ fun ChatLazyColumn(
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun CallButton(onStartCall: () -> Unit) {
+fun VoiceCallButton(onStartCall: () -> Unit) {
+    val multiplePermissionsState = rememberMultiplePermissionsState(
+        permissions = listOf(
+//            android.Manifest.permission.CAMERA,
+            android.Manifest.permission.RECORD_AUDIO,
+            android.Manifest.permission.BLUETOOTH
+        )
+    )
+    IconButton(onClick = {
+        if (multiplePermissionsState.allPermissionsGranted) {
+            onStartCall()
+        } else {
+            multiplePermissionsState.launchMultiplePermissionRequest()
+        }
+    }) {
+
+        Icon(imageVector = Icons.Default.Call, contentDescription = "voice call button")
+
+    }
+}
+
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun VideoCallButton(onStartCall: () -> Unit) {
 
     val multiplePermissionsState = rememberMultiplePermissionsState(
         permissions = listOf(
@@ -385,13 +417,11 @@ fun CallButton(onStartCall: () -> Unit) {
         }
     }) {
 
-        Icon(imageVector = Icons.Default.Call, contentDescription = "call button")
+        Icon(imageVector = Icons.Default.VideoCall, contentDescription = "video call button")
 
     }
 
 }
-
-
 
 
 @Composable
