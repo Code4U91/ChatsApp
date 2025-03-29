@@ -173,7 +173,7 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
                 val callType = backStackEntry.arguments?.getString("callType") ?:""
              //   val token = backStackEntry.arguments?.getString("token") ?: ""
 
-                CallScreen(channelName, callType)
+                CallScreen(channelName, callType, chatsViewModel = viewModel)
                 {
                     navController.popBackStack()
                 }

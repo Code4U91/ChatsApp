@@ -5,16 +5,21 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.AGORA_APP_ID
 import com.example.chatapp.repository.AgoraSetUpRepo
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class CallViewModel @Inject constructor(
-    private val agoraRepo: AgoraSetUpRepo
+    private val agoraRepo: AgoraSetUpRepo,
+    private val auth: FirebaseAuth
 ) : ViewModel() {
 
 
@@ -34,17 +39,48 @@ class CallViewModel @Inject constructor(
     private val _callEnded = MutableStateFlow(false)
     val callEnded = _callEnded.asStateFlow()
 
+    private val _callStartTime = MutableStateFlow<Long?>(null)
+    private val _callDuration = MutableStateFlow(0L)
+
+    val callDuration = _callDuration.asStateFlow()
+
+    private var callTimerJob: Job? = null
 
 
     init {
         agoraRepo.initializeAgora(AGORA_APP_ID)
+
+        viewModelScope.launch {
+            remoteUserJoined.collect { userId ->
+
+                if (userId != null)
+                {
+                    startCallTimer()
+                }
+
+            }
+        }
+
+        viewModelScope.launch {
+            remoteUserLeft.collect{ isLeft ->
+
+                if (isLeft)
+                {
+                    stopCallTimer()
+                }
+            }
+        }
     }
 
 
-    fun joinChannel(token: String?, channelId: String, uid: Int, callType: String) {
-        viewModelScope.launch {
-            agoraRepo.joinChannel(token, channelId, callType)
+    fun joinChannel(token: String?, channelId: String, callType: String) {
+
+        val userId = auth.currentUser?.uid ?: return
+            viewModelScope.launch {
+                agoraRepo.joinChannel(token, channelId, callType, userId)
+
         }
+
     }
 
     fun leaveChannel() {
@@ -85,12 +121,39 @@ class CallViewModel @Inject constructor(
         agoraRepo.toggleSpeakerphone(_isSpeakerPhoneEnabled.value)
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        agoraRepo.destroy()
+    private fun startCallTimer()
+    {
+        _callStartTime.value = System.currentTimeMillis()
+
+        callTimerJob?.cancel()
+        callTimerJob = viewModelScope.launch{
+
+            while (isActive)
+            {
+                val durationMillis = System.currentTimeMillis() - (_callStartTime.value ?: 0L)
+                _callDuration.value = durationMillis / 1000 // converted to seconds
+                delay(1000)
+            }
+        }
     }
 
-    fun enableVideoPreview() {
-         agoraRepo.enableVideo()
+    private fun stopCallTimer()
+    {
+
+        callTimerJob?.cancel()
+        _callStartTime.value?.let { startTime ->
+            val durationMillis = System.currentTimeMillis() - startTime
+            _callDuration.value = durationMillis / 1000
+        }
+
+        _callStartTime.value = null
+
     }
+
+    override fun onCleared() {
+        super.onCleared()
+            agoraRepo.destroy()
+
+    }
+
 }

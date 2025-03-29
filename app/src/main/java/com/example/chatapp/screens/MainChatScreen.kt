@@ -232,6 +232,7 @@ fun MainChatScreen(
                             horizontalArrangement = Arrangement.End
                         ) {
 
+
                             VideoCallButton {
                                 navController.navigate("CallScreen/$chatId/video")
                             }

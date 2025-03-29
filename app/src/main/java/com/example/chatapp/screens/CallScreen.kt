@@ -4,14 +4,20 @@ import android.util.Log
 import android.view.SurfaceView
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
@@ -34,12 +40,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil3.compose.rememberAsyncImagePainter
+import com.example.chatapp.UserData
+import com.example.chatapp.formatCallDuration
 import com.example.chatapp.viewmodel.CallViewModel
+import com.example.chatapp.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -47,20 +59,42 @@ fun CallScreen(
     channelName: String,
     callType: String,
     callViewModel: CallViewModel = hiltViewModel(),
+    chatsViewModel: ChatsViewModel,
     onCallEnd: () -> Unit
 ) {
 
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
 
+    val otherUserData by chatsViewModel.userData.collectAsState()
 
-    if (callType == "video") {
-        StartVideoCall(callViewModel = callViewModel, channelName = channelName, onCallEnd)
-    } else {
+    val callEnded by callViewModel.callEnded.collectAsState()
+    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()
+    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
 
-        StartVoiceCall(callViewModel = callViewModel, channelName = channelName, onCallEnd)
+    LaunchedEffect(remoteUserLeft, callEnded) {
+        if (remoteUserLeft || callEnded) onCallEnd()
 
     }
 
+    LaunchedEffect(remoteUserJoined) {
+
+        // Wait for 48sec for the remote user to join
+        delay(1 * 60 * 800)
+
+        if (remoteUserJoined == null) {
+            // If still null after 48sec, end call
+            callViewModel.leaveChannel()
+        }
+
+    }
+
+    if (callType == "video") {
+        StartVideoCall(callViewModel = callViewModel, channelName = channelName)
+    } else {
+
+        StartVoiceCall(callViewModel = callViewModel, channelName = channelName, otherUserData)
+
+    }
 
 }
 
@@ -68,26 +102,17 @@ fun CallScreen(
 fun StartVoiceCall(
     callViewModel: CallViewModel,
     channelName: String,
-    onCallEnd: () -> Unit
+    otherUserData: UserData?
 ) {
 
     val isJoined by callViewModel.isJoined.collectAsState()
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
-    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()
-    val isMuted by callViewModel.isMuted.collectAsState()
-    val isRemoteAudioDeafen by callViewModel.isRemoteAudioDeafen.collectAsState()
-    val isSpeakerPhoneEnabled by callViewModel.isSpeakerPhoneEnabled.collectAsState()
-    val callEnded by callViewModel.callEnded.collectAsState()
+    val callDuration by callViewModel.callDuration.collectAsState()
 
-    LaunchedEffect(remoteUserLeft, callEnded) {
-        if (remoteUserLeft || callEnded) onCallEnd()
-
-    }
 
     LaunchedEffect(Unit) {
-        callViewModel.joinChannel(null, channelName, 0, "voice")
+        callViewModel.joinChannel(null, channelName, "voice")
     }
-
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
         Box(
@@ -98,12 +123,56 @@ fun StartVoiceCall(
             if (isJoined) {
                 // engine created waiting for other user to join call
 
-                if (remoteUserJoined != null) {  // remote/other user joined the call
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+
+                    Image(
+                        painter = rememberAsyncImagePainter(model = otherUserData?.photoUrl),
+                        contentDescription = "profile picture",
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(150.dp)
+                            .border(1.dp, Color.Gray, shape = CircleShape),
+                    )
+
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Text(
-                        text = "Call active",
-                        modifier = Modifier.align(Alignment.Center)
+                        text = otherUserData?.name ?: "",
+                        fontSize = 20.sp
                     )
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+
+                    if (remoteUserJoined != null) {  // remote/other user joined the call
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Call active: ",
+                                color = Color.Green,
+                                fontSize = 18.sp
+                            )
+
+                            Text(
+                                text = formatCallDuration(callDuration),
+                                fontSize = 18.sp
+                            )
+                        }
+
+                    } else {
+                        Text(
+                            text = "waiting for other user to join the call",
+                            fontSize = 18.sp
+
+                        )
+                    }
 
                 }
 
@@ -122,71 +191,34 @@ fun StartVoiceCall(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
-                    Icon(
-                        imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                        contentDescription = "Mute",
-
-                        )
-                }
-
-                IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
-                    Icon(
-                        imageVector = if (isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "audio turn on/off",
-
-                        )
-                }
-
-                IconButton(onClick = { callViewModel.toggleSpeaker() }) {
-                    Icon(
-                        imageVector = if (isSpeakerPhoneEnabled) Icons.Default.Hearing else Icons.Default.HearingDisabled,
-                        contentDescription = "voice mode : speaker or earpiece",
-
-                        )
-                }
-
-
-                IconButton(onClick = {
-                    callViewModel.leaveChannel()
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.CallEnd,
-                        contentDescription = "End Call",
-                        tint = Color.Red
-                    )
-                }
+                ControlButtons(callType = "voice", callViewModel)
             }
+
         }
     }
-
-
 }
+
 
 @Composable
 fun StartVideoCall(
     callViewModel: CallViewModel,
-    channelName: String,
-    onCallEnd: () -> Unit
+    channelName: String
 ) {
     val context = LocalContext.current
     val isJoined by callViewModel.isJoined.collectAsState()
-    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
-    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()
-    val isMuted by callViewModel.isMuted.collectAsState()
-    val isRemoteAudioDeafen by callViewModel.isRemoteAudioDeafen.collectAsState()
+    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // remote user numeric id
+    val callDuration by callViewModel.callDuration.collectAsState()
 
     // Create SurfaceViews for Local and Remote video
     val localView by rememberUpdatedState(SurfaceView(context))
     val remoteView by rememberUpdatedState(SurfaceView(context))
 
-    val callEnded by callViewModel.callEnded.collectAsState()
 
     val activity = LocalActivity.current
 
     LaunchedEffect(Unit) {
-        // callViewModel.enableVideoPreview()
-        callViewModel.joinChannel(null, channelName, 0, "video")
+        // callViewModel.enableVideoPreview() // camera preview to show before joining the call
+        callViewModel.joinChannel(null, channelName, "video")
     }
 
     LaunchedEffect(isJoined) {
@@ -205,18 +237,9 @@ fun StartVideoCall(
         if (remoteUserJoined != null) {
             callViewModel.setUpRemoteVideo(remoteView, remoteUserJoined!!)
             callViewModel.setUpLocalVideo(localView) // force rebind
-        } else {
-            // Wait for 2 minutes for the remote user to join
-            delay(2 * 60 * 1000)
-
-            // If still null after 2 minutes, end call
-            if (remoteUserJoined == null) callViewModel.leaveChannel()
         }
     }
 
-    LaunchedEffect(remoteUserLeft, callEnded) {
-        if (remoteUserLeft || callEnded) onCallEnd()
-    }
 
     DisposableEffect(Unit) {
         onDispose {
@@ -231,12 +254,27 @@ fun StartVideoCall(
                 .padding(it)
         ) {
             if (isJoined) {
-                // Remote video (Large)
+
+                // screen context
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     if (remoteUserJoined != null) {
+
+                        // remote view (full screen)
                         AndroidView(factory = { remoteView }, modifier = Modifier.fillMaxSize())
+
+                        // Local video (Mini-screen) - Floating at bottom end
+                        Box(
+                            modifier = Modifier
+                                .size(120.dp)
+                                .align(Alignment.TopEnd)
+                                .padding(16.dp)
+                                .background(Color.Black, shape = RoundedCornerShape(8.dp))
+                        ) {
+                            AndroidView(factory = { localView }, modifier = Modifier.fillMaxSize())
+                        }
+
                     } else {
                         Text(
                             text = "Waiting for other user to join...",
@@ -245,20 +283,6 @@ fun StartVideoCall(
                         )
                     }
                 }
-
-                // Local video (Mini-screen) - Floating at bottom end
-                if (remoteUserJoined != null) {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .align(Alignment.TopEnd)
-                            .padding(16.dp)
-                            .background(Color.Black, shape = RoundedCornerShape(8.dp))
-                    ) {
-                        AndroidView(factory = { localView }, modifier = Modifier.fillMaxSize())
-                    }
-                }
-
             } else {
                 Text(
                     text = "Joining Channel...",
@@ -267,48 +291,100 @@ fun StartVideoCall(
                 )
             }
 
+
             // Control Buttons
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
                     .padding(16.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
-                    Icon(
-                        imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                        contentDescription = "Mute",
-                        tint = Color.White
-                    )
+                // Call Duration Display
+                if (remoteUserJoined != null) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Call active: ",
+                            color = Color.Green,
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            text = formatCallDuration(callDuration),
+                            fontSize = 18.sp
+                        )
+                    }
                 }
 
-                IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
-                    Icon(
-                        imageVector = if (isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                        contentDescription = "Speaker",
-                        tint = Color.White
-                    )
-                }
+                Spacer(modifier = Modifier.height(8.dp))
 
-                IconButton(onClick = { callViewModel.switchCamera() }) {
-                    Icon(
-                        imageVector = Icons.Default.FlipCameraAndroid,
-                        contentDescription = "Switch Camera",
-                        tint = Color.White
-                    )
-                }
-
-                IconButton(onClick = {
-                    callViewModel.leaveChannel()
-                }) {
-                    Icon(
-                        imageVector = Icons.Default.CallEnd,
-                        contentDescription = "End Call",
-                        tint = Color.Red
-                    )
+                // Control Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly
+                ) {
+                    ControlButtons(callType = "video", callViewModel = callViewModel)
                 }
             }
+
         }
     }
+}
+
+@Composable
+fun ControlButtons(callType: String, callViewModel: CallViewModel) {
+    val isMuted by callViewModel.isMuted.collectAsState()
+    val isRemoteAudioDeafen by callViewModel.isRemoteAudioDeafen.collectAsState()
+    val isSpeakerPhoneEnabled by callViewModel.isSpeakerPhoneEnabled.collectAsState()
+
+
+    //common
+    IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
+        Icon(
+            imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+            contentDescription = "Mute",
+        )
+    }
+
+    // video/call/common
+    IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
+        Icon(
+            imageVector = if (isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+            contentDescription = "audio turn on/off",
+
+            )
+    }
+
+    // common
+    IconButton(onClick = {
+        callViewModel.leaveChannel()
+    }) {
+        Icon(
+            imageVector = Icons.Default.CallEnd,
+            contentDescription = "End Call",
+            tint = Color.Red
+        )
+    }
+
+
+    if (callType == "voice") {
+        // only voice call
+        IconButton(onClick = { callViewModel.toggleSpeaker() }) {
+            Icon(
+                imageVector = if (isSpeakerPhoneEnabled) Icons.Default.Hearing else Icons.Default.HearingDisabled,
+                contentDescription = "voice mode : speaker or earpiece"
+
+            )
+        }
+    } else {
+        // only video
+        IconButton(onClick = { callViewModel.switchCamera() }) {
+            Icon(
+                imageVector = Icons.Default.FlipCameraAndroid,
+                contentDescription = "Switch Camera"
+            )
+        }
+    }
+
 }

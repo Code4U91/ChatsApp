@@ -9,8 +9,10 @@ import io.agora.rtc2.Constants
 import io.agora.rtc2.IRtcEngineEventHandler
 import io.agora.rtc2.RtcEngine
 import io.agora.rtc2.video.VideoCanvas
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class AgoraSetUpRepo @Inject constructor(
@@ -29,6 +31,8 @@ class AgoraSetUpRepo @Inject constructor(
     private val _remoteUserLeft = MutableStateFlow(false)
     val remoteUserLeft = _remoteUserLeft.asStateFlow()
 
+    private var localUid: Int = 0
+
     fun initializeAgora(appId: String) {
         try {
             rtcEngine = RtcEngine.create(context, appId, object : IRtcEngineEventHandler() {
@@ -36,6 +40,7 @@ class AgoraSetUpRepo @Inject constructor(
                 override fun onJoinChannelSuccess(channel: String?, uid: Int, elapsed: Int) {
                     super.onJoinChannelSuccess(channel, uid, elapsed)
 
+                    localUid = uid
                     _isJoined.value = true
                 }
 
@@ -43,7 +48,13 @@ class AgoraSetUpRepo @Inject constructor(
                     Log.d("AgoraDebug", "Remote user joined: $uid")
                     _remoteUserJoined.value = uid
 
-                    //enableVideo()
+                }
+
+                override fun onLocalUserRegistered(uid: Int, userAccount: String?) {
+                    super.onLocalUserRegistered(uid, userAccount)
+
+                    localUid = uid
+
                 }
 
                 override fun onUserOffline(uid: Int, reason: Int) {
@@ -56,15 +67,14 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
 
-      fun enableVideo() {
+    private fun enableVideo() {
         rtcEngine?.apply {
             enableVideo()
-            startPreview() // might not needed
+            startPreview() //  preview to run before call join
         }
     }
 
-    private fun enableAudioOnly()
-    {
+    private fun enableAudioOnly() {
         rtcEngine?.apply {
             disableVideo()
             setEnableSpeakerphone(false)
@@ -75,26 +85,29 @@ class AgoraSetUpRepo @Inject constructor(
         rtcEngine?.setEnableSpeakerphone(isEnabled)
     }
 
-    fun joinChannel(token: String?, channelName: String, callType: String) {
+    suspend fun joinChannel(token: String?, channelName: String, callType: String, uid: String) {
 
-        val options = ChannelMediaOptions().apply {
-            clientRoleType = Constants.CLIENT_ROLE_BROADCASTER
-            channelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION
-            publishMicrophoneTrack = true
+        withContext(Dispatchers.IO)
+        {
+            val options = ChannelMediaOptions().apply {
+                clientRoleType = Constants.CLIENT_ROLE_BROADCASTER
+                channelProfile = Constants.CHANNEL_PROFILE_COMMUNICATION
+                publishMicrophoneTrack = true
 
-            if (callType == "video")
-            {
-                publishCameraTrack = true
-                enableVideo()
-            } else {
-                publishCameraTrack = false
-               // rtcEngine?.disableVideo()
-                enableAudioOnly()
+                if (callType == "video") {
+                    publishCameraTrack = true
+                    enableVideo()
+                } else {
+                    publishCameraTrack = false
+                    enableAudioOnly()
+                }
+
             }
 
+            // rtcEngine?.joinChannel(token, channelName, 0, options)
+            rtcEngine?.joinChannelWithUserAccount(token, channelName, uid, options)
         }
 
-        rtcEngine?.joinChannel(token, channelName, 0, options)
     }
 
     fun leaveChannel() {
@@ -109,7 +122,13 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
     fun setupLocalVideo(surfaceView: SurfaceView) {
-        rtcEngine?.setupLocalVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, 0))
+        rtcEngine?.setupLocalVideo(
+            VideoCanvas(
+                surfaceView,
+                VideoCanvas.RENDER_MODE_HIDDEN,
+                localUid
+            )
+        )
 
     }
 
@@ -133,18 +152,21 @@ class AgoraSetUpRepo @Inject constructor(
 
 
     fun destroy() {
+
         rtcEngine?.apply {
-            leaveChannel()  // Step 1: Leave the channel
-            stopPreview()   // Step 2: Stop camera preview (if started)
-            disableVideo()  // Step 3: Disable video
-            disableAudio() // Step 3: Disable audio
+            leaveChannel()
+            stopPreview()
+            disableVideo()
+            disableAudio()
             setEnableSpeakerphone(true)
         }
 
-        RtcEngine.destroy() // Step 4: Destroy the global instance
-        rtcEngine = null   // Step 5: Release the reference
+        RtcEngine.destroy()
+        rtcEngine = null
 
         Log.i("AgoraDebug", "Called On Destroy")
+
+
     }
 
 }

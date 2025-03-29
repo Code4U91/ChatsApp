@@ -77,7 +77,6 @@ import androidx.compose.ui.window.Dialog
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.ProfileItem
 import com.example.chatapp.viewmodel.ChatsViewModel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
