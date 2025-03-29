@@ -78,7 +78,6 @@ class CallViewModel @Inject constructor(
         val userId = auth.currentUser?.uid ?: return
             viewModelScope.launch {
                 agoraRepo.joinChannel(token, channelId, callType, userId)
-
         }
 
     }
