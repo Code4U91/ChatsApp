@@ -44,6 +44,11 @@ class AgoraSetUpRepo @Inject constructor(
                     _isJoined.value = true
                 }
 
+                override fun onLeaveChannel(stats: RtcStats?) {
+                    super.onLeaveChannel(stats)
+                    _isJoined.value = false
+                }
+
                 override fun onUserJoined(uid: Int, elapsed: Int) {
                     Log.d("AgoraDebug", "Remote user joined: $uid")
                     _remoteUserJoined.value = uid
@@ -67,10 +72,11 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
 
-    private fun enableVideo() {
+     fun enableVideo() {
         rtcEngine?.apply {
             enableVideo()
             startPreview() //  preview to run before call join
+            setEnableSpeakerphone(true)
         }
     }
 
@@ -103,23 +109,21 @@ class AgoraSetUpRepo @Inject constructor(
                 }
 
             }
-
-            // rtcEngine?.joinChannel(token, channelName, 0, options)
             rtcEngine?.joinChannelWithUserAccount(token, channelName, uid, options)
         }
 
     }
 
-    fun leaveChannel() {
-
-        rtcEngine?.apply {
-            leaveChannel()
-            disableVideo()
-            muteAllRemoteAudioStreams(false)
-        }
-        _isJoined.value = false
-        _remoteUserJoined.value = null
-    }
+//    fun leaveChannel() {
+//
+//        rtcEngine?.apply {
+//            leaveChannel()
+//            disableVideo()
+//            muteAllRemoteAudioStreams(false)
+//        }
+//        _isJoined.value = false
+//        _remoteUserJoined.value = null
+//    }
 
     fun setupLocalVideo(surfaceView: SurfaceView) {
         rtcEngine?.setupLocalVideo(

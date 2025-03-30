@@ -9,6 +9,7 @@ import com.example.chatapp.MESSAGE_COLLECTION
 import com.example.chatapp.Message
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.UserData
+import com.example.chatapp.checkEmailPattern
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -27,6 +28,7 @@ class MessageServiceRepository @Inject constructor(
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
+    // function to fetch current user data
     fun fetchUserData(user: FirebaseUser, onDataChanged: (UserData?) -> Unit) {
 
         val userRef = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
@@ -47,9 +49,11 @@ class MessageServiceRepository @Inject constructor(
     }
 
 
+    // function to fetch friend user data
+    // fetchUserData and fetchFriendData could be merged into one but currently they put the data in seprate
+    // data class of its own so not merged yet, might do in future
     fun fetchFriendData(
-        friendUserId: String,
-        updatedFriendData: (FriendData?) -> Unit
+        friendUserId: String, updatedFriendData: (FriendData?) -> Unit
     ): ListenerRegistration {
         val userRef = firestoreDb.collection(USERS_COLLECTION).document(friendUserId)
 
@@ -68,75 +72,142 @@ class MessageServiceRepository @Inject constructor(
 
     }
 
+    // function to add friend on the users friendList collection
+    // user can add friend using either other user id or an email
     fun addFriend(
-        friendUserId: String,
-        onSuccess: () -> Unit,
-        onFailure: (e: Exception) -> Unit
+        friendUserIdEmail: String, onSuccess: () -> Unit, onFailure: (e: Exception) -> Unit
     ) {
 
-        val user = auth.currentUser
+        val userId = auth.currentUser?.uid ?: return onFailure(Exception("User not authenticated"))
+        val currentUserEmail = auth.currentUser?.email ?: return onFailure(Exception("Email is not available"))
 
-        if (user != null) {
+        // check if the user is trying to add themselves
+        if (friendUserIdEmail == userId || friendUserIdEmail == currentUserEmail) {
+            return onFailure(Exception("You can't add yourself as your own friend."))
 
-            if (friendUserId != user.uid) {
+        }
 
-                // checking if the friend user id is already friend with the current user
-                val userFriendRef =
-                    firestoreDb.collection(USERS_COLLECTION).document(user.uid).collection(
-                        FRIEND_COLLECTION
-                    ).document(friendUserId)
+        if (checkEmailPattern(friendUserIdEmail)) {
 
-                userFriendRef.get()
-                    .addOnSuccessListener { friendListDoc ->
-                        if (!friendListDoc.exists()) {
+            val email = friendUserIdEmail.lowercase()
+            // add friend using email id
+            addFriendByEmail(email, userId, onSuccess, onFailure)
 
-                            // Checking if the friends user id exists and have account
-                            val userRef =
-                                firestoreDb.collection(USERS_COLLECTION).document(friendUserId)
-                            userRef.get()
-                                .addOnSuccessListener { friendDataDoc ->
-
-                                    if (friendDataDoc.exists()) {
-
-                                        val friendName = friendDataDoc.get("name") as String
-
-                                        val friendData = mapOf(
-                                            "friendName" to  friendName
-                                        )
-
-                                        // adding a friend
-                                        firestoreDb.collection(USERS_COLLECTION)
-                                            .document(user.uid)
-                                            .collection(FRIEND_COLLECTION)
-                                            .document(friendUserId)
-                                            .set(friendData)
-                                            .addOnSuccessListener { onSuccess() }
-                                            .addOnFailureListener { e -> onFailure(e) }
-                                    } else {
-                                        onFailure(Exception("User with ID \"$friendUserId\" does not exist."))
-
-                                    }
-                                }
-                                .addOnFailureListener { e ->
-                                    onFailure(e)
-
-                                }
-                        } else {
-                            onFailure(Exception("Entered UserId already exists as your friend"))
-                        }
-                    }
-                    .addOnFailureListener { e -> onFailure(e) }
-
-
-            } else (
-                    onFailure(Exception("You can't add yourself as your own friend."))
-                    )
         } else {
-            onFailure(Exception("User login error"))
+            // add friend using their id
+            addFriendById(friendUserIdEmail, userId, onSuccess, onFailure)
+
         }
 
 
     }
+
+    // add friend using provided email address
+    private fun addFriendByEmail(
+        friendEmail: String,
+        userId: String,
+        onSuccess: () -> Unit,
+        onFailure: (e: Exception) -> Unit
+    ) {
+
+        // first checking if the user with that email id exists
+        firestoreDb.collection(USERS_COLLECTION)
+            .whereEqualTo("email", friendEmail)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { snapShot ->
+
+                // snapshot empty them the user with that email does not exists
+                if (snapShot.isEmpty) {
+                    return@addOnSuccessListener onFailure(Exception("User with email \"$friendEmail\" does not exist."))
+                }
+
+                // if the user with that email exists, fetch name to proceed to next step
+                val friendDoc = snapShot.documents.first()
+                val friendId = friendDoc.id
+                val friendName = friendDoc.getString("name") ?: "Name not found"
+
+                // this function checks if the current user is already friend with user currentUser wants to add
+                checkAndFriend(
+                    userId,
+                    friendId,
+                    friendName,
+                    onSuccess,
+                    onFailure
+                )
+            }
+            .addOnFailureListener { e -> onFailure(e) }
+
+    }
+
+    // adds friend to friend list using id
+    private fun addFriendById(
+        friendId: String,
+        userId: String,
+        onSuccess: () -> Unit,
+        onFailure: (e: Exception) -> Unit
+    ) {
+
+        // checks if the user with the provided friendId exists
+        firestoreDb.collection(USERS_COLLECTION)
+            .document(friendId)
+            .get()
+            .addOnSuccessListener { friendDoc ->
+
+                // if the user with provided email doesn't exists
+                if (!friendDoc.exists()) {
+                    return@addOnSuccessListener onFailure(Exception("User with Id \"$friendId\" does not exist"))
+                }
+
+                // if it exists fetch name and proceed to next step
+                val friendName = friendDoc.getString("name") ?: "Name not found"
+
+
+                // check if user is already friend with it
+                checkAndFriend(
+                    userId,
+                    friendId,
+                    friendName,
+                    onSuccess,
+                    onFailure
+                )
+            }
+            .addOnFailureListener { e -> onFailure(e) }
+
+    }
+
+    // checks if the friendId is already friends with that user or not
+    private fun checkAndFriend(
+        userId: String,
+        friendId: String,
+        friendName: String,
+        onSuccess: () -> Unit,
+        onFailure: (e: Exception) -> Unit
+    ) {
+        firestoreDb.collection(USERS_COLLECTION).document(userId)
+            .collection(FRIEND_COLLECTION)
+            .document(friendId)
+            .get()
+            .addOnSuccessListener { friendDoc ->
+
+                if (friendDoc.exists()) {
+                    return@addOnSuccessListener onFailure(Exception("Entered userId or email already exists as your friend."))
+                }
+
+                val friendData = mapOf("friendName" to friendName)
+
+                firestoreDb.collection(USERS_COLLECTION)
+                    .document(userId)
+                    .collection(FRIEND_COLLECTION)
+                    .document(friendId)
+                    .set(friendData)
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e -> onFailure(e) }
+            }
+            .addOnFailureListener { e -> onFailure(e) }
+
+    }
+
 
     fun fetchFriendList(onFriendUpdated: (List<FriendListData>, Int) -> Unit): ListenerRegistration? { // added listener
 
@@ -144,8 +215,7 @@ class MessageServiceRepository @Inject constructor(
         if (user != null) {
 
             return firestoreDb.collection(USERS_COLLECTION).document(user.uid)
-                .collection(FRIEND_COLLECTION)
-                .addSnapshotListener { snapshot, error ->
+                .collection(FRIEND_COLLECTION).addSnapshotListener { snapshot, error ->
 
                     if (error != null) {
                         return@addSnapshotListener
@@ -169,11 +239,10 @@ class MessageServiceRepository @Inject constructor(
         return null
     }
 
-    fun updateFriendNameOnFriendList(friendName: String, currentUserId: String, friendId: String)
-    {
+    fun updateFriendNameOnFriendList(friendName: String, currentUserId: String, friendId: String) {
         firestoreDb.collection(USERS_COLLECTION).document(currentUserId).collection(
-            FRIEND_COLLECTION).document(friendId)
-            .update("friendName", friendName)
+            FRIEND_COLLECTION
+        ).document(friendId).update("friendName", friendName)
     }
 
 
@@ -190,14 +259,13 @@ class MessageServiceRepository @Inject constructor(
                         FRIEND_COLLECTION
                     ).document(friendId)
 
-                userFriendRef.get()
-                    .addOnSuccessListener { friend ->
-                        if (friend.exists()) {
+                userFriendRef.get().addOnSuccessListener { friend ->
+                    if (friend.exists()) {
 
-                            userFriendRef.delete()
-                        }
-
+                        userFriendRef.delete()
                     }
+
+                }
             }
         }
     }
@@ -206,7 +274,7 @@ class MessageServiceRepository @Inject constructor(
         messageText: String,
         otherUserId: String,
         fetchedChatId: String,
-        ) {
+    ) {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             val currentUserId = currentUser.uid
@@ -214,8 +282,7 @@ class MessageServiceRepository @Inject constructor(
             val chatId = chatIdCreator(currentUserId, otherUserId, fetchedChatId)
 
 
-            val chatRef = firestoreDb.collection(CHATS_COLLECTION)
-                .document(chatId)
+            val chatRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
 
             chatRef.get().addOnSuccessListener { chat ->
 
@@ -234,8 +301,7 @@ class MessageServiceRepository @Inject constructor(
                 } else {
 
                     chatRef.update(
-                        "lastMessage", messageText,
-                        "lastMessageTimeStamp", Timestamp.now()
+                        "lastMessage", messageText, "lastMessageTimeStamp", Timestamp.now()
                     )
 
                 }
@@ -251,11 +317,10 @@ class MessageServiceRepository @Inject constructor(
                     "status" to "sending"
                 )
 
-                messageRef.set(messageItem)
-                    .addOnSuccessListener {
-                        messageRef.update("status", "sent")
+                messageRef.set(messageItem).addOnSuccessListener {
+                    messageRef.update("status", "sent")
 
-                    }
+                }
 
             }
 
@@ -264,9 +329,7 @@ class MessageServiceRepository @Inject constructor(
 
     // causing double fetch, this one used for main chat other one is global listener
     fun fetchMessages(
-        friendUserId: String,
-        fetchedChatId: String,
-        onMessageFetched: (List<Message>) -> Unit
+        friendUserId: String, fetchedChatId: String, onMessageFetched: (List<Message>) -> Unit
     ): ListenerRegistration? {
 
         val user = auth.currentUser
@@ -275,10 +338,8 @@ class MessageServiceRepository @Inject constructor(
 
             val chatId = chatIdCreator(currentUserId, friendUserId, fetchedChatId)
 
-            val messagesRef = firestoreDb.collection(CHATS_COLLECTION)
-                .document(chatId)
-                .collection(MESSAGE_COLLECTION)
-                .orderBy("timeStamp", Query.Direction.DESCENDING)
+            val messagesRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
+                .collection(MESSAGE_COLLECTION).orderBy("timeStamp", Query.Direction.DESCENDING)
 
 
             val fetchMessageListener = messagesRef.addSnapshotListener { snapshot, error ->
@@ -320,11 +381,8 @@ class MessageServiceRepository @Inject constructor(
         if (chatId.isNotEmpty()) {
             val chatRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
 
-            chatRef.collection(MESSAGE_COLLECTION)
-                .whereEqualTo("receiverId", currentUserId)
-                .whereEqualTo("status", "delivered")
-                .get()
-                .addOnSuccessListener { snapShot ->
+            chatRef.collection(MESSAGE_COLLECTION).whereEqualTo("receiverId", currentUserId)
+                .whereEqualTo("status", "delivered").get().addOnSuccessListener { snapShot ->
 
                     val batch = firestoreDb.batch()
 
@@ -343,10 +401,8 @@ class MessageServiceRepository @Inject constructor(
     }
 
 
-        private fun chatIdCreator(
-        currentUserId: String,
-        friendUserId: String,
-        fetchedChatId: String
+    private fun chatIdCreator(
+        currentUserId: String, friendUserId: String, fetchedChatId: String
     ): String {
 
         if (fetchedChatId.isEmpty()) {
@@ -363,23 +419,15 @@ class MessageServiceRepository @Inject constructor(
 
     }
 
-    fun createFirebaseCloudMessageToken(token: (String) -> Unit) {
-        firebaseMessaging.token.addOnSuccessListener {upToDateToken ->
-            token(upToDateToken)
-        }
-    }
-
-    fun updateFcmTokenIfNeeded(savedToken: String?)
-    {
-        val user = auth.currentUser?: return
+    fun updateFcmTokenIfNeeded(savedToken: String?) {
+        val user = auth.currentUser ?: return
 
         firebaseMessaging.token.addOnSuccessListener { currentToken ->
 
             val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 
             savedToken?.let {
-                if (it != currentToken)
-                {
+                if (it != currentToken) {
                     userDoc.update("fcmToken", currentToken)
 
                     Log.i("FCMCheck", "onUpdate ran : $currentToken")

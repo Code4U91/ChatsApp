@@ -93,7 +93,7 @@ fun AddFriendDialogBox(
                         .fillMaxWidth()
                 ) {
 
-                    Text(text = "Enter your friend user id", fontSize = 20.sp)
+                    Text(text = "Enter your friend user id or email", fontSize = 20.sp)
                     Spacer(modifier = Modifier.height(15.dp))
 
                     TextField(

@@ -65,17 +65,18 @@ fun CallScreen(
 
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
 
-    val otherUserData by chatsViewModel.userData.collectAsState()
+    val otherUserData by chatsViewModel.userData.collectAsState() // not real time updated data
 
-    val callEnded by callViewModel.callEnded.collectAsState()
-    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()
-    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+    val callEnded by callViewModel.callEnded.collectAsState()  // called when clicked on call end button
+    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()  // when other user leaves call
+    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // contains numeric agora id of other joined user
 
     LaunchedEffect(remoteUserLeft, callEnded) {
-        if (remoteUserLeft || callEnded) onCallEnd()
+        if (callEnded || remoteUserLeft) onCallEnd()
 
     }
 
+    // auto leave channel or call end if call not connected within 48seconds
     LaunchedEffect(remoteUserJoined) {
 
         // Wait for 48sec for the remote user to join
@@ -88,6 +89,7 @@ fun CallScreen(
 
     }
 
+    // switch compose based on the call type passes as parameter to callScreen compose
     if (callType == "video") {
         StartVideoCall(callViewModel = callViewModel, channelName = channelName)
     } else {
@@ -217,7 +219,7 @@ fun StartVideoCall(
     val activity = LocalActivity.current
 
     LaunchedEffect(Unit) {
-        // callViewModel.enableVideoPreview() // camera preview to show before joining the call
+         callViewModel.enableVideoPreview() // camera preview to show before joining the call
         callViewModel.joinChannel(null, channelName, "video")
     }
 
@@ -253,12 +255,15 @@ fun StartVideoCall(
                 .fillMaxSize()
                 .padding(it)
         ) {
+
             if (isJoined) {
 
                 // screen context
                 Box(
                     modifier = Modifier.fillMaxSize()
                 ) {
+
+                    // when the remote user is connected and call is established
                     if (remoteUserJoined != null) {
 
                         // remote view (full screen)
@@ -276,11 +281,9 @@ fun StartVideoCall(
                         }
 
                     } else {
-                        Text(
-                            text = "Waiting for other user to join...",
-                            modifier = Modifier.align(Alignment.Center),
-                            color = Color.White
-                        )
+
+                        // if other user is not connected show local user's video preview
+                        AndroidView(factory = { localView }, modifier = Modifier.fillMaxSize())
                     }
                 }
             } else {
@@ -315,6 +318,12 @@ fun StartVideoCall(
                             fontSize = 18.sp
                         )
                     }
+                } else {
+
+                    Text(
+                        text = "Video Calling....",
+                        fontSize = 18.sp
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

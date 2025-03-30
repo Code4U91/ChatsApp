@@ -23,7 +23,7 @@ class CallViewModel @Inject constructor(
 ) : ViewModel() {
 
 
-    val isJoined: StateFlow<Boolean> =  agoraRepo.isJoined
+    val isJoined: StateFlow<Boolean> = agoraRepo.isJoined
     val remoteUserJoined: StateFlow<Int?> = agoraRepo.remoteUserJoined
     val remoteUserLeft: StateFlow<Boolean> = agoraRepo.remoteUserLeft
 
@@ -31,10 +31,10 @@ class CallViewModel @Inject constructor(
     val isMuted = _isMuted.asStateFlow()
 
     private val _isRemoteAudioDeafen = MutableStateFlow(false) // changed to true
-    val isRemoteAudioDeafen  = _isRemoteAudioDeafen.asStateFlow()
+    val isRemoteAudioDeafen = _isRemoteAudioDeafen.asStateFlow()
 
     private val _isSpeakerPhoneEnabled = MutableStateFlow(false) // changed to true
-    val isSpeakerPhoneEnabled  = _isSpeakerPhoneEnabled.asStateFlow()
+    val isSpeakerPhoneEnabled = _isSpeakerPhoneEnabled.asStateFlow()
 
     private val _callEnded = MutableStateFlow(false)
     val callEnded = _callEnded.asStateFlow()
@@ -53,8 +53,7 @@ class CallViewModel @Inject constructor(
         viewModelScope.launch {
             remoteUserJoined.collect { userId ->
 
-                if (userId != null)
-                {
+                if (userId != null) {
                     startCallTimer()
                 }
 
@@ -62,10 +61,9 @@ class CallViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            remoteUserLeft.collect{ isLeft ->
+            remoteUserLeft.collect { isLeft ->
 
-                if (isLeft)
-                {
+                if (isLeft) {
                     stopCallTimer()
                 }
             }
@@ -76,28 +74,23 @@ class CallViewModel @Inject constructor(
     fun joinChannel(token: String?, channelId: String, callType: String) {
 
         val userId = auth.currentUser?.uid ?: return
-            viewModelScope.launch {
-                agoraRepo.joinChannel(token, channelId, callType, userId)
+
+        viewModelScope.launch {
+            agoraRepo.joinChannel(token, channelId, callType, userId)
         }
 
     }
 
     fun leaveChannel() {
-        viewModelScope.launch {
-            agoraRepo.leaveChannel()
-            _callEnded.value = true
-        }
-
+        _callEnded.value = true
     }
 
-    fun setUpLocalVideo(surfaceView: SurfaceView)
-    {
+    fun setUpLocalVideo(surfaceView: SurfaceView) {
         agoraRepo.setupLocalVideo(surfaceView)
     }
 
-    fun setUpRemoteVideo(surfaceView: SurfaceView, uid: Int)
-    {
-        agoraRepo.setupRemoteVideo(surfaceView,uid)
+    fun setUpRemoteVideo(surfaceView: SurfaceView, uid: Int) {
+        agoraRepo.setupRemoteVideo(surfaceView, uid)
     }
 
     fun muteOutgoingAudio() {
@@ -105,7 +98,7 @@ class CallViewModel @Inject constructor(
         agoraRepo.muteLocalAudio(_isMuted.value)
     }
 
-    fun  muteYourSpeaker() {
+    fun muteYourSpeaker() {
         _isRemoteAudioDeafen.value = !_isRemoteAudioDeafen.value
         agoraRepo.muteRemoteAudio(_isRemoteAudioDeafen.value)
     }
@@ -114,21 +107,18 @@ class CallViewModel @Inject constructor(
         agoraRepo.switchCamera()
     }
 
-    fun toggleSpeaker()
-    {
+    fun toggleSpeaker() {
         _isSpeakerPhoneEnabled.value = !_isSpeakerPhoneEnabled.value
         agoraRepo.toggleSpeakerphone(_isSpeakerPhoneEnabled.value)
     }
 
-    private fun startCallTimer()
-    {
+    private fun startCallTimer() {
         _callStartTime.value = System.currentTimeMillis()
 
         callTimerJob?.cancel()
-        callTimerJob = viewModelScope.launch{
+        callTimerJob = viewModelScope.launch {
 
-            while (isActive)
-            {
+            while (isActive) {
                 val durationMillis = System.currentTimeMillis() - (_callStartTime.value ?: 0L)
                 _callDuration.value = durationMillis / 1000 // converted to seconds
                 delay(1000)
@@ -136,8 +126,7 @@ class CallViewModel @Inject constructor(
         }
     }
 
-    private fun stopCallTimer()
-    {
+    private fun stopCallTimer() {
 
         callTimerJob?.cancel()
         _callStartTime.value?.let { startTime ->
@@ -149,10 +138,15 @@ class CallViewModel @Inject constructor(
 
     }
 
+    fun enableVideoPreview() {
+        agoraRepo.enableVideo()
+    }
+
     override fun onCleared() {
         super.onCleared()
-            agoraRepo.destroy()
+        agoraRepo.destroy()
 
     }
+
 
 }
