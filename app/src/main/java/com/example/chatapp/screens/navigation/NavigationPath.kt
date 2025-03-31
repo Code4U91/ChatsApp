@@ -37,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.screens.AllChatScreen
+import com.example.chatapp.screens.CallHistoryScreen
 import com.example.chatapp.screens.CallScreen
 import com.example.chatapp.screens.FriendListScreen
 import com.example.chatapp.screens.MainChatScreen
@@ -140,6 +141,7 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
 
             composable(Screen.CallHistoryScreen.route) {
                 // Add your call history screen UI here
+                CallHistoryScreen()
             }
 
             composable("FriendListScreen") {

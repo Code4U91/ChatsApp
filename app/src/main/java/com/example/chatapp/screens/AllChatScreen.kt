@@ -93,7 +93,7 @@ fun AllChatScreen(
                         navController = navController,
                         chatId = chatItemData.chatId,
                         lastMessageTimStamp = chatItemData.lastMessageTimeStamp,
-                        lastMessage = chatItemData.lastMessage ?: "",
+                        lastMessage = chatItemData.lastMessage ?: ""
                     )
                 }
             }

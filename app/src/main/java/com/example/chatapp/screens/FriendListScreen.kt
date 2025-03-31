@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -59,10 +60,21 @@ import kotlinx.coroutines.delay
 @Composable
 fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController) {
 
+
     var expandFriendDialogBox by rememberSaveable {
         mutableStateOf(false)
     }
 
+    var searchQuery by rememberSaveable {
+        mutableStateOf("")
+    }
+
+    var showSearchBar by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    // listens for the friendList and fetches them
+    // removes listener when the compose is not on view
     val friendList by produceState(initialValue = emptyList()) {
 
         val listener = viewmodel.fetchFriendList { friendListData ->
@@ -75,36 +87,28 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
         }
     }
 
-
-    var searchQuery by rememberSaveable {
-        mutableStateOf("")
-    }
-
-    var showSearchBar by rememberSaveable {
-        mutableStateOf(false)
-    }
-
+    // filters fetched friend list
     val filteredFriendList =
         friendList.filter { it.friendName.trim().contains(searchQuery.trim(), ignoreCase = true) }
             .sortedBy { it.friendName.lowercase() }
 
-
+    // collects total number of friends
     val totalFriends by viewmodel.totalFriend.collectAsState()
 
 
+    // list of ui component
     val friendScreenUiItemList = listOf(
-
         FriendScreenUiItem(icon = Icons.Default.AddComment, itemDescription = "New friend"),
         FriendScreenUiItem(icon = Icons.Default.Groups, itemDescription = "New group")
     )
 
-
+    // main ui container for this page
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
         topBar = {
             TopAppBar(
                 title = {
-
+                    // show search bar or not
                     if (showSearchBar) {
 
                         val keyboardController = LocalSoftwareKeyboardController.current
@@ -117,41 +121,52 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                             keyboardController?.show()
                         }
 
-                        TextField(
-                            value = searchQuery,
-                            onValueChange = { searchQuery = it },
-                            placeholder = { Text(text = "Search in friend list..") },
-                            singleLine = true,
-                            leadingIcon = {
-
-                                IconButton(onClick = {
-
-                                    showSearchBar = false
-                                    searchQuery = ""
-
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowBackIosNew,
-                                        contentDescription = "back button"
-                                    )
-                                }
-                            },
-                            shape = RoundedCornerShape(30.dp),
+                        Card(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequester),
-                            colors = TextFieldDefaults.colors(
+                                .fillMaxSize()
+                                .padding(4.dp),
+                            shape = RoundedCornerShape(10.dp)
+                        ) {
 
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                                errorIndicatorColor = Color.Transparent,
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                disabledContainerColor = Color.Transparent,
-                                errorContainerColor = Color.Transparent
+                            // field where user can enter text to sort the friend by name
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text(text = "Search in friend list..") },
+                                singleLine = true,
+                                leadingIcon = {
+
+                                    IconButton(onClick = {
+
+                                        showSearchBar = false
+                                        searchQuery = ""
+
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowBackIosNew,
+                                            contentDescription = "back button"
+                                        )
+                                    }
+                                },
+                                shape = RoundedCornerShape(30.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester),
+                                colors = TextFieldDefaults.colors(
+
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    disabledIndicatorColor = Color.Transparent,
+                                    errorIndicatorColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    disabledContainerColor = Color.Transparent,
+                                    errorContainerColor = Color.Transparent
+                                )
                             )
-                        )
+                        }
+
+
                     } else {
                         Column(
                             modifier = Modifier.fillMaxWidth()
@@ -223,19 +238,24 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                     .padding(10.dp)
             ) {
 
-                items(friendScreenUiItemList) { item ->
+                // shows ui item
+                if (!showSearchBar) {
 
-                    FriendScreenOptionItem(
-                        icon = item.icon,
-                        descriptionText = item.itemDescription
-                    ) { state ->
-                        expandFriendDialogBox = state
+                    items(friendScreenUiItemList, key = { it.itemDescription }) { item ->
+
+                        FriendScreenOptionItem(
+                            icon = item.icon,
+                            descriptionText = item.itemDescription
+                        ) { state ->
+                            expandFriendDialogBox = state
+                        }
+                        Spacer(modifier = Modifier.height(12.dp))
+
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
-
                 }
 
-                item {
+                // like a horizontal divider but with the description
+                item(key = "headlineBar") {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
@@ -248,7 +268,8 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                items(filteredFriendList)
+                // composes profile items of all fetch friends
+                items(filteredFriendList, key = { it.friendId })
                 { friendList ->
 
                     ChatItemAndFriendListItem(
@@ -262,7 +283,8 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                 }
             }
 
-
+            // when clicked on add friend, activated drop box
+            // which takes friend uid or email
             if (expandFriendDialogBox) {
                 AddFriendDialogBox(viewModel = viewmodel)
                 {

@@ -98,6 +98,7 @@ class ChatManager @Inject constructor(
                                         "delivered"
                                     }
                                 doc.reference.update("status", newStatus)
+
                                 Log.d(
                                     "ChatManager",
                                     "Updated message status to $newStatus for chatId: $chatId"

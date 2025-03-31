@@ -4,23 +4,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.google.firebase.Timestamp
 
 data class UserData(
-     val uid : String? = "",
-     val name : String? = "",
-     val photoUrl : String? = "",
-     val email : String? = "",
-    val about : String? = "",
-    val fcmToken : String? = ""
- )
+    val uid: String? = "",
+    val name: String? = "",
+    val photoUrl: String? = "",
+    val email: String? = "",
+    val about: String? = "",
+    val fcmToken: String? = ""
+)
 
 data class ProfileItem(
-    val primaryIcon : ImageVector,
-    val secondaryIcon : ImageVector,
-    val itemDescription : String,
-    val itemValue : String
+    val primaryIcon: ImageVector,
+    val secondaryIcon: ImageVector,
+    val itemDescription: String,
+    val itemValue: String
 )
 
 data class FriendScreenUiItem(
-    val icon : ImageVector,
+    val icon: ImageVector,
     val itemDescription: String = ""
 )
 
@@ -41,8 +41,8 @@ data class FriendData(
 )
 
 data class LastMessageData(
-    val lastMessage : String? = "",
-    val lastMessageTimeStamp : Timestamp? = Timestamp.now(),
+    val lastMessage: String? = "",
+    val lastMessageTimeStamp: Timestamp? = Timestamp.now(),
     val senderId: String? = "",
     val receiverId: String? = "",
     val status: String? = ""
