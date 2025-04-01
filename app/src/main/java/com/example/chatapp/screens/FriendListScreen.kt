@@ -124,7 +124,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                         Card(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(end = 14.dp),
+                                .padding(top = 2.dp, end = 14.dp, bottom = 10.dp),
                             shape = CircleShape
                         ) {
 
@@ -239,7 +239,8 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(10.dp)
+                    .padding(horizontal = 10.dp)
+                    
             ) {
 
                 // shows ui item
@@ -253,7 +254,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                         ) { state ->
                             expandFriendDialogBox = state
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(10.dp))
 
                     }
                 }
@@ -314,6 +315,7 @@ fun FriendScreenOptionItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(top = 10.dp)
             .clickable {
                 // when clicked add new friend
                 if (descriptionText == "New friend") {

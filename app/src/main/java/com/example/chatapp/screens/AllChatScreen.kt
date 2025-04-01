@@ -105,7 +105,7 @@ fun AllChatScreen(
                         Card(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(top = 2.dp, end = 14.dp),
+                                .padding(top = 2.dp, end = 14.dp, bottom = 10.dp),
                             shape = CircleShape
                         ) {
 
@@ -197,7 +197,7 @@ fun AllChatScreen(
             {
 
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().padding(top = 10.dp)
+                    modifier = Modifier.fillMaxSize()
                 ) {
 
                     items(filteredActiveChatList, key = { it.chatId }) { chatItemData ->

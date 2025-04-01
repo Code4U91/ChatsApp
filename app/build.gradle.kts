@@ -27,7 +27,9 @@ android {
         // tested on android version 9 huawei y9
         // canceled for testing it on emulators
         // ABI Filtering - Keep only necessary architectures
-//
+        ndk {
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
+        }
 
 
     }
