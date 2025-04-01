@@ -1,5 +1,6 @@
 package com.example.chatapp.screens.navigation
 
+import android.annotation.SuppressLint
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -81,6 +82,7 @@ fun AuthNavigationHost(viewModel: ChatsViewModel) {
 
 
 // Main screen navigation, only appear after user is authenticated
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MainNavigationHost(viewModel: ChatsViewModel) {
     val navController = rememberNavController()
@@ -125,7 +127,7 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
             }
         },
         floatingActionButtonPosition = FabPosition.End
-    ) { paddingValue ->
+    ) {
 
         NavHost(
             navController = navController,
@@ -245,6 +247,7 @@ fun BottomNavigationBar(navController: NavHostController, viewmodel: ChatsViewMo
         }
     }
 }
+
 
 // bottom bar item
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
