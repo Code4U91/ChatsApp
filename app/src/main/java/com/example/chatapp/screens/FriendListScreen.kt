@@ -124,8 +124,8 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                         Card(
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(4.dp),
-                            shape = RoundedCornerShape(10.dp)
+                                .padding(end = 14.dp),
+                            shape = CircleShape
                         ) {
 
                             // field where user can enter text to sort the friend by name
@@ -230,7 +230,11 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
         )
         {
 
-            HorizontalDivider()
+            if (!showSearchBar)
+            {
+                HorizontalDivider()
+            }
+
 
             LazyColumn(
                 modifier = Modifier
@@ -277,7 +281,8 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                         friendId = friendList.friendId,
                         navController = navController,
                         viewmodel = viewmodel,
-                        oldFriendName = friendList.friendName
+                        oldFriendName = friendList.friendName,
+                        whichList = "friendList"
                     )
 
                 }

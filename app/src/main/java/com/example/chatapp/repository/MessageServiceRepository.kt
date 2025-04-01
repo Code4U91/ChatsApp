@@ -245,6 +245,13 @@ class MessageServiceRepository @Inject constructor(
         ).document(friendId).update("friendName", friendName)
     }
 
+    fun updateFriendNameOnChatList(friendName: String,friendId: String, chatId: String)
+    {
+        firestoreDb.collection(CHATS_COLLECTION).document(chatId)
+            .update("participantsName.$friendId", friendName) // updates only one key
+
+    }
+
 
     fun deleteFriend(friendId: String) {
         val user = auth.currentUser
@@ -288,12 +295,18 @@ class MessageServiceRepository @Inject constructor(
 
                 // if the chat doesn't already exists
                 if (!chat.exists()) {
+
+                    val mapIdWithName = mapOf(
+                        currentUserId to "",
+                        otherUserId to ""
+                    )
                     val chatData = mapOf(
                         "participants" to listOf(currentUser.uid, otherUserId),
                         "lastMessage" to messageText,
                         "lastMessageTimeStamp" to Timestamp.now(),
                         "senderId" to currentUserId,
                         "receiverId" to otherUserId,
+                        "participantsName" to mapIdWithName
                     )
 
                     chatRef.set(chatData)

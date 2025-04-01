@@ -460,14 +460,20 @@ class ChatsViewModel @Inject constructor(
 
     }
 
-    fun updateFriendName(friendName: String, friendId: String)
+    fun updateFriendName(friendName: String, friendId: String, whichList: String, chatId: String)
     {
         val userID = auth.currentUser?.uid
 
-        userID?.let {currentUserId ->
-
-            messageServiceRepository.updateFriendNameOnFriendList(friendName,currentUserId, friendId)
+        if (whichList == "friendList")
+        {
+            userID?.let {currentUserId ->
+                messageServiceRepository.updateFriendNameOnFriendList(friendName,currentUserId, friendId)
+            }
+        } else
+        {
+            messageServiceRepository.updateFriendNameOnChatList(friendName, friendId, chatId)
         }
+
     }
 
     override fun onCleared() {

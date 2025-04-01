@@ -58,7 +58,6 @@ class ChatManager @Inject constructor(
     }
 
 
-
     private fun addListenersForNewChats(chatList: List<ChatItemData>) {
 
 
@@ -118,7 +117,7 @@ class ChatManager @Inject constructor(
 
     // provides chatId list sorted by the last message activity
     private fun fetchCurrentUserParticipantChats(
-        onUpdatedChatList: (List<ChatItemData>) -> Unit   
+        onUpdatedChatList: (List<ChatItemData>) -> Unit
     ): ListenerRegistration? {
 
         val user = auth.currentUser
@@ -137,9 +136,13 @@ class ChatManager @Inject constructor(
                     val chatList = snapshots?.documents?.mapNotNull { doc ->
 
                         val participants =
-                            doc.get("participants")  as? List<String> ?: return@mapNotNull null
+                            doc.get("participants") as? List<String> ?: return@mapNotNull null
 
                         val otherId = participants.firstOrNull { it != currentUserId }
+
+                        val participantsName = doc.get("participantsName") as? Map<String, String>
+
+                        val otherUserName = participantsName?.get(otherId)
 
 
                         val lastMessage = doc.getString("lastMessage")
@@ -149,12 +152,11 @@ class ChatManager @Inject constructor(
                             chatId = doc.id,
                             otherUserId = otherId,
                             lastMessage = lastMessage,
-                            lastMessageTimeStamp = lastMessageTimeStamp
+                            lastMessageTimeStamp = lastMessageTimeStamp,
+                            otherUserName = otherUserName ?: ""
                         )
 
-                    }
-                        ?.sortedByDescending { it.lastMessageTimeStamp?.toDate()?.time ?: 0L }
-                        ?: emptyList()
+                    }?: emptyList()
 
                     onUpdatedChatList(chatList)
                 }

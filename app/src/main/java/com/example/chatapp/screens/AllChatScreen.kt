@@ -6,7 +6,6 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,8 +18,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,11 +38,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -44,61 +59,167 @@ import com.example.chatapp.formatTimestamp
 import com.example.chatapp.shimmerEffect
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.delay
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllChatScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
-    paddingValue: PaddingValues,
 ) {
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
     val activeChatList by viewmodel.activeChatList.collectAsState()
 
+    var searchQuery by rememberSaveable {
+        mutableStateOf("")
+    }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(paddingValue),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.Start
-    ) {
+    var showSearchBar by rememberSaveable {
+        mutableStateOf(false)
+    }
 
-        Text(
-            text = "ChatsApp",
-            fontSize = 35.sp,
-            modifier = Modifier.padding(4.dp)
-        )
-
-        HorizontalDivider()
+    val filteredActiveChatList = activeChatList.filter {
+        it.otherUserName?.trim()?.contains(searchQuery.trim(), ignoreCase = true) == true
+    }.sortedByDescending { it.lastMessageTimeStamp?.toDate()?.time ?: 0L }
 
 
-        Box(
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            TopAppBar(
+                title = {
+                    // show search bar or not
+                    if (showSearchBar) {
+
+                        val keyboardController = LocalSoftwareKeyboardController.current
+
+                        val focusRequester = remember { FocusRequester() }
+
+                        LaunchedEffect(Unit) {
+                            delay(200)
+                            focusRequester.requestFocus()
+                            keyboardController?.show()
+                        }
+
+                        Card(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(top = 2.dp, end = 14.dp),
+                            shape = CircleShape
+                        ) {
+
+                            // field where user can enter text to sort the friend by name
+                            TextField(
+                                value = searchQuery,
+                                onValueChange = { searchQuery = it },
+                                placeholder = { Text(text = "Search in chat list..") },
+                                singleLine = true,
+                                leadingIcon = {
+
+                                    IconButton(onClick = {
+
+                                        showSearchBar = false
+                                        searchQuery = ""
+
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Default.ArrowBackIosNew,
+                                            contentDescription = "back button"
+                                        )
+                                    }
+                                },
+                                shape = RoundedCornerShape(30.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequester),
+                                colors = TextFieldDefaults.colors(
+
+                                    focusedIndicatorColor = Color.Transparent,
+                                    unfocusedIndicatorColor = Color.Transparent,
+                                    disabledIndicatorColor = Color.Transparent,
+                                    errorIndicatorColor = Color.Transparent,
+                                    focusedContainerColor = Color.Transparent,
+                                    unfocusedContainerColor = Color.Transparent,
+                                    disabledContainerColor = Color.Transparent,
+                                    errorContainerColor = Color.Transparent
+                                )
+                            )
+                        }
+
+
+                    } else {
+                        // if search bar isn't opened
+                        Text(
+                            text = "ChatsApp",
+                            fontSize = 35.sp,
+                            modifier = Modifier.padding(4.dp)
+                        )
+                    }
+                },
+                actions = {
+
+                    if (!showSearchBar) {
+                        IconButton(onClick = {
+                            showSearchBar = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = "Localized description"
+                            )
+                        }
+                    }
+                },
+
+                )
+
+
+        }
+    ) { paddingValue ->
+        Column(
             modifier = Modifier
-                .fillMaxSize(),
-            contentAlignment = Alignment.Center
-        )
-        {
+                .fillMaxWidth()
+                .padding(paddingValue),
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.Start
+        ) {
 
-            LazyColumn(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            if (!showSearchBar)
+            {
+                HorizontalDivider()
+            }
 
-                items(activeChatList, key = { it.chatId }) { chatItemData ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            )
+            {
 
-                    ChatItemAndFriendListItem(
-                        chatItemWithMsg = true,
-                        friendId = chatItemData.otherUserId ?: "",
-                        viewmodel = viewmodel,
-                        navController = navController,
-                        chatId = chatItemData.chatId,
-                        lastMessageTimStamp = chatItemData.lastMessageTimeStamp,
-                        lastMessage = chatItemData.lastMessage ?: ""
-                    )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().padding(top = 10.dp)
+                ) {
+
+                    items(filteredActiveChatList, key = { it.chatId }) { chatItemData ->
+
+                        ChatItemAndFriendListItem(
+                            chatItemWithMsg = true,
+                            friendId = chatItemData.otherUserId ?: "",
+                            viewmodel = viewmodel,
+                            navController = navController,
+                            chatId = chatItemData.chatId,
+                            lastMessageTimStamp = chatItemData.lastMessageTimeStamp,
+                            lastMessage = chatItemData.lastMessage ?: "",
+                            oldFriendName = chatItemData.otherUserName,
+                            whichList = "chatList"
+                        )
+                    }
                 }
             }
         }
     }
+
+
 }
 
 
@@ -111,7 +232,8 @@ fun ChatItemAndFriendListItem(
     chatId: String = "",
     lastMessageTimStamp: Timestamp? = null,
     lastMessage: String = "",
-    oldFriendName: String? = null
+    oldFriendName: String? = null,
+    whichList: String
 
 ) {
 
@@ -140,7 +262,7 @@ fun ChatItemAndFriendListItem(
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
-    LaunchedEffect(oldFriendName, friendData?.name) {
+    LaunchedEffect(oldFriendName, friendData?.name, chatId) {
 
         val updatedFriendName = friendData?.name
 
@@ -149,7 +271,12 @@ fun ChatItemAndFriendListItem(
 
                 if (oldFriendName != updatedFriendName) {
                     // change friend name on the friend list data on the friendList document of the user
-                    viewmodel.updateFriendName(updatedFriendName, friendData?.uid ?: "")
+                    viewmodel.updateFriendName(
+                        friendName = updatedFriendName,
+                        friendId = friendData?.uid ?: "",
+                        whichList = whichList,
+                        chatId = chatId
+                    )
                 }
             }
         }

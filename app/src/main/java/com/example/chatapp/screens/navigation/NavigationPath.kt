@@ -132,7 +132,7 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
             startDestination = Screen.AllChatScreen.route
         ) {
             composable(Screen.AllChatScreen.route) {
-                AllChatScreen(viewModel, navController, paddingValue)
+                AllChatScreen(viewModel, navController)
             }
 
             composable(Screen.ProfileScreen.route) {
