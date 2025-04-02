@@ -30,7 +30,6 @@ output.json
 
 # Firebase and Google Services
 google-services.json
-Constant.kt
 app/google-services.json
 crashlytics.properties
 firebase/
