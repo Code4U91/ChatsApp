@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.jetbrains.kotlin.android)
@@ -23,12 +25,23 @@ android {
             useSupportLibrary = true
         }
 
+        val localProperties = Properties().apply {
+            load(rootProject.file("local.properties").inputStream())
+        }
+        val agoraAppId = localProperties.getProperty("AGORA_APP_ID") ?: ""
+
+        buildConfigField("String", "AGORA_APP_ID", agoraAppId)
+
         // remove this if it cause error on some android versions, currently works fine on most
         // tested on android version 9 huawei y9
         // canceled for testing it on emulators
         // ABI Filtering - Keep only necessary architectures
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
+//        ndk {
+//            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
+//        }
+
+        buildFeatures {
+            buildConfig = true  // Enable BuildConfig generation
         }
 
 

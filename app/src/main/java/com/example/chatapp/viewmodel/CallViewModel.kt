@@ -3,7 +3,7 @@ package com.example.chatapp.viewmodel
 import android.view.SurfaceView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.AGORA_APP_ID
+import com.example.chatapp.AGORA_ID
 import com.example.chatapp.repository.AgoraSetUpRepo
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -48,7 +48,10 @@ class CallViewModel @Inject constructor(
 
 
     init {
-        agoraRepo.initializeAgora(AGORA_APP_ID)
+
+        // for testing purpose only
+
+        agoraRepo.initializeAgora(AGORA_ID)
 
         viewModelScope.launch {
             remoteUserJoined.collect { userId ->
