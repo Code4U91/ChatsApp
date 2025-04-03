@@ -43,7 +43,7 @@ class ChatManager @Inject constructor(
 
         chatListListener = fetchCurrentUserParticipantChats { chatList ->
 
-            onFetchAllActiveChat(chatList)
+
 
             if (chatList != currentChatList) {
                 currentChatList = chatList
