@@ -67,6 +67,7 @@ fun ChatAppRoot(viewModel: ChatsViewModel) {
     {
 
         MainNavigationHost(viewModel)
+
     } else {
 
         AuthNavigationHost(viewModel)

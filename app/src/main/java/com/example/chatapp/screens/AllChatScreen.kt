@@ -1,13 +1,13 @@
 package com.example.chatapp.screens
 
 import android.annotation.SuppressLint
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -69,7 +69,6 @@ import kotlinx.coroutines.delay
 fun AllChatScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
-    paddingValue: PaddingValues,
 ) {
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
@@ -82,6 +81,8 @@ fun AllChatScreen(
     var showSearchBar by rememberSaveable {
         mutableStateOf(false)
     }
+
+    Log.i("ChatList", activeChatList.toString())
 
 
 
@@ -179,7 +180,7 @@ fun AllChatScreen(
 
                 )
         }
-    ) {
+    ) { paddingValue->
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -202,6 +203,7 @@ fun AllChatScreen(
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
+
                 ) {
 
                     items(filteredActiveChatList, key = { it.chatId }) { chatItemData ->

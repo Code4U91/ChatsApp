@@ -169,7 +169,7 @@ class AuthRepository @Inject constructor(
                         "photoUrl" to photoUrl,
                         "uid" to user.uid,
                         "about" to "....",
-                        "fcmToken" to task
+                        "fcmTokens" to listOf(task)
                     )
                     userRef.set(newUser)
                 }

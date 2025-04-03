@@ -12,6 +12,7 @@ import com.example.chatapp.checkEmailPattern
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessaging
@@ -37,7 +38,14 @@ class MessageServiceRepository @Inject constructor(
 
             if (snapshot != null && snapshot.exists()) {
 
-                val userData = snapshot.toObject(UserData::class.java)
+                val fetchedUserData = snapshot.toObject(UserData::class.java)
+
+                val fcmTokens = snapshot.get("fcmTokens") as? List<String> ?: emptyList()
+
+                val userData = fetchedUserData?.copy(
+                    fcmTokens = fcmTokens
+                )
+                Log.i("FCMttoo", userData.toString())
                 onDataChanged(userData)
             }
         }
@@ -428,23 +436,23 @@ class MessageServiceRepository @Inject constructor(
 
     }
 
-    fun updateFcmTokenIfNeeded(savedToken: String?) {
+    fun updateFcmTokenIfNeeded(savedTokens: List<String>) {
         val user = auth.currentUser ?: return
 
         firebaseMessaging.token.addOnSuccessListener { currentToken ->
 
             val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 
-            savedToken?.let {
-                if (it != currentToken) {
-                    userDoc.update("fcmToken", currentToken)
-
-                    Log.i("FCMCheck", "onUpdate ran : $currentToken")
-                }
+            if (currentToken !in savedTokens) {
+                //  adding only unique values automatically
+                userDoc.update("fcmTokens", FieldValue.arrayUnion(currentToken))
+                    .addOnSuccessListener { Log.i("FCMCheck", "FCM Token updated: $currentToken") }
+                    .addOnFailureListener { Log.e("FCMError", "Failed to update token", it) }
             }
-
         }
     }
+
+
 
 
     fun clearMessageListeners() {

@@ -49,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -83,7 +84,7 @@ fun MainChatScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
     otherId: String,
-    chatIdd: String
+    fetchedChatId: String // channel id might not exist if no message exists in a chat
 ) {
 
     var messageText by rememberSaveable {
@@ -96,7 +97,9 @@ fun MainChatScreen(
 
     val currentChatId by viewmodel.currentOpenChatId.collectAsState()
 
-    val chatId = chatIdd.ifEmpty { viewmodel.calculateChatId(otherId) }
+    val chatId by remember {
+        mutableStateOf(fetchedChatId.ifEmpty { viewmodel.calculateChatId(otherId) })
+    } // temporary creates an id when chatId is empty
 
     val listState = rememberLazyListState()
 

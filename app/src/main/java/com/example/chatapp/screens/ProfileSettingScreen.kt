@@ -93,7 +93,6 @@ fun ProfileSettingScreen(
 
     val userData by viewmodel.userData.collectAsState()
 
-
     val loadingIndicator by viewmodel.loadingIndicator.collectAsState()
 
     LaunchedEffect(Unit) {

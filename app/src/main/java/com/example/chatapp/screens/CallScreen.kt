@@ -65,6 +65,7 @@ fun CallScreen(
 
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
 
+
     val otherUserData by chatsViewModel.userData.collectAsState() // not real time updated data
 
     val callEnded by callViewModel.callEnded.collectAsState()  // called when clicked on call end button

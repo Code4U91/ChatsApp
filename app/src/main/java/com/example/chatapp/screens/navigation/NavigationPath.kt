@@ -98,6 +98,11 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
 
         Log.i("CurrentChatId", currentChatId.toString())
         viewModel.setCurrentOpenChatId(currentChatId)
+
+        viewModel.startGlobalListener()
+        viewModel.fetchUserData()
+        viewModel.setOnlineStatus(true)
+
     }
 
     val noBottomBarRouteList = listOf(
@@ -138,7 +143,7 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
             modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.AllChatScreen.route) {
-                AllChatScreen(viewModel, navController, paddingValue)
+                AllChatScreen(viewModel, navController)
             }
 
             composable(Screen.ProfileScreen.route) {
@@ -214,6 +219,14 @@ fun BottomNavigationBar(navController: NavHostController, viewmodel: ChatsViewMo
 
     val userData by viewmodel.userData.collectAsState()
 
+    LaunchedEffect(userData) {
+      //  Log.i("FCM_DEBUG", "LaunchedEffect triggered with userData: $userData")
+
+        userData?.let { user ->
+            //Log.i("FCM_DEBUG", "Calling updateFcmTokenIfNeeded with token: ${user.fcmTokens}")
+            viewmodel.updateFcmTokenIfNeeded(user.fcmTokens)
+        } //?: Log.w("FCM_DEBUG", "UserData is null, skipping FCM update")
+    }
 
 
     NavigationBar {

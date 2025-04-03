@@ -9,7 +9,7 @@ data class UserData(
     val photoUrl: String? = "",
     val email: String? = "",
     val about: String? = "",
-    val fcmToken: String? = ""
+    val fcmTokens: List<String> = emptyList()
 )
 
 data class ProfileItem(
@@ -37,15 +37,8 @@ data class FriendData(
     val name: String? = "",
     val photoUrl: String? = "",
     val about: String? = "",
-    val uid: String? = ""
-)
-
-data class LastMessageData(
-    val lastMessage: String? = "",
-    val lastMessageTimeStamp: Timestamp? = Timestamp.now(),
-    val senderId: String? = "",
-    val receiverId: String? = "",
-    val status: String? = ""
+    val uid: String? = "",
+    val fcmTokens: List<String> = emptyList()
 )
 
 data class ChatItemData(

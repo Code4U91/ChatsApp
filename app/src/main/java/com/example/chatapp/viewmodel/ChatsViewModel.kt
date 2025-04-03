@@ -26,7 +26,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -68,22 +67,22 @@ class ChatsViewModel @Inject constructor(
 
     init {
         checkAuthStatus()
-
-        viewModelScope.launch {
-
-            authState.collect { state ->
-                if (state is AuthState.Authenticated) {
-                    startGlobalListener()
-                    fetchUserData()
-                    setOnlineStatus() // marks as true
-
-                    userData.filterNotNull().collect { user ->
-                        messageServiceRepository.updateFcmTokenIfNeeded(user.fcmToken)
-                    }
-                }
-
-            }
-        }
+//
+//        viewModelScope.launch {
+//
+//            authState.collect { state ->
+//                if (state is AuthState.Authenticated) {
+//                    startGlobalListener()
+//                    fetchUserData()
+//                    setOnlineStatus() // marks as true
+//
+//                    userData.filterNotNull().collect { user ->
+//                        messageServiceRepository.updateFcmTokenIfNeeded(user.fcmToken)
+//                    }
+//                }
+//
+//            }
+//        }
 
     }
 
@@ -326,7 +325,7 @@ class ChatsViewModel @Inject constructor(
 
     }
 
-    private fun fetchUserData() {
+    fun fetchUserData() {
         val user = auth.currentUser
         if (user != null) {
             messageServiceRepository.fetchUserData(user)
@@ -435,7 +434,7 @@ class ChatsViewModel @Inject constructor(
     }
 
 
-    private fun setOnlineStatus(status: Boolean = true) {
+    fun setOnlineStatus(status: Boolean = true) {
         onlineStatusRepo.setOnlineStatusWithDisconnect(status)
     }
 
@@ -452,7 +451,7 @@ class ChatsViewModel @Inject constructor(
         _currentOpenChatId.value = chatId
     }
 
-    private fun startGlobalListener() {
+    fun startGlobalListener() {
         chatManager.startGlobalMessageListener(
             isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId },
             onFetchAllActiveChat = { chatList ->
@@ -471,6 +470,14 @@ class ChatsViewModel @Inject constructor(
 
             }
         )
+
+    }
+
+    fun updateFcmTokenIfNeeded(fcmTokens: List<String>) {
+       // Log.i("FCMTOKENU", userData.value?.fcmTokens.toString())
+
+        //Log.i("FCMTOKE", fcmTokens.toString())
+        messageServiceRepository.updateFcmTokenIfNeeded(fcmTokens)
 
     }
 
@@ -501,7 +508,7 @@ class ChatsViewModel @Inject constructor(
 
         val currentUserId = auth.currentUser?.uid
         currentUserId?.let {
-          return  messageServiceRepository.chatIdCreator(it, otherId, "")
+            return messageServiceRepository.chatIdCreator(it, otherId, "")
         }
 
         return ""
