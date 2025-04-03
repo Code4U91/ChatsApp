@@ -410,7 +410,7 @@ class MessageServiceRepository @Inject constructor(
     }
 
 
-    private fun chatIdCreator(
+     fun chatIdCreator(
         currentUserId: String, friendUserId: String, fetchedChatId: String
     ): String {
 

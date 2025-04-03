@@ -296,7 +296,7 @@ class ChatsViewModel @Inject constructor(
     fun checkAndUpdateEmailOnFireStore(
         currentEmailInDb: String,
     ) {
-            val user = auth.currentUser ?: return
+        val user = auth.currentUser ?: return
 
         user.let { currentUser ->
 
@@ -495,6 +495,16 @@ class ChatsViewModel @Inject constructor(
         chatManager.clearAllGlobalListeners()
         messageServiceRepository.clearMessageListeners()
         super.onCleared()
+    }
+
+    fun calculateChatId(otherId: String): String {
+
+        val currentUserId = auth.currentUser?.uid
+        currentUserId?.let {
+          return  messageServiceRepository.chatIdCreator(it, otherId, "")
+        }
+
+        return ""
     }
 
 

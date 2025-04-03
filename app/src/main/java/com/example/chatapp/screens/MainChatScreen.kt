@@ -83,7 +83,7 @@ fun MainChatScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
     otherId: String,
-    chatId: String
+    chatIdd: String
 ) {
 
     var messageText by rememberSaveable {
@@ -95,6 +95,8 @@ fun MainChatScreen(
     val friendData by viewmodel.friendData.collectAsState()
 
     val currentChatId by viewmodel.currentOpenChatId.collectAsState()
+
+    val chatId = chatIdd.ifEmpty { viewmodel.calculateChatId(otherId) }
 
     val listState = rememberLazyListState()
 
