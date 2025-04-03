@@ -1,4 +1,4 @@
-package com.example.chatapp.screens.logInSignUp
+package com.example.chatapp.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -31,11 +31,12 @@ import com.example.chatapp.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
+ fun ChangeEmailAddressScreen(viewModel: ChatsViewModel) {
 
-    var email by rememberSaveable {
+    var newEmail by rememberSaveable {
         mutableStateOf("")
     }
+
 
     var timer by rememberSaveable {
         mutableIntStateOf(0)
@@ -45,7 +46,7 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
         mutableStateOf(true)
     }
 
-    val isEmailValid =  checkEmailPattern(email)
+    val isEmailValid =  checkEmailPattern(newEmail)
 
     val context = LocalContext.current
 
@@ -78,7 +79,7 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Text(text = "Change password",
+                Text(text = "Change email",
                     fontSize = 25.sp,
                     modifier = Modifier.align(Alignment.Start)
                 )
@@ -86,7 +87,7 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
                 Spacer(modifier = Modifier.height(15.dp))
 
                 Text(
-                    text = "Enter your registered email address.",
+                    text = "Enter your new email address.",
                     fontSize = 20.sp
                 )
 
@@ -94,10 +95,10 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
 
                 OutlinedTextField(
                     modifier = Modifier.fillMaxWidth(),
-                    value = email,
+                    value = newEmail,
                     onValueChange =
                     {
-                        email = it
+                        newEmail = it
                     },
                     shape = RoundedCornerShape(20.dp),
                     singleLine = true,
@@ -129,19 +130,16 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
 
                         if (isEmailValid)
                         {
-                            viewModel.resetPasswordUsingEmail(email)
-                            {response ->
 
-                                if (response == "0")
-                                {
-                                    Toast.makeText(context, "Verification email sent", Toast.LENGTH_LONG).show()
+                            viewModel.updateUserEmail(newEmail,
+                                onSuccess = {
+                                    Toast.makeText(context, "Verification email sent to your new email.", Toast.LENGTH_LONG).show()
+                                },
+                                onFailure = {response ->
+                                    Toast.makeText(context, response, Toast.LENGTH_LONG).show()
                                 }
-                                else
-                                {
-                                    Toast.makeText(context, response, Toast.LENGTH_SHORT).show()
+                            )
 
-                                }
-                            }
                             isButtonEnabled = false
                             timer = 120
 
@@ -166,7 +164,4 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
             }
         }
     }
-
 }
-
-

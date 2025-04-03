@@ -1,5 +1,6 @@
 package com.example.chatapp.screens
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -10,6 +11,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -20,12 +22,11 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Add
@@ -74,6 +75,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.ProfileItem
 import com.example.chatapp.viewmodel.ChatsViewModel
@@ -81,44 +83,50 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun ProfileSettingScreen(viewmodel: ChatsViewModel) {
+fun ProfileSettingScreen(
+    viewmodel: ChatsViewModel,
+    navController: NavHostController,
+    paddingValue: PaddingValues
+) {
 
     val userData by viewmodel.userData.collectAsState()
 
 
     val loadingIndicator by viewmodel.loadingIndicator.collectAsState()
 
+    LaunchedEffect(Unit) {
+
+        userData?.email?.let { currentEmailInDBb ->
+            viewmodel.checkAndUpdateEmailOnFireStore(currentEmailInDBb)
+        }
+    }
+
 
     var expandEditImg by remember {
         mutableStateOf(false)
     }
 
-    val scrollState = rememberScrollState()
-
     val profileItems = listOf(
-
         ProfileItem(
             primaryIcon = Icons.Default.Person,
             secondaryIcon = Icons.Default.Edit,
             itemDescription = "Name",
             itemValue = userData?.name ?: ""
         ),
-
         ProfileItem(
             primaryIcon = Icons.Default.Info,
             secondaryIcon = Icons.Default.Edit,
             itemDescription = "About",
             itemValue = userData?.about ?: ""
         ),
-
         ProfileItem(
             primaryIcon = Icons.Default.Email,
             secondaryIcon = Icons.Default.ChevronRight,
             itemDescription = "Email",
             itemValue = userData?.email ?: ""
         ),
-
         ProfileItem(
             primaryIcon = Icons.Default.AssignmentInd,
             secondaryIcon = Icons.Default.ContentCopy,
@@ -129,111 +137,69 @@ fun ProfileSettingScreen(viewmodel: ChatsViewModel) {
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
-        Column(
+    ) {
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(10.dp)
-                .verticalScroll(scrollState),
+                .padding(paddingValue),
             verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.Start
+            contentPadding = PaddingValues(10.dp)
         ) {
 
-            Text(
-                text = "Profile",
-                fontSize = 35.sp,
+            item {
+                Text(
+                    text = "Profile",
+                    fontSize = 35.sp,
 
-                )
-
-            Spacer(modifier = Modifier.height(15.dp))
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-
-                Box(
-                    modifier = Modifier.size(150.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-
-
-                    Image(
-                        painter = rememberAsyncImagePainter(model = userData?.photoUrl ?: ""),
-                        contentDescription = "profile picture",
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .size(150.dp)
-                            .border(1.dp, Color.Gray, shape = CircleShape),
-
-                        )
-
-                    Box(
-                        modifier = Modifier
-                            .size(50.dp)
-                            .clip(CircleShape)
-                            .align(Alignment.BottomEnd),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Edit picture",
-                            tint = Color.Black,
-                            modifier = Modifier
-                                .clip(CircleShape)
-                                .size(34.dp)
-                                .background(Color.Green)
-                                .clickable {
-                                    expandEditImg = true
-                                }
-
-                        )
-
-
-                    }
-                }
-
-
-                Spacer(modifier = Modifier.height(20.dp))
-
+                    )
             }
 
-            Text(
-                text = "Account information",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
+            item {
+                ProfileImageSection(
+                    imageUrl = userData?.photoUrl ?: "",
+                    onEditClick = { expandEditImg = true }
+                )
+            }
+
+            item {
+
+                SectionTitle(title = "Account information")
+            }
+
+
+
+        item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
             ) {
 
-                profileItems.forEach { item ->
+                profileItems.forEachIndexed { index, item ->
 
                     ProfileComponent(
                         primaryIcon = item.primaryIcon,
                         secondaryIcon = item.secondaryIcon,
                         itemDescription = item.itemDescription,
                         itemValue = item.itemValue,
-                        viewmodel = viewmodel
+                        viewmodel = viewmodel,
+                        navController = navController,
                     )
-                    HorizontalDivider()
-                    Spacer(modifier = Modifier.height(10.dp))
+
+                    if (index != profileItems.lastIndex) {
+                        HorizontalDivider()
+                    }
                 }
 
             }
+        }
 
-            Spacer(modifier = Modifier.height(10.dp))
+        item {
 
-            Text(
-                text = "Security",
-                fontSize = 14.sp,
-                color = Color.Gray
-            )
+            SectionTitle(title = "Security")
+        }
 
+        item {
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(10.dp)
@@ -244,35 +210,96 @@ fun ProfileSettingScreen(viewmodel: ChatsViewModel) {
                     secondaryIcon = Icons.Default.ChevronRight,
                     itemDescription = "Password",
                     itemValue = "",
-                    viewmodel = viewmodel
+                    viewmodel = viewmodel,
+                    navController
                 )
             }
+        }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
+        item {
+            Spacer(modifier = Modifier.height(15.dp))
 
             LogoutUi(viewmodel)
+        }
 
-            if (expandEditImg) {
-                PopUpBox(valueDescription = "Image URL", profileValue = "", viewmodel = viewmodel) {
+
+        if (expandEditImg) {
+            item {
+                PopUpBox(
+                    valueDescription = "Image URL",
+                    profileValue = "",
+                    viewmodel = viewmodel
+                ) {
                     expandEditImg = it
                 }
             }
 
-
         }
 
+    }
+
+    if (loadingIndicator) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
         ) {
-            if (loadingIndicator) {
-                CircularProgressIndicator()
+            CircularProgressIndicator()
+        }
+    }
+}
+
+
+}
+
+@Composable
+fun ProfileImageSection(imageUrl: String, onEditClick: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Box(
+            modifier = Modifier.size(150.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(model = imageUrl),
+                contentDescription = "profile picture",
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .size(150.dp)
+                    .border(1.dp, Color.Gray, shape = CircleShape),
+            )
+
+            Box(
+                modifier = Modifier
+                    .size(50.dp)
+                    .clip(CircleShape)
+                    .align(Alignment.BottomEnd),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Edit picture",
+                    tint = Color.Black,
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .size(34.dp)
+                        .background(Color.Green)
+                        .clickable { onEditClick() }
+                )
             }
         }
     }
+}
 
-
+@Composable
+fun SectionTitle(title: String) {
+    Text(
+        text = title,
+        fontSize = 14.sp,
+        color = Color.Gray,
+        modifier = Modifier.padding(vertical = 5.dp)
+    )
 }
 
 
@@ -326,6 +353,7 @@ fun ProfileComponent(
     itemDescription: String,
     itemValue: String,
     viewmodel: ChatsViewModel,
+    navController: NavHostController,
 ) {
 
     var expanded by rememberSaveable {
@@ -340,14 +368,23 @@ fun ProfileComponent(
             .fillMaxWidth()
             .padding(8.dp)
             .clickable {
-                if (itemDescription == "UserId") {
 
-                    coroutineScope.launch {
-                        clipboardManager.setText(AnnotatedString(itemValue))
+                when (itemDescription) {
+                    "UserId" -> {
+                        coroutineScope.launch {
+                            clipboardManager.setText(AnnotatedString(itemValue))
+                        }
                     }
 
-                } else {
-                    expanded = true
+                    "Email" -> { navController.navigate("changeEmail")}
+
+                    "Password" -> {
+                        navController.navigate("changePassword")
+                    }
+
+                    else -> {
+                        expanded = true
+                    }
                 }
 
             }
@@ -489,7 +526,7 @@ fun PopUpBox(
     onDismiss: (expanded: Boolean) -> Unit
 ) {
 
-    if (valueDescription == "Email" || valueDescription == "Password") return
+//    if (valueDescription == "Email" || valueDescription == "Password") return
 
     var profileValueNew by rememberSaveable {
         mutableStateOf(profileValue)
@@ -698,9 +735,7 @@ fun onSaveCancel(
 
         }
 
-        "Email" -> {}
-
-        "Password" -> {}
+         else -> {}
     }
 }
 

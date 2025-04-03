@@ -14,6 +14,10 @@ import com.google.firebase.firestore.Query
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
+
+// responsible for listening to all active chats, providing active chat lists, fetching and storing new messages
+// updating message state, clearing listeners
+
 class ChatManager @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
@@ -27,7 +31,8 @@ class ChatManager @Inject constructor(
 
     fun startGlobalMessageListener(
         isUserInChatScreen: (String) -> Boolean,
-        onFetchAllActiveChat: (List<ChatItemData>) -> Unit
+        onFetchAllActiveChat: (List<ChatItemData>) -> Unit,
+        onNewMessages: (String, List<Message>) -> Unit
     ) {
 
         chatListListener?.remove()
@@ -51,20 +56,26 @@ class ChatManager @Inject constructor(
 
 
             // Add listeners for new chats
-            addListenersForNewChats(chatList)
+            addListenersForNewChats(chatList, onNewMessages)
 
 
         }
     }
 
 
-    private fun addListenersForNewChats(chatList: List<ChatItemData>) {
+    private fun addListenersForNewChats(
+        chatList: List<ChatItemData>,
+        onNewMessages: (String, List<Message>) -> Unit
+    ) {
 
-
+        // iterate over every chat from the chatList
         chatList.forEach { (chatId, _) ->
 
+            // checking for am existing listener, prevents setting up
+            // duplicate listeners
             if (!activeListeners.containsKey(chatId)) {
 
+                // setting up listener
                 val listener = firestoreDb.collection(CHATS_COLLECTION)
                     .document(chatId)
                     .collection(MESSAGE_COLLECTION)
@@ -77,10 +88,24 @@ class ChatManager @Inject constructor(
                             return@addSnapshotListener
                         }
 
+                        // Convert each document in the snapshot to a Message object.
+                        val newMessages = snapshot?.documents?.mapNotNull { doc ->
+                            doc.toObject(Message::class.java)?.copy(
+                                messageId = doc.id
+                            )
+                        } ?: emptyList()
+
+                        // update message ui
+                        onNewMessages(chatId, newMessages)
+
+
+                        // Loop Through Each Document for Status Updates
+                        val batch = firestoreDb.batch()
                         snapshot?.documents?.forEach docLoop@{ doc ->
 
                             val message = doc.toObject(Message::class.java) ?: return@docLoop
                             val currentUserId = auth.currentUser?.uid ?: return@docLoop
+                            val appInstance = context.appInstance()
 
 
                             if (
@@ -88,15 +113,14 @@ class ChatManager @Inject constructor(
                                 message.status !in listOf("delivered", "seen")
                             ) {
 
-                                val appInstance = context.appInstance()
-
                                 val newStatus =
                                     if (appInstance.isInForeground && isUserInChatScreen(chatId)) {
                                         "seen"
                                     } else {
                                         "delivered"
                                     }
-                                doc.reference.update("status", newStatus)
+
+                                batch.update(doc.reference, "status", newStatus)
 
                                 Log.d(
                                     "ChatManager",
@@ -105,11 +129,12 @@ class ChatManager @Inject constructor(
                             }
                         }
 
+                        batch.commit()
+
 
                     }
 
-                activeListeners[chatId] =
-                    listener  // adding or attaching listeners to the chatId
+                activeListeners[chatId] = listener  // adding or attaching listeners to the chatId
                 Log.d("ChatManager", "Added listener for chatId: $chatId")
             }
         }
@@ -156,7 +181,7 @@ class ChatManager @Inject constructor(
                             otherUserName = otherUserName ?: ""
                         )
 
-                    }?: emptyList()
+                    } ?: emptyList()
 
                     onUpdatedChatList(chatList)
                 }

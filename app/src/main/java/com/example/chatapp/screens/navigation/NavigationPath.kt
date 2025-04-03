@@ -40,6 +40,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.screens.AllChatScreen
 import com.example.chatapp.screens.CallHistoryScreen
 import com.example.chatapp.screens.CallScreen
+import com.example.chatapp.screens.ChangeEmailAddressScreen
 import com.example.chatapp.screens.FriendListScreen
 import com.example.chatapp.screens.MainChatScreen
 import com.example.chatapp.screens.ProfileSettingScreen
@@ -73,7 +74,7 @@ fun AuthNavigationHost(viewModel: ChatsViewModel) {
             }
 
             composable("forgotPwd") {
-                ForgotPasswordScreen(viewModel, navController)
+                ForgotPasswordScreen(viewModel)
             }
         }
     }
@@ -102,7 +103,9 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
     val noBottomBarRouteList = listOf(
         "MainChat/{friendId}/{chatId}",
         "FriendListScreen",
-        "CallScreen/{channelName}/{callType}"
+        "CallScreen/{channelName}/{callType}",
+        "changePassword",
+        "changeEmail"
     )
 
 
@@ -127,27 +130,35 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
             }
         },
         floatingActionButtonPosition = FabPosition.End
-    ) {
+    ) { paddingValue ->
 
         NavHost(
             navController = navController,
-            startDestination = Screen.AllChatScreen.route
+            startDestination = Screen.AllChatScreen.route,
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.AllChatScreen.route) {
-                AllChatScreen(viewModel, navController)
+                AllChatScreen(viewModel, navController, paddingValue)
             }
 
             composable(Screen.ProfileScreen.route) {
-                ProfileSettingScreen(viewModel)
+                ProfileSettingScreen(viewModel, navController, paddingValue)
             }
 
             composable(Screen.CallHistoryScreen.route) {
-                // Add your call history screen UI here
                 CallHistoryScreen()
             }
 
             composable("FriendListScreen") {
                 FriendListScreen(viewModel, navController)
+            }
+
+            composable("changePassword") {
+                ForgotPasswordScreen(viewModel)
+            }
+
+            composable("changeEmail"){
+                ChangeEmailAddressScreen(viewModel)
             }
 
             composable(

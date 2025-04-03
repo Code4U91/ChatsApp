@@ -48,7 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,7 +63,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
 import com.example.chatapp.Message
 import com.example.chatapp.appInstance
@@ -76,7 +75,6 @@ import com.example.chatapp.toLocalDate
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.firebase.firestore.ListenerRegistration
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -92,20 +90,9 @@ fun MainChatScreen(
         mutableStateOf("")
     }
 
-
-    var messageList by remember {
-        mutableStateOf<List<Message>>(emptyList())
-    }
+    val messageList by viewmodel.chatMessages.collectAsState()
 
     val friendData by viewmodel.friendData.collectAsState()
-
-    var onlineStatus by remember {
-        mutableStateOf("")
-    }
-
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-
-    currentBackStackEntry?.destination?.route
 
     val currentChatId by viewmodel.currentOpenChatId.collectAsState()
 
@@ -118,34 +105,13 @@ fun MainChatScreen(
 
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    var messageListener by remember {
-        mutableStateOf<ListenerRegistration?>(null)
-    }
 
+    val onlineStatus by produceState(initialValue = "",key1 = otherId) {
 
-
-    LaunchedEffect(otherId, chatId) {
-
-        messageListener?.remove()
-
-        // fetches message using either chatId or otherId, uses chatId if its not empty
-        // if empty creates chatId using otherId and then fetches data if available
-        val listener = viewmodel.fetchMessage(otherId, chatId)
-        { messages ->
-            messageList = messages
-
-            if (viewmodel.hasUnseenMessages(messageList) && currentChatId == chatId && appInstance.isInForeground) {
-                viewmodel.markAllMessageAsSeen(chatId)
-            }
-
-        }
-
-        messageListener = listener
-
-        viewmodel.fetchOnlineStatus(otherId)
-        { updatedOnlineStatus ->
-
-            onlineStatus = when (updatedOnlineStatus) {
+        val  (dbRef, listener) = viewmodel.fetchOnlineStatus(otherId)
+        {
+            updatedOnlineStatus ->
+            value =  when (updatedOnlineStatus) {
                 1L -> "Online"
 
 
@@ -154,14 +120,24 @@ fun MainChatScreen(
 
                 else -> "last seen " + formatOnlineStatusTime(updatedOnlineStatus)
             }
+        }
 
+        awaitDispose {
+             dbRef.removeEventListener(listener)
         }
     }
 
+
+    // marks message as seen on past message received while the app was on pause/stop etc
     DisposableEffect(lifecycleOwner, chatId) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
-                if (viewmodel.hasUnseenMessages(messageList) && currentChatId == chatId && appInstance.isInForeground) {
+
+                // checks if the message has unseen status message
+                if (viewmodel.hasUnseenMessages(
+                        messageList[chatId] ?: emptyList()
+                    ) && currentChatId == chatId && appInstance.isInForeground
+                ) {
                     viewmodel.markAllMessageAsSeen(chatId)
                 }
             }
@@ -169,8 +145,6 @@ fun MainChatScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose {
-            messageListener?.remove()
-            messageListener = null
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
@@ -269,7 +243,7 @@ fun MainChatScreen(
             {
 
                 ChatLazyColumn(
-                    messageList = messageList,
+                    messageList = messageList[chatId] ?: emptyList(),
                     listState = listState,
                     isCurrentUser = { senderId -> viewmodel.isCurrentUserASender(senderId) },
                     getDateLabel = { date -> getDateLabelForMessage(date) }

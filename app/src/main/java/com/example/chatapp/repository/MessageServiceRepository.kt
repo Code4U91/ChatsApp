@@ -6,7 +6,6 @@ import com.example.chatapp.FRIEND_COLLECTION
 import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
 import com.example.chatapp.MESSAGE_COLLECTION
-import com.example.chatapp.Message
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.UserData
 import com.example.chatapp.checkEmailPattern
@@ -15,7 +14,6 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
 import com.google.firebase.messaging.FirebaseMessaging
 import javax.inject.Inject
 
@@ -24,7 +22,6 @@ class MessageServiceRepository @Inject constructor(
     private val firestoreDb: FirebaseFirestore,
     private val firebaseMessaging: FirebaseMessaging
 ) {
-
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
@@ -79,7 +76,8 @@ class MessageServiceRepository @Inject constructor(
     ) {
 
         val userId = auth.currentUser?.uid ?: return onFailure(Exception("User not authenticated"))
-        val currentUserEmail = auth.currentUser?.email ?: return onFailure(Exception("Email is not available"))
+        val currentUserEmail =
+            auth.currentUser?.email ?: return onFailure(Exception("Email is not available"))
 
         // check if the user is trying to add themselves
         if (friendUserIdEmail == userId || friendUserIdEmail == currentUserEmail) {
@@ -245,8 +243,7 @@ class MessageServiceRepository @Inject constructor(
         ).document(friendId).update("friendName", friendName)
     }
 
-    fun updateFriendNameOnChatList(friendName: String,friendId: String, chatId: String)
-    {
+    fun updateFriendNameOnChatList(friendName: String, friendId: String, chatId: String) {
         firestoreDb.collection(CHATS_COLLECTION).document(chatId)
             .update("participantsName.$friendId", friendName) // updates only one key
 
@@ -341,52 +338,52 @@ class MessageServiceRepository @Inject constructor(
     }
 
     // causing double fetch, this one used for main chat other one is global listener
-    fun fetchMessages(
-        friendUserId: String, fetchedChatId: String, onMessageFetched: (List<Message>) -> Unit
-    ): ListenerRegistration? {
-
-        val user = auth.currentUser
-        if (user != null) {
-            val currentUserId = user.uid
-
-            val chatId = chatIdCreator(currentUserId, friendUserId, fetchedChatId)
-
-            val messagesRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
-                .collection(MESSAGE_COLLECTION).orderBy("timeStamp", Query.Direction.DESCENDING)
-
-
-            val fetchMessageListener = messagesRef.addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    return@addSnapshotListener
-                }
-                if (snapshot != null) {
-                    val messageList = snapshot.documents.mapNotNull { doc ->
-
-                        doc.toObject(Message::class.java)?.copy(
-                            messageId = doc.id
-                        )
-                    }
-
-                    onMessageFetched(messageList)
-                }
-
-
-            }
-
-            // might be unnecessary since we clearing it in our onDispose
-            // in main screen
-            listenerRegistration.add(fetchMessageListener)
-
-
-            return fetchMessageListener
-
-
-        } else {
-            return null
-        }
-
-
-    }
+//    fun fetchMessages(
+//        friendUserId: String, fetchedChatId: String, onMessageFetched: (List<Message>) -> Unit
+//    ): ListenerRegistration? {
+//
+//        val user = auth.currentUser
+//        if (user != null) {
+//            val currentUserId = user.uid
+//
+//            val chatId = chatIdCreator(currentUserId, friendUserId, fetchedChatId)
+//
+//            val messagesRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
+//                .collection(MESSAGE_COLLECTION).orderBy("timeStamp", Query.Direction.DESCENDING)
+//
+//
+//            val fetchMessageListener = messagesRef.addSnapshotListener { snapshot, error ->
+//                if (error != null) {
+//                    return@addSnapshotListener
+//                }
+//                if (snapshot != null) {
+//                    val messageList = snapshot.documents.mapNotNull { doc ->
+//
+//                        doc.toObject(Message::class.java)?.copy(
+//                            messageId = doc.id
+//                        )
+//                    }
+//
+//                    onMessageFetched(messageList)
+//                }
+//
+//
+//            }
+//
+//            // might be unnecessary since we clearing it in our onDispose
+//            // in main screen
+//            listenerRegistration.add(fetchMessageListener)
+//
+//
+//            return fetchMessageListener
+//
+//
+//        } else {
+//            return null
+//        }
+//
+//
+//    }
 
 
     fun markMessageAsSeen(chatId: String, currentUserId: String) {
@@ -402,7 +399,6 @@ class MessageServiceRepository @Inject constructor(
                     snapShot.documents.forEach { doc ->
 
                         batch.update(doc.reference, "status", "seen")
-                        // doc.reference.update("status", "seen")
                     }
 
                     if (snapShot.documents.isNotEmpty()) {

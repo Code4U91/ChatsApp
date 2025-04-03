@@ -1,11 +1,13 @@
 package com.example.chatapp.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -61,11 +63,13 @@ import com.example.chatapp.viewmodel.ChatsViewModel
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllChatScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
+    paddingValue: PaddingValues,
 ) {
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
@@ -78,6 +82,8 @@ fun AllChatScreen(
     var showSearchBar by rememberSaveable {
         mutableStateOf(false)
     }
+
+
 
     val filteredActiveChatList = activeChatList.filter {
         it.otherUserName?.trim()?.contains(searchQuery.trim(), ignoreCase = true) == true
@@ -172,10 +178,8 @@ fun AllChatScreen(
                 },
 
                 )
-
-
         }
-    ) { paddingValue ->
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -184,8 +188,7 @@ fun AllChatScreen(
             horizontalAlignment = Alignment.Start
         ) {
 
-            if (!showSearchBar)
-            {
+            if (!showSearchBar) {
                 HorizontalDivider()
             }
 
@@ -195,6 +198,7 @@ fun AllChatScreen(
                 contentAlignment = Alignment.Center
             )
             {
+
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
@@ -216,6 +220,7 @@ fun AllChatScreen(
                     }
                 }
             }
+
         }
     }
 
@@ -245,7 +250,6 @@ fun ChatItemAndFriendListItem(
         { data ->
             value = data
         }
-
 
         awaitDispose {
 
