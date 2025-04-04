@@ -46,24 +46,23 @@ class ChatsViewModel @Inject constructor(
     private var _loadingIndicator = MutableStateFlow(false)
     val loadingIndicator: StateFlow<Boolean> = _loadingIndicator
 
-    private val _totalFriend = MutableStateFlow(0)
-    val totalFriend: StateFlow<Int> = _totalFriend
+//    private val _totalFriend = MutableStateFlow(0)
+//    val totalFriend: StateFlow<Int> = _totalFriend
 
-    private val _friendData = MutableStateFlow<FriendData?>(null)
-    val friendData: StateFlow<FriendData?> = _friendData
+//    private val _friendData = MutableStateFlow<FriendData?>(null)
+//    val friendData: StateFlow<FriendData?> = _friendData
 
-    private val _userData = MutableStateFlow<UserData?>(null)
-    val userData = _userData.asStateFlow()
+//    private val _userData = MutableStateFlow<UserData?>(null)
+//    val userData = _userData.asStateFlow()
 
-    private val _currentOpenChatId = MutableStateFlow<String?>(null)
-    val currentOpenChatId = _currentOpenChatId.asStateFlow()
+//    private val _currentOpenChatId = MutableStateFlow<String?>(null)
+//    val currentOpenChatId = _currentOpenChatId.asStateFlow()
 
-    private val _activeChatList = MutableStateFlow<List<ChatItemData>>(emptyList())
-    val activeChatList = _activeChatList.asStateFlow()
+//    private val _activeChatList = MutableStateFlow<List<ChatItemData>>(emptyList())
+//    val activeChatList = _activeChatList.asStateFlow()
 
-    private val _chatMessages = MutableStateFlow<Map<String, List<Message>>>(emptyMap())
-
-    val chatMessages = _chatMessages.asStateFlow()
+//    private val _chatMessages = MutableStateFlow<Map<String, List<Message>>>(emptyMap())
+//    val chatMessages = _chatMessages.asStateFlow()
 
     init {
         checkAuthStatus()
@@ -98,10 +97,10 @@ class ChatsViewModel @Inject constructor(
         }
     }
 
-    fun updateFriendData(friendData: FriendData) {
-        _friendData.value = friendData
-
-    }
+//    fun updateFriendData(friendData: FriendData) {
+//        _friendData.value = friendData
+//
+//    }
 
 
     // Sign in or Sign up using google credentials
@@ -283,7 +282,7 @@ class ChatsViewModel @Inject constructor(
             user.verifyBeforeUpdateEmail(newEmail).addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     onSuccess()
-                    signOut()
+                   // signOut()
                 } else {
                     onFailure(task.exception?.message)
                 }
@@ -318,23 +317,31 @@ class ChatsViewModel @Inject constructor(
     }
 
 
-    fun signOut() {
-        chatManager.clearAllGlobalListeners()
-        messageServiceRepository.clearMessageListeners()
-        authRepository.signOut()
+    fun signOut(onSuccess: () -> Unit) {
+        viewModelScope.launch {
 
-    }
-
-    fun fetchUserData() {
-        val user = auth.currentUser
-        if (user != null) {
-            messageServiceRepository.fetchUserData(user)
-            { updatedUserData ->
-
-                _userData.value = updatedUserData
+            authRepository.signOut()
+            {
+                checkAuthStatus()
+                chatManager.clearAllGlobalListeners()
+                messageServiceRepository.clearMessageListeners()
+                onSuccess()
             }
+
         }
+
     }
+
+//    fun fetchUserData() {
+//        val user = auth.currentUser
+//        if (user != null) {
+//            messageServiceRepository.fetchUserData(user)
+//            { updatedUserData ->
+//
+//                _userData.value = updatedUserData
+//            }
+//        }
+//    }
 
 
     fun updateAuthState(newState: AuthState) {
@@ -359,30 +366,30 @@ class ChatsViewModel @Inject constructor(
         )
     }
 
-    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
+//    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
+//
+//        return messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
+//            onFriendUpdated(friendDocument)
+//            _totalFriend.value = updatedTotalFriend
+//        }
+//    }
 
-        return messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
-            onFriendUpdated(friendDocument)
-            _totalFriend.value = updatedTotalFriend
-        }
-    }
-
-    fun fetchFriendData(
-        friendUserId: String,
-        updatedFriendData: (FriendData?) -> Unit
-    ): ListenerRegistration {
-
-        return messageServiceRepository.fetchFriendData(friendUserId)
-        {
-            updatedFriendData(it) // used where multiple new friend data is required at once
-
-            if (friendData.value?.uid == friendUserId) {
-                _friendData.value = it  // this one has same friend data at all place
-            }
-
-        }
-
-    }
+//    fun fetchFriendData(
+//        friendUserId: String,
+//        updatedFriendData: (FriendData?) -> Unit
+//    ): ListenerRegistration {
+//
+//        return messageServiceRepository.fetchFriendData(friendUserId)
+//        {
+//            updatedFriendData(it) // used where multiple new friend data is required at once
+//
+//            if (friendData.value?.uid == friendUserId) {
+//                _friendData.value = it  // this one has same friend data at all place
+//            }
+//
+//        }
+//
+//    }
 
     fun deleteFriend(friendId: String) {
         messageServiceRepository.deleteFriend(friendId)
@@ -447,31 +454,31 @@ class ChatsViewModel @Inject constructor(
         }
     }
 
-    fun setCurrentOpenChatId(chatId: String?) {
-        _currentOpenChatId.value = chatId
-    }
+//    fun setCurrentOpenChatId(chatId: String?) {
+//        _currentOpenChatId.value = chatId
+//    }
 
-    fun startGlobalListener() {
-        chatManager.startGlobalMessageListener(
-            isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId },
-            onFetchAllActiveChat = { chatList ->
-
-                _activeChatList.value = chatList
-
-            },
-            onNewMessages = { chatId, messages ->
-
-                viewModelScope.launch {
-                    delay(200) // to reduce read spikes, may increase more or decreased
-                    _chatMessages.value = _chatMessages.value.toMutableMap().apply {
-                        put(chatId, messages)
-                    }
-                }
-
-            }
-        )
-
-    }
+//    fun startGlobalListener() {
+//        chatManager.startGlobalMessageListener(
+//            isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId },
+//            onFetchAllActiveChat = { chatList ->
+//
+//                _activeChatList.value = chatList
+//
+//            },
+//            onNewMessages = { chatId, messages ->
+//
+//                viewModelScope.launch {
+//                    delay(200) // to reduce read spikes, may increase more or decreased
+//                    _chatMessages.value = _chatMessages.value.toMutableMap().apply {
+//                        put(chatId, messages)
+//                    }
+//                }
+//
+//            }
+//        )
+//
+//    }
 
     fun updateFcmTokenIfNeeded(fcmTokens: List<String>) {
        // Log.i("FCMTOKENU", userData.value?.fcmTokens.toString())
@@ -498,11 +505,11 @@ class ChatsViewModel @Inject constructor(
 
     }
 
-    override fun onCleared() {
-        chatManager.clearAllGlobalListeners()
-        messageServiceRepository.clearMessageListeners()
-        super.onCleared()
-    }
+//    override fun onCleared() {
+//        chatManager.clearAllGlobalListeners()
+//        messageServiceRepository.clearMessageListeners()
+//        super.onCleared()
+//    }
 
     fun calculateChatId(otherId: String): String {
 

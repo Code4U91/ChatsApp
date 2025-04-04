@@ -52,13 +52,17 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.FriendScreenUiItem
 import com.example.chatapp.dialogBox.AddFriendDialogBox
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController) {
+fun FriendListScreen(
+   // viewmodel: ChatsViewModel,
+    navController: NavHostController,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel
+) {
 
 
     var expandFriendDialogBox by rememberSaveable {
@@ -77,7 +81,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
     // removes listener when the compose is not on view
     val friendList by produceState(initialValue = emptyList()) {
 
-        val listener = viewmodel.fetchFriendList { friendListData ->
+        val listener = globalMessageListenerViewModel.fetchFriendList { friendListData ->
             value = friendListData.map { it }
         }
 
@@ -93,7 +97,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
             .sortedBy { it.friendName.lowercase() }
 
     // collects total number of friends
-    val totalFriends by viewmodel.totalFriend.collectAsState()
+    val totalFriends by globalMessageListenerViewModel.totalFriend.collectAsState()
 
 
     // list of ui component
@@ -281,7 +285,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
                         chatItemWithMsg = false,
                         friendId = friendList.friendId,
                         navController = navController,
-                        viewmodel = viewmodel,
+                        globalMessageListenerViewModel = globalMessageListenerViewModel,
                         oldFriendName = friendList.friendName,
                         whichList = "friendList"
                     )
@@ -292,7 +296,7 @@ fun FriendListScreen(viewmodel: ChatsViewModel, navController: NavHostController
             // when clicked on add friend, activated drop box
             // which takes friend uid or email
             if (expandFriendDialogBox) {
-                AddFriendDialogBox(viewModel = viewmodel)
+                AddFriendDialogBox(globalMessageListenerViewModel)
                 {
                     expandFriendDialogBox = it
                 }

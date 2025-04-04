@@ -1,6 +1,7 @@
 package com.example.chatapp
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -61,10 +62,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun ChatAppRoot(viewModel: ChatsViewModel) {
+
     val authState by viewModel.authState.collectAsState()
 
-    if (authState is AuthState.Authenticated)
-    {
+    Log.i("AuthStateChatAppRoot", authState.toString())
+    if (authState is AuthState.Authenticated) {
 
         MainNavigationHost(viewModel)
 
@@ -73,4 +75,3 @@ fun ChatAppRoot(viewModel: ChatsViewModel) {
         AuthNavigationHost(viewModel)
     }
 }
-

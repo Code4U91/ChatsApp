@@ -77,8 +77,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
+import com.example.chatapp.AUTH_GRAPH_ROUTE
+import com.example.chatapp.MAIN_GRAPH_ROUTE
 import com.example.chatapp.ProfileItem
 import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -88,10 +91,11 @@ import kotlinx.coroutines.launch
 fun ProfileSettingScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
-    paddingValue: PaddingValues
+    paddingValue: PaddingValues,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel
 ) {
 
-    val userData by viewmodel.userData.collectAsState()
+    val userData by globalMessageListenerViewModel.userData.collectAsState()
 
     val loadingIndicator by viewmodel.loadingIndicator.collectAsState()
 
@@ -218,7 +222,7 @@ fun ProfileSettingScreen(
         item {
             Spacer(modifier = Modifier.height(15.dp))
 
-            LogoutUi(viewmodel)
+            LogoutUi(viewmodel, navController)
         }
 
 
@@ -303,7 +307,7 @@ fun SectionTitle(title: String) {
 
 
 @Composable
-fun LogoutUi(viewmodel: ChatsViewModel) {
+fun LogoutUi(viewmodel: ChatsViewModel, navController: NavHostController) {
 
     var logOutPopBoxExpanded by rememberSaveable {
         mutableStateOf(false)
@@ -337,7 +341,7 @@ fun LogoutUi(viewmodel: ChatsViewModel) {
     }
 
     if (logOutPopBoxExpanded) {
-        LogOutPopUpBox(viewmodel = viewmodel) {
+        LogOutPopUpBox(viewmodel = viewmodel, navController) {
             logOutPopBoxExpanded = it
         }
     }
@@ -440,7 +444,9 @@ fun ProfileComponent(
 }
 
 @Composable
-fun LogOutPopUpBox(viewmodel: ChatsViewModel, onDismiss: (expanded: Boolean) -> Unit) {
+fun LogOutPopUpBox(viewmodel: ChatsViewModel,
+                   navController: NavHostController,
+                   onDismiss: (expanded: Boolean) -> Unit) {
 
     Dialog(
         onDismissRequest = { onDismiss(false) },
@@ -476,7 +482,9 @@ fun LogOutPopUpBox(viewmodel: ChatsViewModel, onDismiss: (expanded: Boolean) -> 
                 Button(
                     onClick = {
 
-                        viewmodel.signOut()
+                        viewmodel.signOut {
+                            navController.popBackStack()
+                        }
                         onDismiss(false)
                     },
                     colors = ButtonColors(

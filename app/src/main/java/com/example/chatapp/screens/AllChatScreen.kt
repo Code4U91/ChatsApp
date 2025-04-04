@@ -59,7 +59,7 @@ import coil3.compose.AsyncImage
 import com.example.chatapp.FriendData
 import com.example.chatapp.formatTimestamp
 import com.example.chatapp.shimmerEffect
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
 
@@ -67,12 +67,13 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllChatScreen(
-    viewmodel: ChatsViewModel,
     navController: NavHostController,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
 ) {
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
-    val activeChatList by viewmodel.activeChatList.collectAsState()
+    // val activeChatList by viewmodel.activeChatList.collectAsState()
+    val activeChatList by globalMessageListenerViewModel.activeChatList.collectAsState()
 
     var searchQuery by rememberSaveable {
         mutableStateOf("")
@@ -83,7 +84,6 @@ fun AllChatScreen(
     }
 
     Log.i("ChatList", activeChatList.toString())
-
 
 
     val filteredActiveChatList = activeChatList.filter {
@@ -180,7 +180,7 @@ fun AllChatScreen(
 
                 )
         }
-    ) { paddingValue->
+    ) { paddingValue ->
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -211,7 +211,7 @@ fun AllChatScreen(
                         ChatItemAndFriendListItem(
                             chatItemWithMsg = true,
                             friendId = chatItemData.otherUserId ?: "",
-                            viewmodel = viewmodel,
+                            globalMessageListenerViewModel = globalMessageListenerViewModel,
                             navController = navController,
                             chatId = chatItemData.chatId,
                             lastMessageTimStamp = chatItemData.lastMessageTimeStamp,
@@ -234,7 +234,7 @@ fun AllChatScreen(
 fun ChatItemAndFriendListItem(
     chatItemWithMsg: Boolean,
     friendId: String,
-    viewmodel: ChatsViewModel,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     navController: NavHostController,
     chatId: String = "",
     lastMessageTimStamp: Timestamp? = null,
@@ -248,7 +248,7 @@ fun ChatItemAndFriendListItem(
     //  auto offs if ui goes out of view, may be similar to launched effect but used to observe state, snapshot etc
     val friendData by produceState<FriendData?>(initialValue = null, key1 = friendId)
     {
-        val listener = viewmodel.fetchFriendData(friendId)
+        val listener = globalMessageListenerViewModel.fetchFriendData(friendId)
         { data ->
             value = data
         }
@@ -277,7 +277,7 @@ fun ChatItemAndFriendListItem(
 
                 if (oldFriendName != updatedFriendName) {
                     // change friend name on the friend list data on the friendList document of the user
-                    viewmodel.updateFriendName(
+                    globalMessageListenerViewModel.updateFriendName(
                         friendName = updatedFriendName,
                         friendId = friendData?.uid ?: "",
                         whichList = whichList,
@@ -310,12 +310,12 @@ fun ChatItemAndFriendListItem(
                         onLongPress = {
 
                             if (currentRoute == "FriendListScreen") {
-                                viewmodel.deleteFriend(friendId)
+                                globalMessageListenerViewModel.deleteFriend(friendId)
                             }
                         },
                         onTap = {
 
-                            viewmodel.updateFriendData(
+                            globalMessageListenerViewModel.updateFriendData(
                                 FriendData(
                                     name = friendData?.name ?: "",
                                     photoUrl = friendData?.photoUrl ?: "",

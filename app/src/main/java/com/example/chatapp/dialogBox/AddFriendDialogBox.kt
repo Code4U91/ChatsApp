@@ -37,12 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.chatapp.screens.isKeyboardVisible
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
 @Composable
 fun AddFriendDialogBox(
-    viewModel: ChatsViewModel,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     onDismiss: (state: Boolean) -> Unit
 ) {
 
@@ -114,7 +114,7 @@ fun AddFriendDialogBox(
                         keyboardActions = KeyboardActions(
                             onDone = {
 
-                                viewModel.addNewFriend(friendUserId,
+                                globalMessageListenerViewModel.addNewFriend(friendUserId,
                                     onSuccess = {
                                         Toast.makeText(
                                             context,
@@ -160,7 +160,7 @@ fun AddFriendDialogBox(
                             text = "Add",
                             modifier = Modifier.clickable {
 
-                                viewModel.addNewFriend(friendUserId,
+                                 globalMessageListenerViewModel.addNewFriend(friendUserId,
                                     onSuccess = {
                                         Toast.makeText(
                                             context,

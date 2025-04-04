@@ -192,7 +192,7 @@ class AuthRepository @Inject constructor(
 
 
 
-    fun signOut() {
+    fun signOut(onComplete: () -> Unit) {
 
         val user = auth.currentUser
         if (user != null) {
@@ -206,6 +206,7 @@ class AuthRepository @Inject constructor(
                 )
             ).addOnCompleteListener {
                 auth.signOut()
+
 
             }
 

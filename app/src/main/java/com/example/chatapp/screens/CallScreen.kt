@@ -51,7 +51,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.UserData
 import com.example.chatapp.formatCallDuration
 import com.example.chatapp.viewmodel.CallViewModel
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,14 +59,15 @@ fun CallScreen(
     channelName: String,
     callType: String,
     callViewModel: CallViewModel = hiltViewModel(),
-    chatsViewModel: ChatsViewModel,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     onCallEnd: () -> Unit
 ) {
 
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
 
 
-    val otherUserData by chatsViewModel.userData.collectAsState() // not real time updated data
+//    val otherUserData by chatsViewModel.userData.collectAsState() // not real time updated data
+    val otherUserData by globalMessageListenerViewModel.userData.collectAsState() // not real time updated data
 
     val callEnded by callViewModel.callEnded.collectAsState()  // called when clicked on call end button
     val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()  // when other user leaves call
