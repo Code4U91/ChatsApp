@@ -99,10 +99,14 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
         Log.i("CurrentChatId", currentChatId.toString())
         viewModel.setCurrentOpenChatId(currentChatId)
 
+
+
+    }
+
+    LaunchedEffect(Unit) {
         viewModel.startGlobalListener()
         viewModel.fetchUserData()
         viewModel.setOnlineStatus(true)
-
     }
 
     val noBottomBarRouteList = listOf(
