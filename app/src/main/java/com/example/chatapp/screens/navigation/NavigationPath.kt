@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -37,6 +38,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
+import com.example.chatapp.AUTH_GRAPH_ROUTE
+import com.example.chatapp.MAIN_GRAPH_ROUTE
 import com.example.chatapp.screens.AllChatScreen
 import com.example.chatapp.screens.CallHistoryScreen
 import com.example.chatapp.screens.CallScreen
@@ -48,19 +51,24 @@ import com.example.chatapp.screens.logInSignUp.ForgotPasswordScreen
 import com.example.chatapp.screens.logInSignUp.SignInScreenUI
 import com.example.chatapp.screens.logInSignUp.SignUpScreenUI
 import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
 
 // Authentication screen navigation
 @Composable
-fun AuthNavigationHost(viewModel: ChatsViewModel) {
+fun AuthNavigationHost(
+    viewModel: ChatsViewModel
+) {
     val navController = rememberNavController()
 
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) {
+
         NavHost(
             modifier = Modifier.padding(it),
             navController = navController,
+            route = AUTH_GRAPH_ROUTE,
             startDestination = "SignIn"
         )
         {
@@ -85,44 +93,45 @@ fun AuthNavigationHost(viewModel: ChatsViewModel) {
 // Main screen navigation, only appear after user is authenticated
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun MainNavigationHost(viewModel: ChatsViewModel) {
+fun MainNavigationHost(
+    viewModel: ChatsViewModel,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel = hiltViewModel()
+) {
     val navController = rememberNavController()
+
+    Log.d(
+        "ViewModelInstance",
+        "globalMessageListenerViewModel hash: ${globalMessageListenerViewModel.hashCode()}"
+    )
+
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
+    
 
 
     LaunchedEffect(currentChatId) {
 
+        // pass even null, pass everything
         Log.i("CurrentChatId", currentChatId.toString())
-        viewModel.setCurrentOpenChatId(currentChatId)
-
-
+        globalMessageListenerViewModel.setCurrentOpenChatId(currentChatId)
 
     }
 
-    LaunchedEffect(Unit) {
-        viewModel.startGlobalListener()
-        viewModel.fetchUserData()
-        viewModel.setOnlineStatus(true)
-    }
-
-    val noBottomBarRouteList = listOf(
-        "MainChat/{friendId}/{chatId}",
-        "FriendListScreen",
-        "CallScreen/{channelName}/{callType}",
-        "changePassword",
-        "changeEmail"
+    val showBottomBarRoutes = listOf(
+        Screen.AllChatScreen.route,
+        Screen.ProfileScreen.route,
+        Screen.CallHistoryScreen.route
     )
 
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
-            if (currentRoute !in noBottomBarRouteList ) {
-                BottomNavigationBar(navController, viewModel)
+            if (currentRoute in showBottomBarRoutes) {
+                BottomNavigationBar(navController, globalMessageListenerViewModel)
             }
         },
         floatingActionButton = {
@@ -144,14 +153,20 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
         NavHost(
             navController = navController,
             startDestination = Screen.AllChatScreen.route,
+            route = MAIN_GRAPH_ROUTE,
             modifier = Modifier.fillMaxSize()
         ) {
             composable(Screen.AllChatScreen.route) {
-                AllChatScreen(viewModel, navController)
+                AllChatScreen(navController, globalMessageListenerViewModel)
             }
 
             composable(Screen.ProfileScreen.route) {
-                ProfileSettingScreen(viewModel, navController, paddingValue)
+                ProfileSettingScreen(
+                    viewModel,
+                    navController,
+                    paddingValue,
+                    globalMessageListenerViewModel
+                )
             }
 
             composable(Screen.CallHistoryScreen.route) {
@@ -159,14 +174,14 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
             }
 
             composable("FriendListScreen") {
-                FriendListScreen(viewModel, navController)
+                FriendListScreen(navController, globalMessageListenerViewModel)
             }
 
             composable("changePassword") {
                 ForgotPasswordScreen(viewModel)
             }
 
-            composable("changeEmail"){
+            composable("changeEmail") {
                 ChangeEmailAddressScreen(viewModel)
             }
 
@@ -181,23 +196,32 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
                 val chatId = backStackEntry.arguments?.getString("chatId")
 
                 if (!friendId.isNullOrEmpty()) {
-                    MainChatScreen(viewModel, navController, friendId, chatId ?: "")
+                    MainChatScreen(
+                        navController,
+                        friendId,
+                        chatId ?: "",
+                        globalMessageListenerViewModel
+                    )
                 }
             }
 
             composable("CallScreen/{channelName}/{callType}",
                 arguments = listOf(
-                    navArgument("channelName"){ type = NavType.StringType},
-                    navArgument("callType"){type = NavType.StringType}
-                  //  navArgument("token"){type = NavType.StringType}
+                    navArgument("channelName") { type = NavType.StringType },
+                    navArgument("callType") { type = NavType.StringType }
+                    //  navArgument("token"){type = NavType.StringType}
                 )
             )
-            {backStackEntry ->
+            { backStackEntry ->
                 val channelName = backStackEntry.arguments?.getString("channelName") ?: ""
-                val callType = backStackEntry.arguments?.getString("callType") ?:""
-             //   val token = backStackEntry.arguments?.getString("token") ?: ""
+                val callType = backStackEntry.arguments?.getString("callType") ?: ""
+                //   val token = backStackEntry.arguments?.getString("token") ?: ""
 
-                CallScreen(channelName, callType, chatsViewModel = viewModel)
+                CallScreen(
+                    channelName,
+                    callType,
+                    globalMessageListenerViewModel = globalMessageListenerViewModel
+                )
                 {
                     navController.popBackStack()
                 }
@@ -209,7 +233,10 @@ fun MainNavigationHost(viewModel: ChatsViewModel) {
 
 // bottom bar navigation ui
 @Composable
-fun BottomNavigationBar(navController: NavHostController, viewmodel: ChatsViewModel) {
+fun BottomNavigationBar(
+    navController: NavHostController,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel
+) {
 
     val navItemList = listOf(
         Screen.AllChatScreen,
@@ -221,16 +248,18 @@ fun BottomNavigationBar(navController: NavHostController, viewmodel: ChatsViewMo
     val currentRoute = currentBackStackEntry?.destination?.route
 
 
-    val userData by viewmodel.userData.collectAsState()
+    val userData by globalMessageListenerViewModel.userData.collectAsState()
 
-    LaunchedEffect(userData) {
-      //  Log.i("FCM_DEBUG", "LaunchedEffect triggered with userData: $userData")
+    //  val userData by viewmodel.userData.collectAsState()
 
-        userData?.let { user ->
-            //Log.i("FCM_DEBUG", "Calling updateFcmTokenIfNeeded with token: ${user.fcmTokens}")
-            viewmodel.updateFcmTokenIfNeeded(user.fcmTokens)
-        } //?: Log.w("FCM_DEBUG", "UserData is null, skipping FCM update")
-    }
+//    LaunchedEffect(userData) {
+//      //  Log.i("FCM_DEBUG", "LaunchedEffect triggered with userData: $userData")
+//
+//        userData?.let { user ->
+//            //Log.i("FCM_DEBUG", "Calling updateFcmTokenIfNeeded with token: ${user.fcmTokens}")
+//            viewmodel.updateFcmTokenIfNeeded(user.fcmTokens)
+//        } //?: Log.w("FCM_DEBUG", "UserData is null, skipping FCM update")
+//    }
 
 
     NavigationBar {

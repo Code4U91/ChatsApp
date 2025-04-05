@@ -79,6 +79,7 @@ import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.ProfileItem
 import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -88,10 +89,11 @@ import kotlinx.coroutines.launch
 fun ProfileSettingScreen(
     viewmodel: ChatsViewModel,
     navController: NavHostController,
-    paddingValue: PaddingValues
+    paddingValue: PaddingValues,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel
 ) {
 
-    val userData by viewmodel.userData.collectAsState()
+    val userData by globalMessageListenerViewModel.userData.collectAsState()
 
     val loadingIndicator by viewmodel.loadingIndicator.collectAsState()
 
@@ -440,7 +442,10 @@ fun ProfileComponent(
 }
 
 @Composable
-fun LogOutPopUpBox(viewmodel: ChatsViewModel, onDismiss: (expanded: Boolean) -> Unit) {
+fun LogOutPopUpBox(
+    viewmodel: ChatsViewModel,
+    onDismiss: (expanded: Boolean) -> Unit
+) {
 
     Dialog(
         onDismissRequest = { onDismiss(false) },

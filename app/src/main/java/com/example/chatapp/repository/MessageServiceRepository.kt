@@ -45,7 +45,6 @@ class MessageServiceRepository @Inject constructor(
                 val userData = fetchedUserData?.copy(
                     fcmTokens = fcmTokens
                 )
-                Log.i("FCMttoo", userData.toString())
                 onDataChanged(userData)
             }
         }
@@ -301,6 +300,7 @@ class MessageServiceRepository @Inject constructor(
                 // if the chat doesn't already exists
                 if (!chat.exists()) {
 
+
                     val mapIdWithName = mapOf(
                         currentUserId to "",
                         otherUserId to ""
@@ -309,8 +309,6 @@ class MessageServiceRepository @Inject constructor(
                         "participants" to listOf(currentUser.uid, otherUserId),
                         "lastMessage" to messageText,
                         "lastMessageTimeStamp" to Timestamp.now(),
-                        "senderId" to currentUserId,
-                        "receiverId" to otherUserId,
                         "participantsName" to mapIdWithName
                     )
 
@@ -344,54 +342,6 @@ class MessageServiceRepository @Inject constructor(
 
         }
     }
-
-    // causing double fetch, this one used for main chat other one is global listener
-//    fun fetchMessages(
-//        friendUserId: String, fetchedChatId: String, onMessageFetched: (List<Message>) -> Unit
-//    ): ListenerRegistration? {
-//
-//        val user = auth.currentUser
-//        if (user != null) {
-//            val currentUserId = user.uid
-//
-//            val chatId = chatIdCreator(currentUserId, friendUserId, fetchedChatId)
-//
-//            val messagesRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
-//                .collection(MESSAGE_COLLECTION).orderBy("timeStamp", Query.Direction.DESCENDING)
-//
-//
-//            val fetchMessageListener = messagesRef.addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    return@addSnapshotListener
-//                }
-//                if (snapshot != null) {
-//                    val messageList = snapshot.documents.mapNotNull { doc ->
-//
-//                        doc.toObject(Message::class.java)?.copy(
-//                            messageId = doc.id
-//                        )
-//                    }
-//
-//                    onMessageFetched(messageList)
-//                }
-//
-//
-//            }
-//
-//            // might be unnecessary since we clearing it in our onDispose
-//            // in main screen
-//            listenerRegistration.add(fetchMessageListener)
-//
-//
-//            return fetchMessageListener
-//
-//
-//        } else {
-//            return null
-//        }
-//
-//
-//    }
 
 
     fun markMessageAsSeen(chatId: String, currentUserId: String) {

@@ -207,6 +207,7 @@ class AuthRepository @Inject constructor(
             ).addOnCompleteListener {
                 auth.signOut()
 
+
             }
 
         }

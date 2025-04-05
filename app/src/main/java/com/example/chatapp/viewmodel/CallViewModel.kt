@@ -146,8 +146,9 @@ class CallViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
         agoraRepo.destroy()
+        super.onCleared()
+
 
     }
 

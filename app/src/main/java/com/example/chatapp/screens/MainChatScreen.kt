@@ -73,7 +73,7 @@ import com.example.chatapp.getMessageIconColor
 import com.example.chatapp.getMessageStatusIcon
 import com.example.chatapp.getTimeOnly
 import com.example.chatapp.toLocalDate
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import java.time.LocalDate
@@ -81,24 +81,24 @@ import java.time.LocalDate
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainChatScreen(
-    viewmodel: ChatsViewModel,
     navController: NavHostController,
     otherId: String,
-    fetchedChatId: String // channel id might not exist if no message exists in a chat
+    fetchedChatId: String, // channel id might not exist if no message exists in a chat
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel
 ) {
 
     var messageText by rememberSaveable {
         mutableStateOf("")
     }
 
-    val messageList by viewmodel.chatMessages.collectAsState()
+    val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
 
-    val friendData by viewmodel.friendData.collectAsState()
+    val friendData by globalMessageListenerViewModel.friendData.collectAsState()
 
-    val currentChatId by viewmodel.currentOpenChatId.collectAsState()
+    val currentChatId by globalMessageListenerViewModel.currentOpenChatId.collectAsState()
 
     val chatId by remember {
-        mutableStateOf(fetchedChatId.ifEmpty { viewmodel.calculateChatId(otherId) })
+        mutableStateOf(fetchedChatId.ifEmpty { globalMessageListenerViewModel.calculateChatId(otherId) })
     } // temporary creates an id when chatId is empty
 
     val listState = rememberLazyListState()
@@ -113,7 +113,7 @@ fun MainChatScreen(
 
     val onlineStatus by produceState(initialValue = "",key1 = otherId) {
 
-        val  (dbRef, listener) = viewmodel.fetchOnlineStatus(otherId)
+        val  (dbRef, listener) = globalMessageListenerViewModel.fetchOnlineStatus(otherId)
         {
             updatedOnlineStatus ->
             value =  when (updatedOnlineStatus) {
@@ -139,11 +139,11 @@ fun MainChatScreen(
             if (event == Lifecycle.Event.ON_RESUME) {
 
                 // checks if the message has unseen status message
-                if (viewmodel.hasUnseenMessages(
+                if (globalMessageListenerViewModel.hasUnseenMessages(
                         messageList[chatId] ?: emptyList()
                     ) && currentChatId == chatId && appInstance.isInForeground
                 ) {
-                    viewmodel.markAllMessageAsSeen(chatId)
+                    globalMessageListenerViewModel.markAllMessageAsSeen(chatId)
                 }
             }
         }
@@ -250,7 +250,7 @@ fun MainChatScreen(
                 ChatLazyColumn(
                     messageList = messageList[chatId] ?: emptyList(),
                     listState = listState,
-                    isCurrentUser = { senderId -> viewmodel.isCurrentUserASender(senderId) },
+                    isCurrentUser = { senderId -> globalMessageListenerViewModel.isCurrentUserASender(senderId) },
                     getDateLabel = { date -> getDateLabelForMessage(date) }
                 )
             }
@@ -284,7 +284,7 @@ fun MainChatScreen(
                         // if chat already doesn't exists creates new chat user otherId
                         if (messageText.isNotEmpty()) {
 
-                            viewmodel.sendMessageToOneFriend(messageText, otherId, chatId)
+                            globalMessageListenerViewModel.sendMessageToOneFriend(messageText, otherId, chatId)
                             messageText = ""
                         }
 
