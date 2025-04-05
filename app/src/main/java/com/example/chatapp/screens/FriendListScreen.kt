@@ -59,7 +59,6 @@ import kotlinx.coroutines.delay
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FriendListScreen(
-   // viewmodel: ChatsViewModel,
     navController: NavHostController,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel
 ) {
@@ -287,7 +286,8 @@ fun FriendListScreen(
                         navController = navController,
                         globalMessageListenerViewModel = globalMessageListenerViewModel,
                         oldFriendName = friendList.friendName,
-                        whichList = "friendList"
+                        whichList = "friendList",
+                        chatId = globalMessageListenerViewModel.calculateChatId(friendList.friendId)
                     )
 
                 }
