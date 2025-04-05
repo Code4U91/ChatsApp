@@ -77,8 +77,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.AUTH_GRAPH_ROUTE
-import com.example.chatapp.MAIN_GRAPH_ROUTE
 import com.example.chatapp.ProfileItem
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
@@ -222,7 +220,7 @@ fun ProfileSettingScreen(
         item {
             Spacer(modifier = Modifier.height(15.dp))
 
-            LogoutUi(viewmodel, navController)
+            LogoutUi(viewmodel)
         }
 
 
@@ -307,7 +305,7 @@ fun SectionTitle(title: String) {
 
 
 @Composable
-fun LogoutUi(viewmodel: ChatsViewModel, navController: NavHostController) {
+fun LogoutUi(viewmodel: ChatsViewModel) {
 
     var logOutPopBoxExpanded by rememberSaveable {
         mutableStateOf(false)
@@ -341,7 +339,7 @@ fun LogoutUi(viewmodel: ChatsViewModel, navController: NavHostController) {
     }
 
     if (logOutPopBoxExpanded) {
-        LogOutPopUpBox(viewmodel = viewmodel, navController) {
+        LogOutPopUpBox(viewmodel = viewmodel) {
             logOutPopBoxExpanded = it
         }
     }
@@ -444,9 +442,10 @@ fun ProfileComponent(
 }
 
 @Composable
-fun LogOutPopUpBox(viewmodel: ChatsViewModel,
-                   navController: NavHostController,
-                   onDismiss: (expanded: Boolean) -> Unit) {
+fun LogOutPopUpBox(
+    viewmodel: ChatsViewModel,
+    onDismiss: (expanded: Boolean) -> Unit
+) {
 
     Dialog(
         onDismissRequest = { onDismiss(false) },
@@ -482,9 +481,7 @@ fun LogOutPopUpBox(viewmodel: ChatsViewModel,
                 Button(
                     onClick = {
 
-                        viewmodel.signOut {
-                            navController.popBackStack()
-                        }
+                        viewmodel.signOut()
                         onDismiss(false)
                     },
                     colors = ButtonColors(

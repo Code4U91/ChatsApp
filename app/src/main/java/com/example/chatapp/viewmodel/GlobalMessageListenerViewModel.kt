@@ -8,14 +8,12 @@ import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
 import com.example.chatapp.Message
 import com.example.chatapp.UserData
-import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.ChatManager
 import com.example.chatapp.repository.MessageServiceRepository
 import com.example.chatapp.repository.OnlineStatusRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -28,9 +26,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GlobalMessageListenerViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
     private val auth: FirebaseAuth,
-    private val firestoreDb: FirebaseFirestore,
     private val messageServiceRepository: MessageServiceRepository,
     private val chatManager: ChatManager,
     private val onlineStatusRepo: OnlineStatusRepo
@@ -230,10 +226,10 @@ class GlobalMessageListenerViewModel @Inject constructor(
     }
 
     override fun onCleared() {
-        super.onCleared()
 
         Log.i("TimesEx", "OnDestroy")
         chatManager.clearAllGlobalListeners()
         messageServiceRepository.clearMessageListeners()
+        super.onCleared()
     }
 }

@@ -3,12 +3,7 @@ package com.example.chatapp.viewmodel
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.ChatItemData
-import com.example.chatapp.FriendData
-import com.example.chatapp.FriendListData
-import com.example.chatapp.Message
 import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.UserData
 import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.ChatManager
 import com.example.chatapp.repository.MessageServiceRepository
@@ -17,15 +12,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.userProfileChangeRequest
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -46,43 +36,8 @@ class ChatsViewModel @Inject constructor(
     private var _loadingIndicator = MutableStateFlow(false)
     val loadingIndicator: StateFlow<Boolean> = _loadingIndicator
 
-//    private val _totalFriend = MutableStateFlow(0)
-//    val totalFriend: StateFlow<Int> = _totalFriend
-
-//    private val _friendData = MutableStateFlow<FriendData?>(null)
-//    val friendData: StateFlow<FriendData?> = _friendData
-
-//    private val _userData = MutableStateFlow<UserData?>(null)
-//    val userData = _userData.asStateFlow()
-
-//    private val _currentOpenChatId = MutableStateFlow<String?>(null)
-//    val currentOpenChatId = _currentOpenChatId.asStateFlow()
-
-//    private val _activeChatList = MutableStateFlow<List<ChatItemData>>(emptyList())
-//    val activeChatList = _activeChatList.asStateFlow()
-
-//    private val _chatMessages = MutableStateFlow<Map<String, List<Message>>>(emptyMap())
-//    val chatMessages = _chatMessages.asStateFlow()
-
     init {
         checkAuthStatus()
-//
-//        viewModelScope.launch {
-//
-//            authState.collect { state ->
-//                if (state is AuthState.Authenticated) {
-//                    startGlobalListener()
-//                    fetchUserData()
-//                    setOnlineStatus() // marks as true
-//
-//                    userData.filterNotNull().collect { user ->
-//                        messageServiceRepository.updateFcmTokenIfNeeded(user.fcmToken)
-//                    }
-//                }
-//
-//            }
-//        }
-
     }
 
 
@@ -96,11 +51,6 @@ class ChatsViewModel @Inject constructor(
             updateAuthState(AuthState.Unauthenticated)
         }
     }
-
-//    fun updateFriendData(friendData: FriendData) {
-//        _friendData.value = friendData
-//
-//    }
 
 
     // Sign in or Sign up using google credentials
@@ -122,7 +72,7 @@ class ChatsViewModel @Inject constructor(
                         onSuccess = {
 
                             updateAuthState(AuthState.Authenticated)
-                            setOnlineStatus(true)
+                            setOnlineStatus()
 
                         }, onFailure = { exception ->
                             AuthState.Error(exception.message.toString())
@@ -146,7 +96,7 @@ class ChatsViewModel @Inject constructor(
                 password,
                 onSuccess = {
                     updateAuthState(AuthState.Authenticated)
-                    setOnlineStatus(true)
+                    setOnlineStatus()
                 },
                 onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
             )
@@ -164,7 +114,7 @@ class ChatsViewModel @Inject constructor(
                 userName,
                 onSuccess = {
                     updateAuthState(AuthState.Authenticated)
-                    setOnlineStatus(true)
+                    setOnlineStatus()
                 },
                 onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
             )
@@ -231,7 +181,7 @@ class ChatsViewModel @Inject constructor(
     }
 
     // uploads the user data on both firestore database and firebase auth
-    fun updateProfile(
+    private fun updateProfile(
         user: FirebaseUser,
         profileUpdates: UserProfileChangeRequest,
         newData: Map<String, Any?>,
@@ -254,7 +204,7 @@ class ChatsViewModel @Inject constructor(
 
     }
 
-    fun uploadInDb(
+    private fun uploadInDb(
         newData: Map<String, Any?>,
         user: FirebaseUser,
         onSuccess: () -> Unit,
@@ -282,7 +232,7 @@ class ChatsViewModel @Inject constructor(
             user.verifyBeforeUpdateEmail(newEmail).addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     onSuccess()
-                   // signOut()
+                    // signOut()
                 } else {
                     onFailure(task.exception?.message)
                 }
@@ -317,31 +267,17 @@ class ChatsViewModel @Inject constructor(
     }
 
 
-    fun signOut(onSuccess: () -> Unit) {
+    fun signOut() {
+
         viewModelScope.launch {
 
+            chatManager.clearAllGlobalListeners()
+            messageServiceRepository.clearMessageListeners()
             authRepository.signOut()
-            {
-                checkAuthStatus()
-                chatManager.clearAllGlobalListeners()
-                messageServiceRepository.clearMessageListeners()
-                onSuccess()
-            }
 
         }
 
     }
-
-//    fun fetchUserData() {
-//        val user = auth.currentUser
-//        if (user != null) {
-//            messageServiceRepository.fetchUserData(user)
-//            { updatedUserData ->
-//
-//                _userData.value = updatedUserData
-//            }
-//        }
-//    }
 
 
     fun updateAuthState(newState: AuthState) {
@@ -354,181 +290,15 @@ class ChatsViewModel @Inject constructor(
         _loadingIndicator.value = state
     }
 
-    fun addNewFriend(
-        friendUserId: String,
-        onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
-        messageServiceRepository.addFriend(
-            friendUserId,
-            onSuccess = { onSuccess() },
-            onFailure = { e -> onFailure(e) }
-        )
-    }
 
-//    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
-//
-//        return messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
-//            onFriendUpdated(friendDocument)
-//            _totalFriend.value = updatedTotalFriend
-//        }
-//    }
-
-//    fun fetchFriendData(
-//        friendUserId: String,
-//        updatedFriendData: (FriendData?) -> Unit
-//    ): ListenerRegistration {
-//
-//        return messageServiceRepository.fetchFriendData(friendUserId)
-//        {
-//            updatedFriendData(it) // used where multiple new friend data is required at once
-//
-//            if (friendData.value?.uid == friendUserId) {
-//                _friendData.value = it  // this one has same friend data at all place
-//            }
-//
-//        }
-//
-//    }
-
-    fun deleteFriend(friendId: String) {
-        messageServiceRepository.deleteFriend(friendId)
-    }
-
-    fun sendMessageToOneFriend(
-        message: String,
-        friendId: String,
-        fetchedChatId: String = ""
-    ) {
-        messageServiceRepository.sendMessageToSingleUser(message, friendId, fetchedChatId)
-
-    }
-
-
-//    fun fetchMessage(
-//        friendId: String,
-//        fetchedChatId: String = "",
-//        onMessageFetched: (List<Message>) -> Unit
-//    ): ListenerRegistration? {
-//
-//        val listener = messageServiceRepository.fetchMessages(friendId, fetchedChatId)
-//        { messages ->
-//            onMessageFetched(messages)
-//        }
-//
-//        return listener
-//    }
-
-    fun markAllMessageAsSeen(chatId: String) {
-        val user = auth.currentUser
-        if (user != null) {
-            val currentUserId = user.uid
-            messageServiceRepository.markMessageAsSeen(chatId, currentUserId)
-        }
-    }
-
-    fun isCurrentUserASender(senderId: String): Boolean {
-        val user = auth.currentUser
-
-        return senderId == user?.uid
-
-    }
-
-    fun hasUnseenMessages(messages: List<Message>): Boolean {
-
-        val currentUserId = auth.currentUser?.uid ?: return false
-        return messages.any { it.receiverId == currentUserId && it.status == "delivered" }
-    }
-
-
-    fun setOnlineStatus(status: Boolean = true) {
+    private fun setOnlineStatus(status: Boolean = true) {
         onlineStatusRepo.setOnlineStatusWithDisconnect(status)
     }
-
-    fun fetchOnlineStatus(
-        userId: String,
-        onStatusChanged: (Long) -> Unit
-    ): Pair<DatabaseReference, ValueEventListener> {
-        return onlineStatusRepo.listenForOnlineStatus(userId) { onlineStatus ->
-            onStatusChanged(onlineStatus)
-        }
-    }
-
-//    fun setCurrentOpenChatId(chatId: String?) {
-//        _currentOpenChatId.value = chatId
-//    }
-
-//    fun startGlobalListener() {
-//        chatManager.startGlobalMessageListener(
-//            isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId },
-//            onFetchAllActiveChat = { chatList ->
-//
-//                _activeChatList.value = chatList
-//
-//            },
-//            onNewMessages = { chatId, messages ->
-//
-//                viewModelScope.launch {
-//                    delay(200) // to reduce read spikes, may increase more or decreased
-//                    _chatMessages.value = _chatMessages.value.toMutableMap().apply {
-//                        put(chatId, messages)
-//                    }
-//                }
-//
-//            }
-//        )
-//
-//    }
-
-    fun updateFcmTokenIfNeeded(fcmTokens: List<String>) {
-       // Log.i("FCMTOKENU", userData.value?.fcmTokens.toString())
-
-        //Log.i("FCMTOKE", fcmTokens.toString())
-        messageServiceRepository.updateFcmTokenIfNeeded(fcmTokens)
-
-    }
-
-    fun updateFriendName(friendName: String, friendId: String, whichList: String, chatId: String) {
-        val userID = auth.currentUser?.uid
-
-        if (whichList == "friendList") {
-            userID?.let { currentUserId ->
-                messageServiceRepository.updateFriendNameOnFriendList(
-                    friendName,
-                    currentUserId,
-                    friendId
-                )
-            }
-        } else {
-            messageServiceRepository.updateFriendNameOnChatList(friendName, friendId, chatId)
-        }
-
-    }
-
-//    override fun onCleared() {
-//        chatManager.clearAllGlobalListeners()
-//        messageServiceRepository.clearMessageListeners()
-//        super.onCleared()
-//    }
-
-    fun calculateChatId(otherId: String): String {
-
-        val currentUserId = auth.currentUser?.uid
-        currentUserId?.let {
-            return messageServiceRepository.chatIdCreator(it, otherId, "")
-        }
-
-        return ""
-    }
-
-
 }
 
 sealed class AuthState {
     data object Authenticated : AuthState() // updated object to data object
     data object Unauthenticated : AuthState()
     data object Loading : AuthState()
-
-    //data object DoNothing : AuthState()
     data class Error(val message: String?) : AuthState()
 }
