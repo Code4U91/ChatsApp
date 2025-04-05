@@ -56,7 +56,9 @@ import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
 // Authentication screen navigation
 @Composable
-fun AuthNavigationHost(viewModel: ChatsViewModel) {
+fun AuthNavigationHost(
+    viewModel: ChatsViewModel
+) {
     val navController = rememberNavController()
 
     Scaffold(
@@ -112,6 +114,7 @@ fun MainNavigationHost(
 
     LaunchedEffect(currentChatId) {
 
+        // pass even null, pass everything
         Log.i("CurrentChatId", currentChatId.toString())
         globalMessageListenerViewModel.setCurrentOpenChatId(currentChatId)
 
