@@ -98,7 +98,11 @@ fun MainChatScreen(
     val currentChatId by globalMessageListenerViewModel.currentOpenChatId.collectAsState()
 
     val chatId by remember {
-        mutableStateOf(fetchedChatId.ifEmpty { globalMessageListenerViewModel.calculateChatId(otherId) })
+        mutableStateOf(fetchedChatId.ifEmpty {
+            globalMessageListenerViewModel.calculateChatId(
+                otherId
+            )
+        })
     } // temporary creates an id when chatId is empty
 
     val listState = rememberLazyListState()
@@ -111,12 +115,11 @@ fun MainChatScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
 
 
-    val onlineStatus by produceState(initialValue = "",key1 = otherId) {
+    val onlineStatus by produceState(initialValue = "", key1 = otherId) {
 
-        val  (dbRef, listener) = globalMessageListenerViewModel.fetchOnlineStatus(otherId)
-        {
-            updatedOnlineStatus ->
-            value =  when (updatedOnlineStatus) {
+        val (dbRef, listener) = globalMessageListenerViewModel.fetchOnlineStatus(otherId)
+        { updatedOnlineStatus ->
+            value = when (updatedOnlineStatus) {
                 1L -> "Online"
 
 
@@ -128,7 +131,7 @@ fun MainChatScreen(
         }
 
         awaitDispose {
-             dbRef.removeEventListener(listener)
+            dbRef.removeEventListener(listener)
         }
     }
 
@@ -176,8 +179,8 @@ fun MainChatScreen(
                 },
                 title = {
                     Row(
-                        verticalAlignment = Alignment.CenterVertically, // Align items properly
-                        horizontalArrangement = Arrangement.spacedBy(8.dp), // Space between items
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         AsyncImage(
@@ -189,7 +192,7 @@ fun MainChatScreen(
                                 .border(0.dp, Color.Transparent, CircleShape)
                         )
 
-                        Column {
+                        Column(modifier = Modifier.wrapContentWidth()) {
                             // Profile user name
                             Text(
                                 text = friendData?.name ?: "",
@@ -213,18 +216,20 @@ fun MainChatScreen(
 
 
                             VideoCallButton {
-                                navController.navigate("CallScreen/$chatId/video")
+                                navController.navigate("CallScreen/$chatId/video/true/$otherId")
                             }
 
                             VoiceCallButton {
 
-                                navController.navigate("CallScreen/$chatId/voice")
+                                navController.navigate("CallScreen/$chatId/voice/true/$otherId")
                             }
 
                         }
 
                     }
-                }
+
+                },
+                modifier = Modifier.height(55.dp)
             )
         }
 
@@ -250,7 +255,11 @@ fun MainChatScreen(
                 ChatLazyColumn(
                     messageList = messageList[chatId] ?: emptyList(),
                     listState = listState,
-                    isCurrentUser = { senderId -> globalMessageListenerViewModel.isCurrentUserASender(senderId) },
+                    isCurrentUser = { senderId ->
+                        globalMessageListenerViewModel.isCurrentUserASender(
+                            senderId
+                        )
+                    },
                     getDateLabel = { date -> getDateLabelForMessage(date) }
                 )
             }
@@ -260,8 +269,6 @@ fun MainChatScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp)
                     .imePadding()
-
-
             ) {
 
                 OutlinedTextField(
@@ -269,10 +276,11 @@ fun MainChatScreen(
                     onValueChange = { newText ->
                         messageText = newText
                     },
+                    maxLines = 5,
                     modifier = Modifier
                         .weight(1f)
                         .padding(4.dp),
-                    shape = CircleShape,
+                    shape = RoundedCornerShape(30.dp),
                     placeholder = { Text(text = "Message") }
                 )
 
@@ -284,11 +292,16 @@ fun MainChatScreen(
                         // if chat already doesn't exists creates new chat user otherId
                         if (messageText.isNotEmpty()) {
 
-                            globalMessageListenerViewModel.sendMessageToOneFriend(messageText, otherId, chatId)
+                            globalMessageListenerViewModel.sendMessageToOneFriend(
+                                messageText,
+                                otherId,
+                                chatId
+                            )
                             messageText = ""
                         }
 
                     },
+                    modifier = Modifier.align(Alignment.Bottom),
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,

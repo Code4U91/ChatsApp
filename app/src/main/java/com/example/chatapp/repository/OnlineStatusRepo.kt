@@ -10,6 +10,9 @@ import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import javax.inject.Inject
 
+// for setting and fetching online status
+// uses real time database of firebase for this purpose
+
 class OnlineStatusRepo @Inject constructor(
     private val auth: FirebaseAuth,
     private val realTimeDb: FirebaseDatabase

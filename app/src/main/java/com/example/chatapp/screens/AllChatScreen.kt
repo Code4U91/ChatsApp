@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,22 +17,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -45,11 +43,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -61,7 +56,6 @@ import com.example.chatapp.formatTimestamp
 import com.example.chatapp.shimmerEffect
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.firebase.Timestamp
-import kotlinx.coroutines.delay
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,6 +68,7 @@ fun AllChatScreen(
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
     // val activeChatList by viewmodel.activeChatList.collectAsState()
     val activeChatList by globalMessageListenerViewModel.activeChatList.collectAsState()
+
 
     var searchQuery by rememberSaveable {
         mutableStateOf("")
@@ -91,78 +86,33 @@ fun AllChatScreen(
     }.sortedByDescending { it.lastMessageTimeStamp?.toDate()?.time ?: 0L }
 
 
+
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             TopAppBar(
                 title = {
-                    // show search bar or not
+
                     if (showSearchBar) {
+                        TopAppBarTemplate(
+                            searchQuery = searchQuery,
+                            placeHolderText = "Search in chat list..",
+                            onQueryChanged = { newQuery ->
+                                searchQuery = newQuery
+                            }
+                        ) { newState ->
+                            showSearchBar = newState
 
-                        val keyboardController = LocalSoftwareKeyboardController.current
-
-                        val focusRequester = remember { FocusRequester() }
-
-                        LaunchedEffect(Unit) {
-                            delay(200)
-                            focusRequester.requestFocus()
-                            keyboardController?.show()
                         }
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 2.dp, end = 14.dp, bottom = 10.dp),
-                            shape = CircleShape
-                        ) {
-
-                            // field where user can enter text to sort the friend by name
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = { Text(text = "Search in chat list..") },
-                                singleLine = true,
-                                leadingIcon = {
-
-                                    IconButton(onClick = {
-
-                                        showSearchBar = false
-                                        searchQuery = ""
-
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowBackIosNew,
-                                            contentDescription = "back button"
-                                        )
-                                    }
-                                },
-                                shape = RoundedCornerShape(30.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                colors = TextFieldDefaults.colors(
-
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    errorIndicatorColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledContainerColor = Color.Transparent,
-                                    errorContainerColor = Color.Transparent
-                                )
-                            )
-                        }
-
-
                     } else {
-                        // if search bar isn't opened
+
                         Text(
                             text = "ChatsApp",
-                            fontSize = 35.sp,
-                            modifier = Modifier.padding(4.dp)
+                            fontSize = 30.sp
                         )
                     }
+
                 },
                 actions = {
 
@@ -172,13 +122,14 @@ fun AllChatScreen(
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Search,
-                                contentDescription = "Localized description"
+                                contentDescription = "Localized description",
+                                modifier = Modifier.size(25.dp)
                             )
                         }
                     }
                 },
-
-                )
+                modifier = Modifier.wrapContentHeight()
+            )
         }
     ) { paddingValue ->
         Column(
@@ -202,7 +153,8 @@ fun AllChatScreen(
 
 
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(10.dp)
 
                 ) {
 
@@ -219,6 +171,11 @@ fun AllChatScreen(
                             oldFriendName = chatItemData.otherUserName,
                             whichList = "chatList"
                         )
+                    }
+
+                    // adding space at the end of list so it doesn't get covered by bottom bar
+                    item {
+                        Spacer(modifier = Modifier.height(72.dp))
                     }
                 }
             }
@@ -303,7 +260,7 @@ fun ChatItemAndFriendListItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp)
+                .padding(vertical = 10.dp)
                 .pointerInput(Unit)
                 {
                     detectTapGestures(

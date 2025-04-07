@@ -3,6 +3,7 @@ package com.example.chatapp.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatapp.CallData
 import com.example.chatapp.ChatItemData
 import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
@@ -51,6 +52,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val _friendData = MutableStateFlow<FriendData?>(null)
     val friendData: StateFlow<FriendData?> = _friendData
 
+    private val _incomingCallData = MutableStateFlow<CallData?>(null)
+    val incomingCallData = _incomingCallData.asStateFlow()
+
+    private val _callHistoryData = MutableStateFlow<List<CallData>>(emptyList())
+    val callHistoryData = _callHistoryData.asStateFlow()
+
     init {
 
         Log.i("TimesExecuted", "Executed")
@@ -58,6 +65,9 @@ class GlobalMessageListenerViewModel @Inject constructor(
         startGlobalListener()
         fetchUserData()
         setOnlineStatus() // -> marks true, online
+        startCallListener()
+
+        fetchCallHistory()
 
         viewModelScope.launch {
             userData.filterNotNull().collect { user ->
@@ -118,7 +128,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
         {
             updatedFriendData(it) // used where multiple new friend data is required at once
 
-            if (friendData.value?.uid == friendUserId) {
+            if (friendData.value?.uid == friendUserId) { // only update this if both id same
                 _friendData.value = it  // this one has same friend data at all place
             }
 
@@ -222,6 +232,29 @@ class GlobalMessageListenerViewModel @Inject constructor(
         fetchedChatId: String = ""
     ) {
         messageServiceRepository.sendMessageToSingleUser(message, friendId, fetchedChatId)
+
+    }
+
+    private fun startCallListener()
+    {
+        messageServiceRepository.callListener { callData ->
+            _incomingCallData.value = callData
+        }
+    }
+
+    fun emptyIncomingCall()
+    {
+        _incomingCallData.value = null
+    }
+
+    private fun fetchCallHistory()
+    {
+
+        messageServiceRepository.fetchCallHistory { callList ->
+
+            _callHistoryData.value = callList
+
+        }
 
     }
 

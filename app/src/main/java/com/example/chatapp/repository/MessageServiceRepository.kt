@@ -1,7 +1,9 @@
 package com.example.chatapp.repository
 
 import android.util.Log
+import com.example.chatapp.CALL_HISTORY
 import com.example.chatapp.CHATS_COLLECTION
+import com.example.chatapp.CallData
 import com.example.chatapp.FRIEND_COLLECTION
 import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
@@ -17,6 +19,10 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessaging
 import javax.inject.Inject
+
+// Contains function and listeners for sending message, user data, fcm token, add/delete friend
+// call listener and history fetch also is in here
+
 
 class MessageServiceRepository @Inject constructor(
     private val auth: FirebaseAuth,
@@ -368,7 +374,7 @@ class MessageServiceRepository @Inject constructor(
     }
 
 
-     fun chatIdCreator(
+    fun chatIdCreator(
         currentUserId: String, friendUserId: String, fetchedChatId: String
     ): String {
 
@@ -402,9 +408,80 @@ class MessageServiceRepository @Inject constructor(
         }
     }
 
+    // later to be replaced with fcm notification
+    fun callListener(incomingCall: (CallData?) -> Unit) {
+
+        val currentUserId = auth.currentUser?.uid
+
+        val callListener = firestoreDb.collection(CALL_HISTORY)
+            .whereEqualTo("callReceiverId", currentUserId)
+            .whereEqualTo("status", "ringing")
+            .addSnapshotListener { snapshots, _ ->
+
+                for (doc in snapshots?.documents ?: emptyList()) {
+
+                    val callData = doc.toObject(CallData::class.java)?.copy(
+                        callId = doc.id
+                    )
+
+                    incomingCall(callData)
+                }
+            }
+
+        listenerRegistration.add(callListener)
+
+    }
+
+    // fetches call history from the firestore database
+    fun fetchCallHistory(callHistory: (List<CallData>) -> Unit) {
+
+        auth.currentUser?.let { user ->
+            val currentUserId = user.uid
+
+            val callRef = firestoreDb.collection(CALL_HISTORY)
+                .whereArrayContains("participants", currentUserId)
+                .addSnapshotListener { querySnapshot, error ->
+
+                    if (error != null) {
+                        Log.e("Firestore", "Error fetching messages", error)
+                        return@addSnapshotListener
+                    }
+                    val callList = querySnapshot?.documents?.mapNotNull { doc ->
+
+                        // multiple .where is causing issue so filtering the rest of data here
+                        val status = doc.getString("status") ?: return@mapNotNull null
+                        if (status == "ringing" || status == "ongoing") return@mapNotNull null
+
+                        val participants =
+                            doc.get("participants") as? List<String> ?: return@mapNotNull null
+
+                        val otherUserId =
+                            participants.firstOrNull { it != currentUserId } // pulling other participant
+
+                        val participantsName = doc.get("participantsName") as? Map<String, String>
+
+                        val otherUserName = participantsName?.get(otherUserId)
+
+                        doc.toObject(CallData::class.java)?.copy(
+                            callId = doc.id,
+                            otherUserName = otherUserName,
+                            otherUserId = otherUserId // other participant
+                        )
+
+                    } ?: emptyList()
+
+                    callHistory(callList)
+
+                }
+
+            listenerRegistration.add(callRef)
+        }
 
 
+    }
 
+    // clear all active listeners
+    // runs on viewmodel destroy/ sign out
     fun clearMessageListeners() {
         listenerRegistration.forEach { it.remove() }
         listenerRegistration.clear()

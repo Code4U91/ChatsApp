@@ -23,6 +23,9 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
+// Contains all the functions needed to authenticate user
+// also uploads initial user data to firestore on first signup
+
 class AuthRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
@@ -188,8 +191,6 @@ class AuthRepository @Inject constructor(
         }
 
     }
-
-
 
 
     fun signOut() {

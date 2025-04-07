@@ -4,8 +4,11 @@ import android.view.SurfaceView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.AGORA_ID
+import com.example.chatapp.CALL_HISTORY
 import com.example.chatapp.repository.AgoraSetUpRepo
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,6 +22,7 @@ import javax.inject.Inject
 @HiltViewModel
 class CallViewModel @Inject constructor(
     private val agoraRepo: AgoraSetUpRepo,
+    private val firestoreDb: FirebaseFirestore,
     private val auth: FirebaseAuth
 ) : ViewModel() {
 
@@ -42,7 +46,12 @@ class CallViewModel @Inject constructor(
     private val _callStartTime = MutableStateFlow<Long?>(null)
     private val _callDuration = MutableStateFlow(0L)
 
+    private val _isCaller = MutableStateFlow(true)
+
+
     val callDuration = _callDuration.asStateFlow()
+
+    private var callId: String? = null
 
     private var callTimerJob: Job? = null
 
@@ -73,6 +82,11 @@ class CallViewModel @Inject constructor(
         }
     }
 
+    fun updateIsCaller(state: Boolean) {
+        if (_isCaller.value != state) {
+            _isCaller.value = state
+        }
+    }
 
     fun joinChannel(token: String?, channelId: String, callType: String) {
 
@@ -145,7 +159,81 @@ class CallViewModel @Inject constructor(
         agoraRepo.enableVideo()
     }
 
+    fun uploadCallData(
+        callReceiverId: String?,
+        callType: String,
+        channelId: String,
+        callStatus: String,
+        callerName: String,
+        receiverName: String
+    ) {
+        val userId = auth.currentUser?.uid ?: return
+
+        callReceiverId?.let { receiverId ->
+
+            val callDocRef = firestoreDb.collection(CALL_HISTORY).document()
+
+            val mapIdWithName = mapOf(
+                userId to callerName,
+                receiverId to receiverName
+            )
+
+            val callData = mapOf(
+                "callerId" to userId,
+                "callReceiverId" to receiverId,
+                "callType" to callType,
+                "channelId" to channelId,
+                "status" to callStatus,
+                "callStartTime" to Timestamp.now(),
+                "participants" to listOf(userId, receiverId),
+                "participantsName" to mapIdWithName
+            )
+
+            callDocRef.set(callData)
+            callId = callDocRef.id
+        }
+
+    }
+
+    fun updateCallStatus(status: String) {
+        callId?.let { id ->
+            val callDocRef = firestoreDb.collection(CALL_HISTORY).document(id)
+
+            callDocRef.get().addOnSuccessListener { doc ->
+
+                if (doc.exists()) {
+                    val newStatus = mapOf(
+                        "status" to status,
+                    )
+
+                    callDocRef.update(newStatus)
+                }
+
+            }
+        }
+
+
+    }
+
     override fun onCleared() {
+
+        if (_isCaller.value) {
+
+            callId?.let { id ->
+
+                val callDocRef = firestoreDb.collection(CALL_HISTORY).document(id)
+                val status = if (remoteUserJoined.value != null) "ended" else "missed"
+
+                val callEndTimeData = mapOf(
+                    "callEndTime" to Timestamp.now(),
+                    "status" to status
+                )
+                callDocRef.update(callEndTimeData)
+
+            }
+        }
+
+
         agoraRepo.destroy()
         super.onCleared()
 

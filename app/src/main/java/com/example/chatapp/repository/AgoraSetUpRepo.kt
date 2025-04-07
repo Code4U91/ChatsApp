@@ -15,10 +15,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+// Contains all function needed to make and receive call
+
+
 class AgoraSetUpRepo @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-
 
     private var rtcEngine: RtcEngine? = null
 
@@ -63,6 +65,7 @@ class AgoraSetUpRepo @Inject constructor(
                 }
 
                 override fun onUserOffline(uid: Int, reason: Int) {
+                    Log.d("AgoraDebug", "Remote user left: $uid")
                     _remoteUserLeft.value = true
                 }
             })
@@ -114,16 +117,6 @@ class AgoraSetUpRepo @Inject constructor(
 
     }
 
-//    fun leaveChannel() {
-//
-//        rtcEngine?.apply {
-//            leaveChannel()
-//            disableVideo()
-//            muteAllRemoteAudioStreams(false)
-//        }
-//        _isJoined.value = false
-//        _remoteUserJoined.value = null
-//    }
 
     fun setupLocalVideo(surfaceView: SurfaceView) {
         rtcEngine?.setupLocalVideo(

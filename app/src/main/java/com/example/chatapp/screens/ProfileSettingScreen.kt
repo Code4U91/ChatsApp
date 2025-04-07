@@ -44,7 +44,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -136,7 +135,7 @@ fun ProfileSettingScreen(
         )
     )
 
-    Scaffold(
+    Box(
         modifier = Modifier.fillMaxSize()
     ) {
 
@@ -170,84 +169,84 @@ fun ProfileSettingScreen(
 
 
 
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp)
-            ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
 
-                profileItems.forEachIndexed { index, item ->
+                    profileItems.forEachIndexed { index, item ->
+
+                        ProfileComponent(
+                            primaryIcon = item.primaryIcon,
+                            secondaryIcon = item.secondaryIcon,
+                            itemDescription = item.itemDescription,
+                            itemValue = item.itemValue,
+                            viewmodel = viewmodel,
+                            navController = navController,
+                        )
+
+                        if (index != profileItems.lastIndex) {
+                            HorizontalDivider()
+                        }
+                    }
+
+                }
+            }
+
+            item {
+
+                SectionTitle(title = "Security")
+            }
+
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
 
                     ProfileComponent(
-                        primaryIcon = item.primaryIcon,
-                        secondaryIcon = item.secondaryIcon,
-                        itemDescription = item.itemDescription,
-                        itemValue = item.itemValue,
+                        primaryIcon = Icons.Default.Lock,
+                        secondaryIcon = Icons.Default.ChevronRight,
+                        itemDescription = "Password",
+                        itemValue = "",
                         viewmodel = viewmodel,
-                        navController = navController,
+                        navController
                     )
+                }
+            }
 
-                    if (index != profileItems.lastIndex) {
-                        HorizontalDivider()
+            item {
+                Spacer(modifier = Modifier.height(15.dp))
+
+                LogoutUi(viewmodel)
+            }
+
+
+            if (expandEditImg) {
+                item {
+                    PopUpBox(
+                        valueDescription = "Image URL",
+                        profileValue = "",
+                        viewmodel = viewmodel
+                    ) {
+                        expandEditImg = it
                     }
                 }
 
             }
+
         }
 
-        item {
-
-            SectionTitle(title = "Security")
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp)
+        if (loadingIndicator) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-
-                ProfileComponent(
-                    primaryIcon = Icons.Default.Lock,
-                    secondaryIcon = Icons.Default.ChevronRight,
-                    itemDescription = "Password",
-                    itemValue = "",
-                    viewmodel = viewmodel,
-                    navController
-                )
+                CircularProgressIndicator()
             }
         }
-
-        item {
-            Spacer(modifier = Modifier.height(15.dp))
-
-            LogoutUi(viewmodel)
-        }
-
-
-        if (expandEditImg) {
-            item {
-                PopUpBox(
-                    valueDescription = "Image URL",
-                    profileValue = "",
-                    viewmodel = viewmodel
-                ) {
-                    expandEditImg = it
-                }
-            }
-
-        }
-
     }
-
-    if (loadingIndicator) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-    }
-}
 
 
 }
@@ -377,7 +376,9 @@ fun ProfileComponent(
                         }
                     }
 
-                    "Email" -> { navController.navigate("changeEmail")}
+                    "Email" -> {
+                        navController.navigate("changeEmail")
+                    }
 
                     "Password" -> {
                         navController.navigate("changePassword")
@@ -739,7 +740,7 @@ fun onSaveCancel(
 
         }
 
-         else -> {}
+        else -> {}
     }
 }
 

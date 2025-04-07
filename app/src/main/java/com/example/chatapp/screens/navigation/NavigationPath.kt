@@ -109,15 +109,36 @@ fun MainNavigationHost(
     val currentRoute = currentBackStackEntry?.destination?.route
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
-    
+
+    val incomingCall by globalMessageListenerViewModel.incomingCallData.collectAsState()
+
 
 
     LaunchedEffect(currentChatId) {
 
-        // pass even null, pass everything
+        // pass even null, pass everything or else old id would remain in viewmodel
+        // and cause unnecessary ui updates, alternative method clear value each time
+        // when navigating
         Log.i("CurrentChatId", currentChatId.toString())
         globalMessageListenerViewModel.setCurrentOpenChatId(currentChatId)
 
+    }
+
+    // testing purpose only
+    // later replacing it with fcm call notification
+    LaunchedEffect(incomingCall) {
+
+        if (incomingCall != null) {
+            val channelName = incomingCall?.channelId
+            val callType = incomingCall?.callType
+            val callerId = incomingCall?.callerId
+
+            Log.i("IncomingCall", incomingCall.toString())
+
+            // currently directly initiating a call, later add accept or decline option
+            navController.navigate("CallScreen/$channelName/$callType/false/$callerId")
+            globalMessageListenerViewModel.emptyIncomingCall() // clear call log so it doesn't run again
+        }
     }
 
     val showBottomBarRoutes = listOf(
@@ -170,7 +191,7 @@ fun MainNavigationHost(
             }
 
             composable(Screen.CallHistoryScreen.route) {
-                CallHistoryScreen()
+                CallHistoryScreen(globalMessageListenerViewModel, navController)
             }
 
             composable("FriendListScreen") {
@@ -205,24 +226,32 @@ fun MainNavigationHost(
                 }
             }
 
-            composable("CallScreen/{channelName}/{callType}",
+            composable("CallScreen/{channelName}/{callType}/{isCaller}/{receiverId}",
                 arguments = listOf(
                     navArgument("channelName") { type = NavType.StringType },
-                    navArgument("callType") { type = NavType.StringType }
-                    //  navArgument("token"){type = NavType.StringType}
+                    navArgument("callType") { type = NavType.StringType },
+                    navArgument("isCaller") { type = NavType.BoolType },
+                    navArgument("receiverId") { type = NavType.StringType }
+                    //  navArgument("token"){type = NavType.StringType} // token for agora if on secure mode
                 )
             )
             { backStackEntry ->
                 val channelName = backStackEntry.arguments?.getString("channelName") ?: ""
                 val callType = backStackEntry.arguments?.getString("callType") ?: ""
+                val isCaller = backStackEntry.arguments?.getBoolean("isCaller") ?: true
+                val receiverId = backStackEntry.arguments?.getString("receiverId") ?: ""
                 //   val token = backStackEntry.arguments?.getString("token") ?: ""
 
                 CallScreen(
                     channelName,
                     callType,
-                    globalMessageListenerViewModel = globalMessageListenerViewModel
+                    globalMessageListenerViewModel = globalMessageListenerViewModel,
+                    isCaller = isCaller,
+                    receiverId = receiverId
                 )
                 {
+                    Log.d("CallScreen", "onCallEnd triggered!")
+
                     navController.popBackStack()
                 }
 
@@ -250,16 +279,7 @@ fun BottomNavigationBar(
 
     val userData by globalMessageListenerViewModel.userData.collectAsState()
 
-    //  val userData by viewmodel.userData.collectAsState()
 
-//    LaunchedEffect(userData) {
-//      //  Log.i("FCM_DEBUG", "LaunchedEffect triggered with userData: $userData")
-//
-//        userData?.let { user ->
-//            //Log.i("FCM_DEBUG", "Calling updateFcmTokenIfNeeded with token: ${user.fcmTokens}")
-//            viewmodel.updateFcmTokenIfNeeded(user.fcmTokens)
-//        } //?: Log.w("FCM_DEBUG", "UserData is null, skipping FCM update")
-//    }
 
 
     NavigationBar {

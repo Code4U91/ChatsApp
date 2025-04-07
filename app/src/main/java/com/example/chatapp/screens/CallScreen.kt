@@ -37,6 +37,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,11 +49,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.rememberAsyncImagePainter
+import com.example.chatapp.FriendData
 import com.example.chatapp.UserData
 import com.example.chatapp.formatCallDuration
 import com.example.chatapp.viewmodel.CallViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
+
+// Active call screen
 
 @Composable
 fun CallScreen(
@@ -60,21 +64,43 @@ fun CallScreen(
     callType: String,
     callViewModel: CallViewModel = hiltViewModel(),
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
+    receiverId: String,
+    isCaller: Boolean,
     onCallEnd: () -> Unit
 ) {
 
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
 
+    LaunchedEffect(Unit) {
+        callViewModel.updateIsCaller(isCaller)
+    }
 
 //    val otherUserData by chatsViewModel.userData.collectAsState() // not real time updated data
-    val otherUserData by globalMessageListenerViewModel.userData.collectAsState() // not real time updated data
+    //val otherUserData by globalMessageListenerViewModel.friendData.collectAsState() // not real time updated data
+
+    val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
+    {
+        val listener = globalMessageListenerViewModel.fetchFriendData(receiverId)
+        { data ->
+            value = data
+        }
+
+        awaitDispose {
+
+            listener.remove()
+        }
+    }
+
+    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
 
     val callEnded by callViewModel.callEnded.collectAsState()  // called when clicked on call end button
     val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()  // when other user leaves call
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // contains numeric agora id of other joined user
 
     LaunchedEffect(remoteUserLeft, callEnded) {
-        if (callEnded || remoteUserLeft) onCallEnd()
+        if (callEnded || remoteUserLeft) {
+            onCallEnd()
+        }
 
     }
 
@@ -93,10 +119,22 @@ fun CallScreen(
 
     // switch compose based on the call type passes as parameter to callScreen compose
     if (callType == "video") {
-        StartVideoCall(callViewModel = callViewModel, channelName = channelName)
+        StartVideoCall(
+            callViewModel = callViewModel,
+            channelName = channelName,
+            otherUserData,
+            currentUserData,
+            isCaller
+        )
     } else {
 
-        StartVoiceCall(callViewModel = callViewModel, channelName = channelName, otherUserData)
+        StartVoiceCall(
+            callViewModel = callViewModel,
+            channelName = channelName,
+            otherUserData,
+            currentUserData,
+            isCaller
+        )
 
     }
 
@@ -106,7 +144,9 @@ fun CallScreen(
 fun StartVoiceCall(
     callViewModel: CallViewModel,
     channelName: String,
-    otherUserData: UserData?
+    otherUserData: FriendData?,
+    currentUserData: UserData?,
+    isCaller: Boolean
 ) {
 
     val isJoined by callViewModel.isJoined.collectAsState()
@@ -114,8 +154,24 @@ fun StartVoiceCall(
     val callDuration by callViewModel.callDuration.collectAsState()
 
 
-    LaunchedEffect(Unit) {
-        callViewModel.joinChannel(null, channelName, "voice")
+    LaunchedEffect(isJoined) {
+        if (!isJoined) {
+            callViewModel.joinChannel(null, channelName, "voice")
+        }
+    }
+
+    LaunchedEffect(isJoined) {
+
+        if (isJoined && isCaller) {
+            callViewModel.uploadCallData(
+                callReceiverId = otherUserData?.uid,
+                callType = "voice",
+                channelId = channelName,
+                callerName = currentUserData?.name ?: "",
+                receiverName = otherUserData?.name ?: "",
+                callStatus = "ringing"
+            )
+        }
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -125,6 +181,7 @@ fun StartVoiceCall(
                 .padding(it)
         ) {
             if (isJoined) {
+
                 // engine created waiting for other user to join call
 
                 Column(
@@ -153,6 +210,11 @@ fun StartVoiceCall(
 
 
                     if (remoteUserJoined != null) {  // remote/other user joined the call
+
+                        if (isCaller) {
+                            callViewModel.updateCallStatus("ongoing")
+                        }
+
 
                         Row(
                             modifier = Modifier.fillMaxWidth(),
@@ -206,7 +268,10 @@ fun StartVoiceCall(
 @Composable
 fun StartVideoCall(
     callViewModel: CallViewModel,
-    channelName: String
+    channelName: String,
+    otherUserData: FriendData?,
+    currentUserData: UserData?,
+    isCaller: Boolean
 ) {
     val context = LocalContext.current
     val isJoined by callViewModel.isJoined.collectAsState()
@@ -221,16 +286,29 @@ fun StartVideoCall(
     val activity = LocalActivity.current
 
     LaunchedEffect(Unit) {
-         callViewModel.enableVideoPreview() // camera preview to show before joining the call
+        callViewModel.enableVideoPreview() // camera preview to show before joining the call
         callViewModel.joinChannel(null, channelName, "video")
     }
 
     LaunchedEffect(isJoined) {
 
         if (isJoined) {
+
+            if (isCaller) {
+                callViewModel.uploadCallData(
+                    callReceiverId = otherUserData?.uid,
+                    callType = "video",
+                    channelId = channelName,
+                    callerName = currentUserData?.name ?: "",
+                    receiverName = otherUserData?.name ?: "",
+                    callStatus = "ringing"
+                )
+            }
+
+            delay(200)
             callViewModel.setUpLocalVideo(localView)
-            delay(500) // Small delay to ensure the SurfaceView is ready
-            callViewModel.setUpLocalVideo(localView) // Force rebind
+            // Small delay to ensure the SurfaceView is ready
+            //callViewModel.setUpLocalVideo(localView) // Force rebind
 
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
@@ -239,8 +317,13 @@ fun StartVideoCall(
     LaunchedEffect(remoteUserJoined) {
 
         if (remoteUserJoined != null) {
+
+            if (isCaller) {
+                callViewModel.updateCallStatus("ongoing")
+            }
+
             callViewModel.setUpRemoteVideo(remoteView, remoteUserJoined!!)
-            callViewModel.setUpLocalVideo(localView) // force rebind
+            //callViewModel.setUpLocalVideo(localView) // force rebind
         }
     }
 
@@ -267,6 +350,7 @@ fun StartVideoCall(
 
                     // when the remote user is connected and call is established
                     if (remoteUserJoined != null) {
+
 
                         // remote view (full screen)
                         AndroidView(factory = { remoteView }, modifier = Modifier.fillMaxSize())

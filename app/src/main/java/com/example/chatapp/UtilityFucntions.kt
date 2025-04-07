@@ -61,7 +61,7 @@ fun Modifier.shimmerEffect(): Modifier = composed {
     this.background(brush)
 }
 
-fun getMessageStatusIcon(messageStatus: String?) : ImageVector {
+fun getMessageStatusIcon(messageStatus: String?): ImageVector {
 
     return when (messageStatus) {
         "sent" -> Icons.Default.Check
@@ -104,6 +104,13 @@ fun formatTimestamp(timestamp: Timestamp): String {
     }
 }
 
+fun formatTimestampToDateTime(timestamp: Timestamp): String {
+    val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
+    val date = timestamp.toDate()
+    return sdf.format(date)
+}
+
+
 fun formatCallDuration(seconds: Long): String {
     val hours = seconds / 3600
     val minutes = (seconds % 3600) / 60
@@ -114,6 +121,20 @@ fun formatCallDuration(seconds: Long): String {
     } else {
         String.format(Locale.getDefault(), "%02d:%02d", minutes, secs) // MM:SS
     }
+}
+
+fun formatDurationText(durationMillis: Long): String {
+    val totalSeconds = durationMillis / 1000
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+
+    return buildString {
+        if (hours > 0) append("$hours hr ")
+        if (minutes > 0) append("$minutes min ")
+        if (hours == 0L && minutes == 0L && seconds > 0L) append("$seconds sec")
+
+    }.trim()
 }
 
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,49 +12,40 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.FriendScreenUiItem
 import com.example.chatapp.dialogBox.AddFriendDialogBox
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
-import kotlinx.coroutines.delay
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -114,61 +106,11 @@ fun FriendListScreen(
                     // show search bar or not
                     if (showSearchBar) {
 
-                        val keyboardController = LocalSoftwareKeyboardController.current
-
-                        val focusRequester = remember { FocusRequester() }
-
-                        LaunchedEffect(Unit) {
-                            delay(200)
-                            focusRequester.requestFocus()
-                            keyboardController?.show()
-                        }
-
-                        Card(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(top = 2.dp, end = 14.dp, bottom = 10.dp),
-                            shape = CircleShape
-                        ) {
-
-                            // field where user can enter text to sort the friend by name
-                            TextField(
-                                value = searchQuery,
-                                onValueChange = { searchQuery = it },
-                                placeholder = { Text(text = "Search in friend list..") },
-                                singleLine = true,
-                                leadingIcon = {
-
-                                    IconButton(onClick = {
-
-                                        showSearchBar = false
-                                        searchQuery = ""
-
-                                    }) {
-                                        Icon(
-                                            imageVector = Icons.Default.ArrowBackIosNew,
-                                            contentDescription = "back button"
-                                        )
-                                    }
-                                },
-                                shape = RoundedCornerShape(30.dp),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequester),
-                                colors = TextFieldDefaults.colors(
-
-                                    focusedIndicatorColor = Color.Transparent,
-                                    unfocusedIndicatorColor = Color.Transparent,
-                                    disabledIndicatorColor = Color.Transparent,
-                                    errorIndicatorColor = Color.Transparent,
-                                    focusedContainerColor = Color.Transparent,
-                                    unfocusedContainerColor = Color.Transparent,
-                                    disabledContainerColor = Color.Transparent,
-                                    errorContainerColor = Color.Transparent
-                                )
-                            )
-                        }
-
+                        TopAppBarTemplate(
+                            searchQuery = searchQuery,
+                            placeHolderText = "Search in friend list..",
+                            onQueryChanged = { newQuery -> searchQuery = newQuery }
+                        ) { newState -> showSearchBar = newState }
 
                     } else {
                         Column(
@@ -217,8 +159,9 @@ fun FriendListScreen(
                         }
                     }
                 },
+                modifier = Modifier.wrapContentHeight()
 
-                )
+            )
 
 
         }
@@ -233,17 +176,14 @@ fun FriendListScreen(
         )
         {
 
-            if (!showSearchBar)
-            {
+            if (!showSearchBar) {
                 HorizontalDivider()
             }
 
 
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 10.dp)
-                    
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(10.dp)
             ) {
 
                 // shows ui item
@@ -264,7 +204,6 @@ fun FriendListScreen(
 
                 // like a horizontal divider but with the description
                 item(key = "headlineBar") {
-                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
                         text = "Friends on ChatsApp",
