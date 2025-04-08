@@ -12,6 +12,11 @@
     <uses-permission android:name="android.permission.BLUETOOTH"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
@@ -31,6 +36,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
+        <service android:name=".service.AgoraCallService"
+            android:exported="false"
+            android:foregroundServiceType="camera|microphone"/>
         <activity
             android:name=".MainActivity"
             android:exported="true"

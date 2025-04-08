@@ -14,10 +14,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
+import javax.inject.Singleton
 
 // Contains all function needed to make and receive call
 
-
+@Singleton
 class AgoraSetUpRepo @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
@@ -36,6 +37,9 @@ class AgoraSetUpRepo @Inject constructor(
     private var localUid: Int = 0
 
     fun initializeAgora(appId: String) {
+
+        if (rtcEngine != null) return
+
         try {
             rtcEngine = RtcEngine.create(context, appId, object : IRtcEngineEventHandler() {
 

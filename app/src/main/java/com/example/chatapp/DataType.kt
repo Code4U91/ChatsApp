@@ -1,8 +1,9 @@
 package com.example.chatapp
 
+import android.os.Parcelable
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.google.firebase.Timestamp
-import kotlin.time.Duration
+import kotlinx.parcelize.Parcelize
 
 data class UserData(
     val uid: String? = "",
@@ -68,5 +69,18 @@ data class CallData(
     val otherUserId: String? = "" //other participant of the call
 
 )
+
+
+@Parcelize
+data class CallMetadata(
+    val channelName: String,
+    val uid: String,
+    val callType: String,
+    val callerName: String,
+    val callReceiverId: String,
+    val receiverName: String,
+    val isCaller: Boolean
+) : Parcelable
+
 
 

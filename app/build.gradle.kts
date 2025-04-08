@@ -7,6 +7,7 @@ plugins {
     id("com.google.gms.google-services")
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.compose.compiler)
+    id("kotlin-parcelize")
 }
 
 android {
@@ -138,5 +139,7 @@ dependencies {
 
     //
     implementation ("com.google.accompanist:accompanist-permissions:0.34.0")
+
+    implementation (libs.androidx.lifecycle.service)
 
 }
