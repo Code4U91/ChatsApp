@@ -26,7 +26,6 @@ import com.example.chatapp.screens.navigation.Screen
 import com.example.chatapp.ui.theme.ChatsAppTheme
 import com.example.chatapp.viewmodel.AuthState
 import com.example.chatapp.viewmodel.ChatsViewModel
-import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
