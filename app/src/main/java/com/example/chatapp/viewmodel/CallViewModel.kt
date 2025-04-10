@@ -57,10 +57,6 @@ class CallViewModel @Inject constructor(
 
     init {
 
-        // for testing purpose only
-
-      //  agoraRepo.initializeAgora(AGORA_ID)
-
         viewModelScope.launch {
             remoteUserJoined.collect { userId ->
 
@@ -76,10 +72,12 @@ class CallViewModel @Inject constructor(
 
                 if (isLeft) {
                     stopCallTimer()
-                    _callEnded.value = true
+                   // _callEnded.value = true // may OR may be not  remove
                 }
             }
         }
+
+
     }
 
     fun startCallService(
@@ -90,8 +88,7 @@ class CallViewModel @Inject constructor(
         callerName: String,
         receiverName: String,
         isCaller: Boolean
-    )
-    {
+    ) {
         val userId = auth.currentUser?.uid ?: return
 
         val callMetadata = CallMetadata(
@@ -113,8 +110,7 @@ class CallViewModel @Inject constructor(
 
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-        {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
@@ -122,8 +118,7 @@ class CallViewModel @Inject constructor(
 
     }
 
-    fun stopCallService(context: Context)
-    {
+    fun stopCallService(context: Context) {
         context.stopService(Intent(context, AgoraCallService::class.java))
     }
 

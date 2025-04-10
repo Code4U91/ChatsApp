@@ -1,5 +1,6 @@
 package com.example.chatapp.screens
 
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -216,12 +217,17 @@ fun MainChatScreen(
 
 
                             VideoCallButton {
-                                navController.navigate("CallScreen/$chatId/video/true/$otherId")
+                                navController.navigate("CallScreen/$chatId/video/true/$otherId") {
+                                    launchSingleTop = true
+                                }
                             }
 
                             VoiceCallButton {
 
                                 navController.navigate("CallScreen/$chatId/voice/true/$otherId")
+                                {
+                                    launchSingleTop = true
+                                }
                             }
 
                         }
@@ -371,11 +377,19 @@ fun ChatLazyColumn(
 @Composable
 fun VoiceCallButton(onStartCall: () -> Unit) {
     val multiplePermissionsState = rememberMultiplePermissionsState(
-        permissions = listOf(
-//            android.Manifest.permission.CAMERA,
-            android.Manifest.permission.RECORD_AUDIO,
-            android.Manifest.permission.BLUETOOTH
-        )
+
+        permissions = buildList {
+            add(android.Manifest.permission.RECORD_AUDIO)
+            add(android.Manifest.permission.CAMERA)
+            add(android.Manifest.permission.BLUETOOTH)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(android.Manifest.permission.BLUETOOTH_CONNECT)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     )
     IconButton(onClick = {
         if (multiplePermissionsState.allPermissionsGranted) {
@@ -396,11 +410,19 @@ fun VoiceCallButton(onStartCall: () -> Unit) {
 fun VideoCallButton(onStartCall: () -> Unit) {
 
     val multiplePermissionsState = rememberMultiplePermissionsState(
-        permissions = listOf(
-            android.Manifest.permission.CAMERA,
-            android.Manifest.permission.RECORD_AUDIO,
-            android.Manifest.permission.BLUETOOTH
-        )
+
+        permissions = buildList {
+            add(android.Manifest.permission.RECORD_AUDIO)
+            add(android.Manifest.permission.CAMERA)
+            add(android.Manifest.permission.BLUETOOTH)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(android.Manifest.permission.BLUETOOTH_CONNECT)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
     )
     IconButton(onClick = {
         if (multiplePermissionsState.allPermissionsGranted) {

@@ -1,6 +1,7 @@
 package com.example.chatapp.screens
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -55,6 +56,10 @@ import com.example.chatapp.FriendData
 import com.example.chatapp.formatTimestamp
 import com.example.chatapp.shimmerEffect
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import com.google.firebase.Timestamp
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -64,6 +69,8 @@ fun AllChatScreen(
     navController: NavHostController,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
 ) {
+
+    RequestNotificationPermissionIfNeeded()
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
     // val activeChatList by viewmodel.activeChatList.collectAsState()
@@ -248,11 +255,9 @@ fun ChatItemAndFriendListItem(
 
     if (friendData == null) {
 
-
         // Placeholder / Skeleton Loader
 
         ChatItemPlaceholder(showLastMsgTime = chatItemWithMsg)
-
 
     } else {
 
@@ -401,6 +406,26 @@ fun ChatItemPlaceholder(showLastMsgTime: Boolean) {
         }
     }
 }
+
+@OptIn(ExperimentalPermissionsApi::class)
+@Composable
+fun RequestNotificationPermissionIfNeeded() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val permissionState = rememberPermissionState(android.Manifest.permission.POST_NOTIFICATIONS)
+
+        LaunchedEffect(permissionState.status) {
+            if (permissionState.status.isGranted.not() &&
+                permissionState.status.shouldShowRationale.not()
+            ) {
+                // Permission not yet asked or denied permanently – request it
+                permissionState.launchPermissionRequest()
+            }
+            // else: either already granted or permanently denied → do nothing
+        }
+    }
+}
+
+
 
 
 

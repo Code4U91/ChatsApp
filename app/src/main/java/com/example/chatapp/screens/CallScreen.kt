@@ -52,6 +52,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.FriendData
 import com.example.chatapp.formatCallDuration
 import com.example.chatapp.viewmodel.CallViewModel
+import com.example.chatapp.viewmodel.ChatsViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
@@ -65,6 +66,7 @@ fun CallScreen(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     receiverId: String,
     isCaller: Boolean,
+    chatsViewModel: ChatsViewModel,
     onCallEnd: () -> Unit
 ) {
 
@@ -76,13 +78,30 @@ fun CallScreen(
 
     val context = LocalContext.current
 
+
     val callEnded by callViewModel.callEnded.collectAsState()  // called when clicked on call end button
     val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()  // when other user leaves call
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // contains numeric agora id of other joined user
+    val isJoined by callViewModel.isJoined.collectAsState()
+
+
+    LaunchedEffect(Unit) {
+        chatsViewModel.setCallScreenActive(true)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            chatsViewModel.setCallScreenActive(false)
+        }
+    }
+
 
     LaunchedEffect(remoteUserLeft, callEnded) {
         if (callEnded || remoteUserLeft) {
+
+            Log.i("ON_END_CALLED", "callEnd: $callEnded remoteUser : $remoteUserLeft")
+
             callViewModel.stopCallService(context)
+            chatsViewModel.resetCallServiceFlag()
             onCallEnd()
         }
 
@@ -91,12 +110,15 @@ fun CallScreen(
     // auto leave channel or call end if call not connected within 48seconds
     LaunchedEffect(remoteUserJoined) {
 
-        // Wait for 48sec for the remote user to join
-        delay(1 * 60 * 800)
+        if (isJoined) {
+            // Wait for 45sec for the remote user to join
 
-        if (remoteUserJoined == null) {
-            // If still null after 48sec, end call
-            callViewModel.leaveChannel()
+            delay(45000)
+
+            if (remoteUserJoined == null) {
+                // If still null after 45sec, end call
+                callViewModel.leaveChannel()
+            }
         }
 
     }
@@ -108,7 +130,8 @@ fun CallScreen(
             channelName = channelName,
             isCaller,
             receiverId,
-            globalMessageListenerViewModel
+            globalMessageListenerViewModel,
+            chatsViewModel
         )
     } else {
 
@@ -117,7 +140,8 @@ fun CallScreen(
             channelName = channelName,
             isCaller = isCaller,
             receiverId,
-            globalMessageListenerViewModel
+            globalMessageListenerViewModel,
+            chatsViewModel
         )
 
     }
@@ -130,7 +154,8 @@ fun StartVoiceCall(
     channelName: String,
     isCaller: Boolean,
     receiverId: String,
-    globalMessageListenerViewModel: GlobalMessageListenerViewModel
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
+    chatsViewModel: ChatsViewModel
 ) {
 
     val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
@@ -150,13 +175,16 @@ fun StartVoiceCall(
     val isJoined by callViewModel.isJoined.collectAsState()
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
     val callDuration by callViewModel.callDuration.collectAsState()
-    val callEnded by callViewModel.callEnded.collectAsState()
+    val callEnded by callViewModel.callEnded.collectAsState() // may be replace with remoteUserLeft
     val context = LocalContext.current
 
 
-    LaunchedEffect(isJoined, otherUserData) {
+    LaunchedEffect(isJoined, otherUserData, callEnded) {
 
-        if (otherUserData!= null && !isJoined && !callEnded) {
+
+        if (!chatsViewModel.hasStartedCallService.value) {
+
+            if (otherUserData != null && !isJoined && !callEnded) {
 
                 callViewModel.startCallService(
                     context = context,
@@ -167,7 +195,11 @@ fun StartVoiceCall(
                     isCaller = isCaller,
                     callReceiverId = otherUserData?.uid ?: receiverId
                 )
+
+                chatsViewModel.markCallServiceStarted()
+            }
         }
+
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
@@ -206,8 +238,6 @@ fun StartVoiceCall(
 
 
                     if (remoteUserJoined != null) {  // remote/other user joined the call
-
-
 
 
                         Row(
@@ -265,7 +295,8 @@ fun StartVideoCall(
     channelName: String,
     isCaller: Boolean,
     receiverId: String,
-    globalMessageListenerViewModel: GlobalMessageListenerViewModel
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
+    chatsViewModel: ChatsViewModel
 ) {
 
     val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
@@ -297,35 +328,34 @@ fun StartVideoCall(
 
     LaunchedEffect(isJoined, otherUserData) {
 
-        if (otherUserData!= null && !isJoined && !callEnded) {
+        if (!chatsViewModel.hasStartedCallService.value) {
 
-            callViewModel.enableVideoPreview()
+            if (otherUserData != null && !isJoined && !callEnded) {
 
-            callViewModel.startCallService(
-                context = context,
-                channelName = channelName,
-                callType = "video",
-                callerName = currentUserData?.name.orEmpty(),
-                receiverName = otherUserData?.name.orEmpty(),
-                isCaller = isCaller,
-                callReceiverId = otherUserData?.uid ?: receiverId
-            )
+                callViewModel.enableVideoPreview()
+
+                callViewModel.startCallService(
+                    context = context,
+                    channelName = channelName,
+                    callType = "video",
+                    callerName = currentUserData?.name.orEmpty(),
+                    receiverName = otherUserData?.name.orEmpty(),
+                    isCaller = isCaller,
+                    callReceiverId = otherUserData?.uid ?: receiverId
+                )
+
+                chatsViewModel.markCallServiceStarted()
+            }
         }
     }
 
-//    LaunchedEffect(Unit) {
-//         // camera preview to show before joining the call
-//        //callViewModel.joinChannel(null, channelName, "video")
-//    }
 
     LaunchedEffect(isJoined) {
 
         if (isJoined) {
 
-            delay(200)
+            delay(200) // Small delay to ensure the SurfaceView is ready
             callViewModel.setUpLocalVideo(localView)
-            // Small delay to ensure the SurfaceView is ready
-            //callViewModel.setUpLocalVideo(localView) // Force rebind
 
             activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
@@ -334,10 +364,7 @@ fun StartVideoCall(
     LaunchedEffect(remoteUserJoined) {
 
         if (remoteUserJoined != null) {
-
-
             callViewModel.setUpRemoteVideo(remoteView, remoteUserJoined!!)
-            //callViewModel.setUpLocalVideo(localView) // force rebind
         }
     }
 

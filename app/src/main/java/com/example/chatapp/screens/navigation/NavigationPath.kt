@@ -1,7 +1,9 @@
 package com.example.chatapp.screens.navigation
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.util.Log
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxSize
@@ -28,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -50,6 +53,7 @@ import com.example.chatapp.screens.ProfileSettingScreen
 import com.example.chatapp.screens.logInSignUp.ForgotPasswordScreen
 import com.example.chatapp.screens.logInSignUp.SignInScreenUI
 import com.example.chatapp.screens.logInSignUp.SignUpScreenUI
+import com.example.chatapp.service.AgoraCallService
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
@@ -95,8 +99,10 @@ fun AuthNavigationHost(
 @Composable
 fun MainNavigationHost(
     viewModel: ChatsViewModel,
+    startDestination: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel = hiltViewModel()
 ) {
+
     val navController = rememberNavController()
 
     Log.d(
@@ -105,6 +111,7 @@ fun MainNavigationHost(
     )
 
 
+    val metadata by viewModel.deepLinkData.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
@@ -112,7 +119,18 @@ fun MainNavigationHost(
 
     val incomingCall by globalMessageListenerViewModel.incomingCallData.collectAsState()
 
+    val activityContext = LocalActivity.current
 
+
+    LaunchedEffect(metadata) {
+
+        if (metadata != null && !viewModel.isCallScreenActive.value) {
+
+            navController.navigate("CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}")
+            viewModel.setDeepLinkData(null)
+        }
+
+    }
 
     LaunchedEffect(currentChatId) {
 
@@ -136,7 +154,9 @@ fun MainNavigationHost(
             Log.i("IncomingCall", incomingCall.toString())
 
             // currently directly initiating a call, later add accept or decline option
-            navController.navigate("CallScreen/$channelName/$callType/false/$callerId")
+            navController.navigate("CallScreen/$channelName/$callType/false/$callerId") {
+                launchSingleTop = true
+            }
             globalMessageListenerViewModel.emptyIncomingCall() // clear call log so it doesn't run again
         }
     }
@@ -173,10 +193,11 @@ fun MainNavigationHost(
 
         NavHost(
             navController = navController,
-            startDestination = Screen.AllChatScreen.route,
+            startDestination = startDestination,
             route = MAIN_GRAPH_ROUTE,
             modifier = Modifier.fillMaxSize()
         ) {
+
             composable(Screen.AllChatScreen.route) {
                 AllChatScreen(navController, globalMessageListenerViewModel)
             }
@@ -246,13 +267,21 @@ fun MainNavigationHost(
                     channelName,
                     callType,
                     globalMessageListenerViewModel = globalMessageListenerViewModel,
+                    receiverId = receiverId,
                     isCaller = isCaller,
-                    receiverId = receiverId
+                    chatsViewModel = viewModel
                 )
                 {
                     Log.d("CallScreen", "onCallEnd triggered!")
 
-                    navController.popBackStack()
+                    if (startDestination.startsWith("CallScreen")) {
+                        activityContext?.finishAndRemoveTask()
+                    } else {
+
+                        navController.popBackStack()
+                    }
+
+
                 }
 
             }
@@ -278,8 +307,6 @@ fun BottomNavigationBar(
 
 
     val userData by globalMessageListenerViewModel.userData.collectAsState()
-
-
 
 
     NavigationBar {

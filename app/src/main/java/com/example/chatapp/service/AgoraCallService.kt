@@ -1,9 +1,10 @@
 package com.example.chatapp.service
 
+import android.annotation.SuppressLint
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -11,7 +12,9 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.AGORA_ID
+import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_ID
 import com.example.chatapp.CallMetadata
+import com.example.chatapp.MainActivity
 import com.example.chatapp.R
 import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.CallHistoryManager
@@ -22,6 +25,13 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class AgoraCallService : LifecycleService() {
+
+    companion object {
+
+        const val NOTIFICATION_ID = 101
+
+    }
+
 
     @Inject
     lateinit var agoraRepo: AgoraSetUpRepo
@@ -34,16 +44,20 @@ class AgoraCallService : LifecycleService() {
     private var callId: String? = null
     private var isRemoteUserLeft: Boolean = false
 
+    private var isRemoteUserJoined: Int? = null
+
     private var serviceJob: Job? = null
 
 
     override fun onCreate() {
         super.onCreate()
+
         agoraRepo.initializeAgora(AGORA_ID)
-        startForeground(NOTIFICATION_ID, buildNotification())
+
 
     }
 
+    @SuppressLint("NewApi")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
@@ -58,11 +72,16 @@ class AgoraCallService : LifecycleService() {
 
             callMetadata = it
 
+            startForeground(NOTIFICATION_ID, buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE)
+
             lifecycleScope.launch {
                 agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
             }
 
             startFlowCollectors()
+
         }
 
 
@@ -72,7 +91,7 @@ class AgoraCallService : LifecycleService() {
 
     private fun startFlowCollectors() {
 
-       serviceJob = lifecycleScope.launch {
+        serviceJob = lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
 
                 launch {
@@ -101,11 +120,14 @@ class AgoraCallService : LifecycleService() {
                         Log.i("AGORA_CALL_SERVICE", "RemoteUserJoined: ${remoteUser.toString()}")
                         if (remoteUser != null) {
 
+                            isRemoteUserJoined = remoteUser
+
                             callId?.let { callDocId ->
                                 callHistoryManager.updateCallStatus("ongoing", callDocId)
                             }
 
                         }
+
                     }
                 }
 
@@ -129,44 +151,52 @@ class AgoraCallService : LifecycleService() {
         super.onDestroy()
 
         serviceJob?.cancel()
+
         Log.i("AGORA_CALL_SERVICE", "OnDestroy called")
 
         if (callMetadata.isCaller) {
             callId?.let { callDocId ->
 
-                val status = if (isRemoteUserLeft) "ended" else "missed"
+                val status = if (isRemoteUserJoined != null) "ended" else "missed"
 
                 callHistoryManager.uploadOnCallEnd(status, callDocId)
 
             }
         }
         agoraRepo.destroy()
+
     }
+
 
     private fun buildNotification(): Notification {
 
-        val channelId = "call_channel"
+        val intent = Intent(this, MainActivity::class.java).apply {
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                "Call Channel",
-                NotificationManager.IMPORTANCE_LOW
-            )
-            getSystemService(NotificationManager::class.java)?.createNotificationChannel(channel)
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+
+
+            putExtra("call_metadata", callMetadata)
         }
 
-        return NotificationCompat.Builder(this, channelId)
-            .setContentTitle("In a call")
-            .setContentText("Your call is ongoing")
-            .setSmallIcon(R.drawable.googleicon)
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+
+        return NotificationCompat.Builder(this, CALL_CHANNEL_NOTIFICATION_ID)
+            .setSmallIcon(R.drawable.ic_launcher_foreground) // change to app icon or profile pic later
+            .setContentTitle(callMetadata.receiverName)
+            .setContentText("Ongoing call")
+            .setCategory(Notification.CATEGORY_CALL)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(false)
             .setOngoing(true)
             .build()
     }
 
-
-    companion object {
-        const val NOTIFICATION_ID = 101
-    }
 
 }

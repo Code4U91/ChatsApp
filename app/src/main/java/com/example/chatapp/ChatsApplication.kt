@@ -1,6 +1,9 @@
 package com.example.chatapp
 
 import android.app.Application
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
@@ -21,9 +24,11 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
     var isInForeground = false
 
 
-
     override fun onCreate() {
         super<Application>.onCreate()
+
+        createNotificationChannel()
+
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
@@ -39,6 +44,21 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
 
         isInForeground = false
         onlineStatusRepo.setOnlineStatusWithDisconnect(false)
+    }
+
+    private fun createNotificationChannel() {
+
+
+        val channel = NotificationChannel(
+            CALL_CHANNEL_NOTIFICATION_ID,
+            "Call Channel",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+
+
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+
+
     }
 
 

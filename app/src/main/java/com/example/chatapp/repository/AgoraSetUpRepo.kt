@@ -162,6 +162,12 @@ class AgoraSetUpRepo @Inject constructor(
             setEnableSpeakerphone(true)
         }
 
+        // important to reset these or else will interfere with call screen callEnd and close the call as soon as user joined after the second
+        // calls since app start
+        _isJoined.value = false
+        _remoteUserLeft.value = false
+        _remoteUserJoined.value = null
+
         RtcEngine.destroy()
         rtcEngine = null
 

@@ -214,7 +214,9 @@ fun CallLazyColumn(
                 isCaller = callData.callReceiverId == callData.otherUserId, // checking if other user is caller, otherUserId is other participantId
                 callStatus = callData.status ?: ""
             ) {
-                navController.navigate("CallScreen/${callData.channelId}/${callData.callType}/true/${callData.otherUserId}")
+                navController.navigate("CallScreen/${callData.channelId}/${callData.callType}/true/${callData.otherUserId}"){
+                    launchSingleTop = true
+                }
             }
 
         }
@@ -281,11 +283,11 @@ fun CallListItem(
 
     val icon = when (isCaller) {
         true -> {
-            Icons.Default.ArrowOutward // you are the caller, outgoing call
+            Icons.Default.ArrowOutward // currentUser is the caller, outgoing call
         }
 
         false -> {
-            Icons.Default.ArrowDownward // you are the receiver, incoming call
+            Icons.Default.ArrowDownward // currentUser is the receiver, incoming call
         }
     }
 

@@ -1,9 +1,14 @@
 package com.example.chatapp.viewmodel
 
 import android.app.Activity
+import android.util.Log
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatapp.CallMetadata
 import com.example.chatapp.USERS_COLLECTION
+import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.ChatManager
 import com.example.chatapp.repository.MessageServiceRepository
@@ -14,8 +19,10 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.userProfileChangeRequest
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,7 +33,8 @@ class ChatsViewModel @Inject constructor(
     private val firestoreDb: FirebaseFirestore,
     private val messageServiceRepository: MessageServiceRepository,
     private val chatManager: ChatManager,
-    private val onlineStatusRepo: OnlineStatusRepo
+    private val onlineStatusRepo: OnlineStatusRepo,
+    private val agoraRepo: AgoraSetUpRepo
 ) : ViewModel() {
 
 
@@ -36,8 +44,51 @@ class ChatsViewModel @Inject constructor(
     private var _loadingIndicator = MutableStateFlow(false)
     val loadingIndicator: StateFlow<Boolean> = _loadingIndicator
 
+    private val _deepLinkData = MutableStateFlow<CallMetadata?>(null)
+    val deepLinkData = _deepLinkData.asStateFlow()
+
+    private val _isCallScreenActive = mutableStateOf(false)
+    val isCallScreenActive: State<Boolean> get() = _isCallScreenActive
+
+    private val _hasStartedCallService = mutableStateOf(false)
+    val hasStartedCallService: State<Boolean> get() = _hasStartedCallService
+
+    fun markCallServiceStarted() {
+
+        if (!_hasStartedCallService.value) _hasStartedCallService.value = true
+
+    }
+
+    fun resetCallServiceFlag() {
+        if (_hasStartedCallService.value) _hasStartedCallService.value = false
+    }
+
+
+    fun setCallScreenActive(active: Boolean) {
+        _isCallScreenActive.value = active
+    }
+
+
+
     init {
         checkAuthStatus()
+
+        // collecting it so that even if the app restarts, we always will know if the call is active or not
+        // if the app was not to be killed then we could just have relied on global viewmodel to save the state
+        // agora is injected to service class so it should survive the app close
+        viewModelScope.launch {
+
+            agoraRepo.isJoined.collect{isJoined ->
+
+                Log.i("CHATS_VM_IS_JOINED", isJoined.toString())
+                if(isJoined)
+                {
+                    markCallServiceStarted()
+                } else {
+                    resetCallServiceFlag()
+                }
+            }
+        }
     }
 
 
@@ -50,6 +101,12 @@ class ChatsViewModel @Inject constructor(
         } else {
             updateAuthState(AuthState.Unauthenticated)
         }
+    }
+
+    fun setDeepLinkData(metadata: CallMetadata?)
+    {
+        _deepLinkData.value = metadata
+
     }
 
 
@@ -294,6 +351,7 @@ class ChatsViewModel @Inject constructor(
     private fun setOnlineStatus(status: Boolean = true) {
         onlineStatusRepo.setOnlineStatusWithDisconnect(status)
     }
+
 }
 
 sealed class AuthState {
