@@ -1,4 +1,4 @@
-package com.example.chatapp.screens
+package com.example.chatapp.screens.afterMainFrontScreen
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement

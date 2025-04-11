@@ -1,4 +1,4 @@
-package com.example.chatapp.screens.navigation
+package com.example.chatapp.navigation
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -41,13 +41,13 @@ import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.AUTH_GRAPH_ROUTE
 import com.example.chatapp.MAIN_GRAPH_ROUTE
-import com.example.chatapp.screens.AllChatScreen
-import com.example.chatapp.screens.CallHistoryScreen
-import com.example.chatapp.screens.CallScreen
-import com.example.chatapp.screens.ChangeEmailAddressScreen
-import com.example.chatapp.screens.FriendListScreen
-import com.example.chatapp.screens.MainChatScreen
-import com.example.chatapp.screens.ProfileSettingScreen
+import com.example.chatapp.screens.mainBottomBarScreens.AllChatScreen
+import com.example.chatapp.screens.mainBottomBarScreens.CallHistoryScreen
+import com.example.chatapp.screens.afterMainFrontScreen.CallScreen
+import com.example.chatapp.screens.afterMainFrontScreen.ChangeEmailAddressScreen
+import com.example.chatapp.screens.afterMainFrontScreen.FriendListScreen
+import com.example.chatapp.screens.afterMainFrontScreen.MainChatScreen
+import com.example.chatapp.screens.mainBottomBarScreens.ProfileSettingScreen
 import com.example.chatapp.screens.logInSignUp.ForgotPasswordScreen
 import com.example.chatapp.screens.logInSignUp.SignInScreenUI
 import com.example.chatapp.screens.logInSignUp.SignUpScreenUI
@@ -123,7 +123,8 @@ fun MainNavigationHost(
 
         if (metadata != null && !viewModel.isCallScreenActive.value) {
 
-            navController.navigate("CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}")
+            navController.navigate(
+                "CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}/${metadata!!.callDocId}")
             viewModel.setDeepLinkData(null)
         }
 
@@ -147,11 +148,12 @@ fun MainNavigationHost(
             val channelName = incomingCall?.channelId
             val callType = incomingCall?.callType
             val callerId = incomingCall?.callerId
+            val callDocId = incomingCall?.callId
 
             Log.i("IncomingCall", incomingCall.toString())
 
             // currently directly initiating a call, later add accept or decline option
-            navController.navigate("CallScreen/$channelName/$callType/false/$callerId") {
+            navController.navigate("CallScreen/$channelName/$callType/false/$callerId/$callDocId") {
                 launchSingleTop = true
             }
             globalMessageListenerViewModel.emptyIncomingCall() // clear call log so it doesn't run again
@@ -244,12 +246,13 @@ fun MainNavigationHost(
                 }
             }
 
-            composable("CallScreen/{channelName}/{callType}/{isCaller}/{receiverId}",
+            composable("CallScreen/{channelName}/{callType}/{isCaller}/{receiverId}/{callDocId}",
                 arguments = listOf(
                     navArgument("channelName") { type = NavType.StringType },
                     navArgument("callType") { type = NavType.StringType },
                     navArgument("isCaller") { type = NavType.BoolType },
-                    navArgument("receiverId") { type = NavType.StringType }
+                    navArgument("receiverId") { type = NavType.StringType },
+                    navArgument("callDocId") { type = NavType.StringType }
                     //  navArgument("token"){type = NavType.StringType} // token for agora if on secure mode
                 )
             )
@@ -258,6 +261,7 @@ fun MainNavigationHost(
                 val callType = backStackEntry.arguments?.getString("callType") ?: ""
                 val isCaller = backStackEntry.arguments?.getBoolean("isCaller") ?: true
                 val receiverId = backStackEntry.arguments?.getString("receiverId") ?: ""
+                val callDocId = backStackEntry.arguments?.getString("callDocId") ?: ""
                 //   val token = backStackEntry.arguments?.getString("token") ?: ""
 
                 CallScreen(
@@ -266,7 +270,8 @@ fun MainNavigationHost(
                     globalMessageListenerViewModel = globalMessageListenerViewModel,
                     receiverId = receiverId,
                     isCaller = isCaller,
-                    chatsViewModel = viewModel
+                    chatsViewModel = viewModel,
+                    callDocId = callDocId
                 )
                 {
                     Log.d("CallScreen", "onCallEnd triggered!")

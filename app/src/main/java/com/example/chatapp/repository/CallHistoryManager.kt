@@ -4,13 +4,13 @@ import com.example.chatapp.CALL_HISTORY
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import javax.inject.Inject
 
 class CallHistoryManager @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore
 ) {
-
 
     fun uploadCallData(
         callReceiverId: String,
@@ -54,12 +54,22 @@ class CallHistoryManager @Inject constructor(
 
         callDocRef.get().addOnSuccessListener { doc ->
 
-            if (doc.exists()) {
-                val newStatus = mapOf(
-                    "status" to status,
-                )
+            val stateValueInDb = doc.getString("status")
 
-                callDocRef.update(newStatus)
+            val list = listOf("missed", "ended")
+
+            if (doc.exists() && stateValueInDb != null) {
+
+                if (stateValueInDb !in list)
+                {
+                    val newStatus = mapOf(
+                        "status" to status,
+                        "callEndTime" to Timestamp.now()
+                    )
+
+                    callDocRef.update(newStatus)
+                }
+
             }
 
 
@@ -75,13 +85,55 @@ class CallHistoryManager @Inject constructor(
 
 
         val callDocRef = firestoreDb.collection(CALL_HISTORY).document(callId)
-        val callEndTimeData = mapOf(
-            "callEndTime" to Timestamp.now(),
-            "status" to status
-        )
-        callDocRef.update(callEndTimeData)
 
+        callDocRef.get().addOnSuccessListener {
+
+
+            val callEndTimeData = mapOf(
+                "callEndTime" to Timestamp.now(),
+                "status" to status
+            )
+            callDocRef.update(callEndTimeData)
+        }
+    }
+
+
+    fun checkAndUpdateCurrentCall(
+        callId: String,
+        onCallDeclined: () -> Unit
+    ): ListenerRegistration {
+
+        val currentCallListener = firestoreDb.collection(CALL_HISTORY).document(callId)
+            .addSnapshotListener { snapshot, error ->
+
+                if (error != null) {
+                    return@addSnapshotListener
+                }
+
+                if (snapshot != null && snapshot.exists()) {
+
+                    val getCallStatus = snapshot.getString("status")
+
+                    getCallStatus?.let { currentCallStatus ->
+
+                        if (currentCallStatus == "declined" || currentCallStatus == "missed") {
+                            onCallDeclined()
+                        }
+
+                    }
+
+                }
+
+
+            }
+
+
+        return currentCallListener
 
     }
+
+
 }
+
+
 

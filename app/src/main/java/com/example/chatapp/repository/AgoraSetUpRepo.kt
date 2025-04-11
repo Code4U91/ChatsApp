@@ -34,6 +34,15 @@ class AgoraSetUpRepo @Inject constructor(
     private val _remoteUserLeft = MutableStateFlow(false)
     val remoteUserLeft = _remoteUserLeft.asStateFlow()
 
+    private val _declineTheCall = MutableStateFlow(false)
+    val declineTheCall = _declineTheCall.asStateFlow()
+
+    private val _callDuration = MutableStateFlow(0L)
+    val callDuration = _callDuration.asStateFlow()
+
+
+
+
     private var localUid: Int = 0
 
     fun initializeAgora(appId: String) {
@@ -123,15 +132,21 @@ class AgoraSetUpRepo @Inject constructor(
 
 
     fun setupLocalVideo(surfaceView: SurfaceView) {
-        rtcEngine?.setupLocalVideo(
-            VideoCanvas(
-                surfaceView,
-                VideoCanvas.RENDER_MODE_HIDDEN,
-                localUid
+
+        rtcEngine?.apply {
+            enableVideo()
+            setupLocalVideo(
+                VideoCanvas(
+                    surfaceView,
+                    VideoCanvas.RENDER_MODE_HIDDEN,
+                    localUid
+                )
             )
-        )
+            startPreview()
+        }
 
     }
+
 
     fun setupRemoteVideo(surfaceView: SurfaceView, uid: Int) {
         rtcEngine?.setupRemoteVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, uid))
@@ -151,6 +166,19 @@ class AgoraSetUpRepo @Inject constructor(
 
     }
 
+    fun declineIncomingCall(decline: Boolean)
+    {
+        _declineTheCall.value = decline
+    }
+
+    fun updateDuration(duration: Long) {
+        _callDuration.value = duration
+    }
+
+    private fun reset() {
+        _callDuration.value = 0L
+    }
+
 
     fun destroy() {
 
@@ -167,6 +195,8 @@ class AgoraSetUpRepo @Inject constructor(
         _isJoined.value = false
         _remoteUserLeft.value = false
         _remoteUserJoined.value = null
+        _declineTheCall.value = false
+        reset()
 
         RtcEngine.destroy()
         rtcEngine = null

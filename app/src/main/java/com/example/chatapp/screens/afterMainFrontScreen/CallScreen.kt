@@ -1,4 +1,4 @@
-package com.example.chatapp.screens
+package com.example.chatapp.screens.afterMainFrontScreen
 
 import android.util.Log
 import android.view.SurfaceView
@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.VolumeOff
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.FlipCameraAndroid
 import androidx.compose.material.icons.filled.Hearing
@@ -67,14 +68,11 @@ fun CallScreen(
     receiverId: String,
     isCaller: Boolean,
     chatsViewModel: ChatsViewModel,
+    callDocId: String,
     onCallEnd: () -> Unit
 ) {
 
     Log.i("TestChannelName", channelName) // using firebase uid user1_User2
-
-    LaunchedEffect(Unit) {
-        callViewModel.updateIsCaller(isCaller)
-    }
 
     val context = LocalContext.current
 
@@ -83,6 +81,7 @@ fun CallScreen(
     val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()  // when other user leaves call
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // contains numeric agora id of other joined user
     val isJoined by callViewModel.isJoined.collectAsState()
+
 
 
     LaunchedEffect(Unit) {
@@ -98,7 +97,7 @@ fun CallScreen(
     LaunchedEffect(remoteUserLeft, callEnded) {
         if (callEnded || remoteUserLeft) {
 
-            Log.i("ON_END_CALLED", "callEnd: $callEnded remoteUser : $remoteUserLeft")
+            Log.i("ON_END_CALLED", "callEnd: $callEnded remoteUser : $remoteUserLeft ")
 
             callViewModel.stopCallService(context)
             chatsViewModel.resetCallServiceFlag()
@@ -131,7 +130,8 @@ fun CallScreen(
             isCaller,
             receiverId,
             globalMessageListenerViewModel,
-            chatsViewModel
+            chatsViewModel,
+            callDocId
         )
     } else {
 
@@ -141,7 +141,8 @@ fun CallScreen(
             isCaller = isCaller,
             receiverId,
             globalMessageListenerViewModel,
-            chatsViewModel
+            chatsViewModel,
+            callDocId
         )
 
     }
@@ -155,7 +156,8 @@ fun StartVoiceCall(
     isCaller: Boolean,
     receiverId: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    chatsViewModel: ChatsViewModel
+    chatsViewModel: ChatsViewModel,
+    callDocId: String
 ) {
 
     val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
@@ -193,7 +195,8 @@ fun StartVoiceCall(
                     callerName = currentUserData?.name.orEmpty(),
                     receiverName = otherUserData?.name.orEmpty(),
                     isCaller = isCaller,
-                    callReceiverId = otherUserData?.uid ?: receiverId
+                    callReceiverId = otherUserData?.uid ?: receiverId,
+                    callDocId = callDocId
                 )
 
                 chatsViewModel.markCallServiceStarted()
@@ -281,7 +284,10 @@ fun StartVoiceCall(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                ControlButtons(callType = "voice", callViewModel)
+                ControlButtons(callType = "voice", callViewModel, isCaller)
+                {
+                    callViewModel.joinChannel(channelName, "voice")
+                }
             }
 
         }
@@ -296,7 +302,8 @@ fun StartVideoCall(
     isCaller: Boolean,
     receiverId: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    chatsViewModel: ChatsViewModel
+    chatsViewModel: ChatsViewModel,
+    callDocId: String
 ) {
 
     val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
@@ -341,7 +348,8 @@ fun StartVideoCall(
                     callerName = currentUserData?.name.orEmpty(),
                     receiverName = otherUserData?.name.orEmpty(),
                     isCaller = isCaller,
-                    callReceiverId = otherUserData?.uid ?: receiverId
+                    callReceiverId = otherUserData?.uid ?: receiverId,
+                    callDocId = callDocId
                 )
 
                 chatsViewModel.markCallServiceStarted()
@@ -416,8 +424,7 @@ fun StartVideoCall(
             } else {
                 Text(
                     text = "Joining Channel...",
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.White
+                    modifier = Modifier.align(Alignment.Center)
                 )
             }
 
@@ -442,7 +449,8 @@ fun StartVideoCall(
                         )
                         Text(
                             text = formatCallDuration(callDuration),
-                            fontSize = 18.sp
+                            fontSize = 18.sp,
+                            color = Color.Green
                         )
                     }
                 } else {
@@ -460,7 +468,18 @@ fun StartVideoCall(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    ControlButtons(callType = "video", callViewModel = callViewModel)
+                    ControlButtons(
+                        callType = "video",
+                        callViewModel = callViewModel,
+                        isCaller = isCaller
+                    ) {
+                        // when the call receiver accepts the call
+
+                        callViewModel.joinChannel(
+                            channelName,
+                            "video"
+                        )
+                    }
                 }
             }
 
@@ -469,58 +488,138 @@ fun StartVideoCall(
 }
 
 @Composable
-fun ControlButtons(callType: String, callViewModel: CallViewModel) {
+fun ControlButtons(
+    callType: String,
+    callViewModel: CallViewModel,
+    isCaller: Boolean,
+    onJoinCall: () -> Unit
+) {
+
     val isMuted by callViewModel.isMuted.collectAsState()
     val isRemoteAudioDeafen by callViewModel.isRemoteAudioDeafen.collectAsState()
     val isSpeakerPhoneEnabled by callViewModel.isSpeakerPhoneEnabled.collectAsState()
+    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+
+    if (remoteUserJoined == null) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 100.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+
+            Row(
+                modifier = Modifier.fillMaxSize(),
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // call not connected, do not show ongoing call control buttons
+                if (isCaller) {
+                    // current user is a caller, only show call cut button till the remote user joins
+
+                    // common
 
 
-    //common
-    IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
-        Icon(
-            imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-            contentDescription = "Mute",
-        )
-    }
+                    IconButton(onClick = {
+                        callViewModel.leaveChannel()
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.CallEnd,
+                            contentDescription = "End Call",
+                            tint = Color.Red,
+                            modifier = Modifier
+                                .size(250.dp)
+                                .clip(CircleShape)
+                        )
+                    }
+                } else {
+                    // current user is not a caller but a receiver, give option to accept or reject the call
 
-    // video/call/common
-    IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
-        Icon(
-            imageVector = if (isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-            contentDescription = "audio turn on/off",
+                    // cancel button
+                    IconButton(onClick = {
+                        callViewModel.declineTheCall(true)
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.CallEnd,
+                            contentDescription = "End Call",
+                            tint = Color.Red,
+                            modifier = Modifier
+                                .size(200.dp)
+                                .clip(CircleShape)
+                        )
+                    }
 
-            )
-    }
+                    // accept button
 
-    // common
-    IconButton(onClick = {
-        callViewModel.leaveChannel()
-    }) {
-        Icon(
-            imageVector = Icons.Default.CallEnd,
-            contentDescription = "End Call",
-            tint = Color.Red
-        )
-    }
+                    IconButton(onClick = {
+                        // start the call
+                        onJoinCall()
 
+                    }) {
+                        Icon(
+                            imageVector = Icons.Default.Call,
+                            contentDescription = "End Call",
+                            tint = Color.Green,
+                            modifier = Modifier
+                                .size(200.dp)
+                                .clip(CircleShape)
+                        )
+                    }
+                }
+            }
 
-    if (callType == "voice") {
-        // only voice call
-        IconButton(onClick = { callViewModel.toggleSpeaker() }) {
-            Icon(
-                imageVector = if (isSpeakerPhoneEnabled) Icons.Default.Hearing else Icons.Default.HearingDisabled,
-                contentDescription = "voice mode : speaker or earpiece"
-
-            )
         }
+
+
     } else {
-        // only video
-        IconButton(onClick = { callViewModel.switchCamera() }) {
+        //common
+        IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
             Icon(
-                imageVector = Icons.Default.FlipCameraAndroid,
-                contentDescription = "Switch Camera"
+                imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                contentDescription = "Mute",
             )
         }
+
+        // video/call/common
+        IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
+            Icon(
+                imageVector = if (isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                contentDescription = "audio turn on/off",
+
+                )
+        }
+
+        // common
+        IconButton(onClick = {
+            callViewModel.leaveChannel()
+        }) {
+            Icon(
+                imageVector = Icons.Default.CallEnd,
+                contentDescription = "End Call",
+                tint = Color.Red
+            )
+        }
+
+
+        if (callType == "voice") {
+            // only voice call
+            IconButton(onClick = { callViewModel.toggleSpeaker() }) {
+                Icon(
+                    imageVector = if (isSpeakerPhoneEnabled) Icons.Default.Hearing else Icons.Default.HearingDisabled,
+                    contentDescription = "voice mode : speaker or earpiece"
+
+                )
+            }
+        } else {
+            // only video
+            IconButton(onClick = { callViewModel.switchCamera() }) {
+                Icon(
+                    imageVector = Icons.Default.FlipCameraAndroid,
+                    contentDescription = "Switch Camera"
+                )
+            }
+        }
     }
+
 
 }

@@ -1,6 +1,5 @@
-package com.example.chatapp.screens
+package com.example.chatapp.screens.mainBottomBarScreens
 
-import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +62,9 @@ import com.example.chatapp.FriendData
 import com.example.chatapp.formatDurationText
 import com.example.chatapp.formatTimestampToDateTime
 import com.example.chatapp.getDateLabelForMessage
+import com.example.chatapp.screens.afterMainFrontScreen.DateChip
+import com.example.chatapp.screens.afterMainFrontScreen.VideoCallButton
+import com.example.chatapp.screens.afterMainFrontScreen.VoiceCallButton
 import com.example.chatapp.toLocalDate
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.firebase.Timestamp
@@ -214,7 +216,7 @@ fun CallLazyColumn(
                 isCaller = callData.callReceiverId == callData.otherUserId, // checking if other user is caller, otherUserId is other participantId
                 callStatus = callData.status ?: ""
             ) {
-                navController.navigate("CallScreen/${callData.channelId}/${callData.callType}/true/${callData.otherUserId}"){
+                navController.navigate("CallScreen/${callData.channelId}/${callData.callType}/true/${callData.otherUserId}/n"){
                     launchSingleTop = true
                 }
             }
@@ -267,6 +269,7 @@ fun CallListItem(
     }
 
     val timeText = when (callStatus) {
+
         "ended" -> {
             "call lasted $duration at $time"
         }
@@ -274,6 +277,8 @@ fun CallListItem(
         "missed" -> {
             "missed call at $time"
         }
+
+        "declined" -> {"call declined at $time"}
 
         else -> {
             ""
@@ -305,12 +310,12 @@ fun CallListItem(
             Color.Green
         }
 
+        "declined" -> {Color.Red}
+
         else -> {
             Color.Unspecified
         }
     }
-
-    Log.i("CallDuration", duration)
 
 
     Row(
@@ -340,7 +345,7 @@ fun CallListItem(
                 fontSize = 20.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = if (callStatus == "missed") Color.Red else Color.Unspecified
+                color = if (callStatus == "missed" || callStatus == "declined") Color.Red else Color.Unspecified
             )
 
             Row(modifier = Modifier.wrapContentHeight()) {

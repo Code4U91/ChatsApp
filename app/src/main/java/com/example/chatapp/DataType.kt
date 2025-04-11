@@ -79,7 +79,8 @@ data class CallMetadata(
     val callerName: String,
     val callReceiverId: String,
     val receiverName: String,
-    val isCaller: Boolean
+    val isCaller: Boolean,
+    val callDocId: String
 ) : Parcelable
 
 

@@ -3,7 +3,6 @@ package com.example.chatapp
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -20,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.example.chatapp.screens.navigation.AuthNavigationHost
-import com.example.chatapp.screens.navigation.MainNavigationHost
-import com.example.chatapp.screens.navigation.Screen
+import com.example.chatapp.navigation.AuthNavigationHost
+import com.example.chatapp.navigation.MainNavigationHost
+import com.example.chatapp.navigation.Screen
 import com.example.chatapp.ui.theme.ChatsAppTheme
 import com.example.chatapp.viewmodel.AuthState
 import com.example.chatapp.viewmodel.ChatsViewModel
@@ -52,7 +51,7 @@ class MainActivity : ComponentActivity() {
         val startDestination = if (chatsViewModel.deepLinkData.value != null) {
             val data = chatsViewModel.deepLinkData.value!!
 
-            "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}"
+            "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
 
         } else {
             Screen.AllChatScreen.route
@@ -104,10 +103,12 @@ class MainActivity : ComponentActivity() {
         val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra("call_metadata", CallMetadata::class.java)
         } else {
+            // Fallback for older version
+            @Suppress("DEPRECATION")
             intent.getParcelableExtra("call_metadata")
         }
 
-        Log.i("INTENT_METADATA", metaData.toString())
+
         chatsViewModel.setDeepLinkData(metaData)
     }
 }

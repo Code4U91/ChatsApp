@@ -1,4 +1,4 @@
-package com.example.chatapp.screens
+package com.example.chatapp.screens.afterMainFrontScreen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -45,6 +45,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.FriendScreenUiItem
 import com.example.chatapp.dialogBox.AddFriendDialogBox
+import com.example.chatapp.screens.mainBottomBarScreens.ChatItemAndFriendListItem
+import com.example.chatapp.screens.mainBottomBarScreens.TopAppBarTemplate
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
 

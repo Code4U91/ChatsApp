@@ -1,4 +1,4 @@
-package com.example.chatapp.screens
+package com.example.chatapp.screens.mainBottomBarScreens
 
 import android.annotation.SuppressLint
 import android.os.Build

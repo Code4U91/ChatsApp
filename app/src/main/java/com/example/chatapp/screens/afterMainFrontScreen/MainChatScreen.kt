@@ -1,4 +1,4 @@
-package com.example.chatapp.screens
+package com.example.chatapp.screens.afterMainFrontScreen
 
 import android.os.Build
 import androidx.compose.foundation.background
@@ -217,14 +217,14 @@ fun MainChatScreen(
 
 
                             VideoCallButton {
-                                navController.navigate("CallScreen/$chatId/video/true/$otherId") {
+                                navController.navigate("CallScreen/$chatId/video/true/$otherId/n") {
                                     launchSingleTop = true
                                 }
                             }
 
                             VoiceCallButton {
 
-                                navController.navigate("CallScreen/$chatId/voice/true/$otherId")
+                                navController.navigate("CallScreen/$chatId/voice/true/$otherId/n")
                                 {
                                     launchSingleTop = true
                                 }
