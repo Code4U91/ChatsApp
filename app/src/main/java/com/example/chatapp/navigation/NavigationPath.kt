@@ -40,6 +40,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.AUTH_GRAPH_ROUTE
+import com.example.chatapp.CallEventHandler
 import com.example.chatapp.MAIN_GRAPH_ROUTE
 import com.example.chatapp.screens.mainBottomBarScreens.AllChatScreen
 import com.example.chatapp.screens.mainBottomBarScreens.CallHistoryScreen
@@ -114,17 +115,27 @@ fun MainNavigationHost(
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
 
-    val incomingCall by globalMessageListenerViewModel.incomingCallData.collectAsState()
-
     val activityContext = LocalActivity.current
 
+    LaunchedEffect(Unit) {
+        CallEventHandler.incomingCall.collect { data ->
+
+            if (!viewModel.isCallScreenActive.value) {
+                navController.navigate(
+                    "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
+                )
+            }
+
+        }
+    }
 
     LaunchedEffect(metadata) {
 
         if (metadata != null && !viewModel.isCallScreenActive.value) {
 
             navController.navigate(
-                "CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}/${metadata!!.callDocId}")
+                "CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}/${metadata!!.callDocId}"
+            )
             viewModel.setDeepLinkData(null)
         }
 
@@ -138,26 +149,6 @@ fun MainNavigationHost(
         Log.i("CurrentChatId", currentChatId.toString())
         globalMessageListenerViewModel.setCurrentOpenChatId(currentChatId)
 
-    }
-
-    // testing purpose only
-    // later replacing it with fcm call notification
-    LaunchedEffect(incomingCall) {
-
-        if (incomingCall != null) {
-            val channelName = incomingCall?.channelId
-            val callType = incomingCall?.callType
-            val callerId = incomingCall?.callerId
-            val callDocId = incomingCall?.callId
-
-            Log.i("IncomingCall", incomingCall.toString())
-
-            // currently directly initiating a call, later add accept or decline option
-            navController.navigate("CallScreen/$channelName/$callType/false/$callerId/$callDocId") {
-                launchSingleTop = true
-            }
-            globalMessageListenerViewModel.emptyIncomingCall() // clear call log so it doesn't run again
-        }
     }
 
     val showBottomBarRoutes = listOf(

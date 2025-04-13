@@ -42,8 +42,7 @@ class MainActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        if (savedInstanceState == null)
-        {
+        if (savedInstanceState == null) {
             handleIntent(intent)
         }
 
@@ -84,12 +83,10 @@ class MainActivity : ComponentActivity() {
     }
 
 
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        if (chatsViewModel.isCallScreenActive.value)
-        {
+        if (chatsViewModel.isCallScreenActive.value) {
             return
         } else {
             handleIntent(intent)
@@ -98,8 +95,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // handles intent passed via notification icon click
-    private fun handleIntent(intent: Intent)
-    {
+    private fun handleIntent(intent: Intent) {
         val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra("call_metadata", CallMetadata::class.java)
         } else {
@@ -114,18 +110,19 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ChatAppRoot(viewModel: ChatsViewModel, startDestination: String)
-{
+fun ChatAppRoot(viewModel: ChatsViewModel, startDestination: String) {
     val rootNavController = rememberNavController()
     val authState by viewModel.authState.collectAsState()
 
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background))
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    )
     {
         NavHost(
             navController = rootNavController,
-            startDestination =  if (authState is AuthState.Authenticated) "Main" else "Auth",
+            startDestination = if (authState is AuthState.Authenticated) "Main" else "Auth",
             route = "Root"
         ) {
 
@@ -135,7 +132,7 @@ fun ChatAppRoot(viewModel: ChatsViewModel, startDestination: String)
                 MainNavigationHost(viewModel = viewModel, startDestination)
             }
 
-            composable("Auth"){
+            composable("Auth") {
 
                 AuthNavigationHost(viewModel = viewModel)
             }
