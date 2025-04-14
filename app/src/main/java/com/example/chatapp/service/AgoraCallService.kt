@@ -3,16 +3,8 @@ package com.example.chatapp.service
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.PendingIntent
-import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.media.AudioAttributes
-import android.media.AudioDeviceInfo
-import android.media.AudioManager
-import android.media.MediaPlayer
-import android.media.Ringtone
-import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -20,29 +12,24 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.AGORA_ID
-import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_ID
+import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.example.chatapp.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.MainActivity
 import com.example.chatapp.R
 import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.CallHistoryManager
+import com.example.chatapp.repository.CallRingtoneManager
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class AgoraCallService : LifecycleService() {
-
-    companion object {
-
-        const val NOTIFICATION_ID = 101
-
-    }
 
 
     @Inject
@@ -50,6 +37,9 @@ class AgoraCallService : LifecycleService() {
 
     @Inject
     lateinit var callHistoryManager: CallHistoryManager
+
+    @Inject
+    lateinit var callRingtoneManager: CallRingtoneManager
 
     private lateinit var callMetadata: CallMetadata
 
@@ -64,8 +54,6 @@ class AgoraCallService : LifecycleService() {
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
-    private var incomingRingTonePlayer: Ringtone? = null
-    private var outgoingRingTonePlayer: MediaPlayer? = null
 
     private val _callDuration = MutableStateFlow(0L) // in seconds
 
@@ -80,6 +68,7 @@ class AgoraCallService : LifecycleService() {
     }
 
 
+    // currently runs each time start foreground is called
     @SuppressLint("NewApi")
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
@@ -100,14 +89,14 @@ class AgoraCallService : LifecycleService() {
             // support for lower version
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 startForeground(
-                    NOTIFICATION_ID, buildNotification(),
+                    CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification(),
                     ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                             ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                 )
             } else {
 
                 startForeground(
-                    NOTIFICATION_ID, buildNotification()
+                    CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification()
                 )
             }
 
@@ -115,14 +104,13 @@ class AgoraCallService : LifecycleService() {
             if (it.isCaller) // directly join the call if the user is a caller
             {
                 val speaker = it.callType == "video"
-                playOutGoingRingtone(this, speaker)
+                callRingtoneManager.playOutGoingRingtone(speaker)
 
                 lifecycleScope.launch {
                     agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
                 }
-            } else {
-                playIncomingRingtone(this)
             }
+            // incoming calls are received by fcm push notification it runs incoming ringtone there using callRingtoneManager
 
 
             startFlowCollectors(it.callDocId) // callDocId in case needed by the receiver, its firebase doc id where the current
@@ -216,7 +204,7 @@ class AgoraCallService : LifecycleService() {
                         Log.i("AGORA_CALL_SERVICE", "RemoteUserJoined: ${remoteUser.toString()}")
                         if (remoteUser != null) {
 
-                            stopAllSounds()
+                            callRingtoneManager.stopAllSounds()
                             startCallTimer()
                             isRemoteUserJoined = remoteUser
 
@@ -243,7 +231,7 @@ class AgoraCallService : LifecycleService() {
                     }
                 }
 
-                // if the current user is caller and declines the call update the document with
+                // if the current user is receiver and declines the call update the document with
                 // decline status so that the call gets cancelled
                 if (!callMetadata.isCaller) {
                     launch {
@@ -275,7 +263,7 @@ class AgoraCallService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
 
-        stopAllSounds()
+        callRingtoneManager.stopAllSounds()
         clearListeners()
         serviceJob?.cancel()
 
@@ -312,103 +300,25 @@ class AgoraCallService : LifecycleService() {
 
         val pendingIntent = PendingIntent.getActivity(
             this,
-            0,
+            5,
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
 
-        return NotificationCompat.Builder(this, CALL_CHANNEL_NOTIFICATION_ID)
+        return NotificationCompat.Builder(this, CALL_CHANNEL_NOTIFICATION_NAME_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // change to app icon or profile pic later
             .setContentTitle(callMetadata.receiverName)
             .setContentText("Ongoing call")
             .setCategory(Notification.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
             .setAutoCancel(false)
             .setOngoing(true)
             .build()
     }
 
-
-    private fun playIncomingRingtone(context: Context) {
-
-        stopAllSounds()
-
-        val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-        incomingRingTonePlayer = RingtoneManager.getRingtone(context, uri)
-
-        incomingRingTonePlayer?.apply {
-            audioAttributes = AudioAttributes.Builder()
-                .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .build()
-
-            play()
-        }
-    }
-
-    private fun playOutGoingRingtone(
-        context: Context,
-        useSpeaker: Boolean = false
-    ) {
-        stopAllSounds()
-
-        val uri =  Uri.parse("android.resource://${context.packageName}/raw/ringback")
-        outgoingRingTonePlayer = MediaPlayer().apply {
-            try {
-
-                setDataSource(context, uri)
-                isLooping = true
-                setAudioAttributes(
-                    AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                        .build()
-                )
-                prepare()
-                configureAudioRouting(context, this, useSpeaker)
-                start()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun configureAudioRouting(
-        context: Context,
-        player: MediaPlayer,
-        useSpeaker: Boolean = true
-    ) {
-
-        val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-
-        audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val devices = audioManager.getDevices(
-                AudioManager.GET_DEVICES_OUTPUTS
-            )
-
-            val targetDevice = devices.firstOrNull { device ->
-
-                if (useSpeaker) {
-                    device.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER
-                } else {
-                    device.type == AudioDeviceInfo.TYPE_BUILTIN_EARPIECE
-                }
-            }
-
-            if (targetDevice != null) {
-                player.setPreferredDevice(targetDevice)
-            }
-        } else {
-
-            // Fallback for older version
-            @Suppress("DEPRECATION")
-            audioManager.isSpeakerphoneOn = useSpeaker
-        }
-    }
 
     private fun startCallTimer() {
         callTimerJob?.cancel()
@@ -424,19 +334,6 @@ class AgoraCallService : LifecycleService() {
     private fun stopCallTimer() {
         callTimerJob?.cancel()
         _callDuration.value = 0L
-    }
-
-
-    private fun stopAllSounds() {
-
-        incomingRingTonePlayer?.stop()
-        incomingRingTonePlayer = null
-
-        outgoingRingTonePlayer?.apply {
-            stop()
-            release()
-        }
-        outgoingRingTonePlayer = null
     }
 
 

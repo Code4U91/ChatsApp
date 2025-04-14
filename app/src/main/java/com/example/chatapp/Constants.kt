@@ -18,10 +18,14 @@ const val AUTH_GRAPH_ROUTE = "auth_graph"
 
 const val CALL_HISTORY = "calls"
 
-const val CALL_CHANNEL_NOTIFICATION_ID = "call_channel"
+const val CALL_CHANNEL_NOTIFICATION_NAME_ID = "call_channel"
 
-const val ACTION_ANSWER_CALL = "answer"
-const val ACTION_DECLINE_CALL = "decline"
+const val CALL_FCM_NOTIFICATION_CHANNEL_STRING = "call_fcm_channel"
+const val MESSAGE_FCM_CHANNEL_STRING = "message_fcm_channel"
+
+const val CALL_FCM_NOTIFICATION_ID = 101
+const val CALL_SERVICE_ACTIVE_NOTIFICATION_ID = 102
+const val MESSAGE_FCM_NOTIFICATION_ID = 201
 
 const val AGORA_ID = BuildConfig.AGORA_APP_ID
 

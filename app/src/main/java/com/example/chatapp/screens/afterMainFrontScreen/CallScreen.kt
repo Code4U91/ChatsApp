@@ -3,6 +3,7 @@ package com.example.chatapp.screens.afterMainFrontScreen
 import android.util.Log
 import android.view.SurfaceView
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -52,9 +53,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.FriendData
 import com.example.chatapp.formatCallDuration
+import com.example.chatapp.screens.mainBottomBarScreens.requestPerm
 import com.example.chatapp.viewmodel.CallViewModel
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.delay
 
 // Active call screen
@@ -149,6 +152,7 @@ fun CallScreen(
 
 }
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun StartVoiceCall(
     callViewModel: CallViewModel,
@@ -180,28 +184,36 @@ fun StartVoiceCall(
     val callEnded by callViewModel.callEnded.collectAsState() // may be replace with remoteUserLeft
     val context = LocalContext.current
 
+    val permissionState = requestPerm()
 
-    LaunchedEffect(isJoined, otherUserData, callEnded) {
 
+    LaunchedEffect(isJoined, otherUserData, callEnded, permissionState) {
 
-        if (!chatsViewModel.hasStartedCallService.value) {
+        if (permissionState.allPermissionsGranted)
+        {
+            if (!chatsViewModel.hasStartedCallService.value) {
 
-            if (otherUserData != null && !isJoined && !callEnded) {
+                if (otherUserData != null && !isJoined && !callEnded) {
 
-                callViewModel.startCallService(
-                    context = context,
-                    channelName = channelName,
-                    callType = "voice",
-                    callerName = currentUserData?.name.orEmpty(),
-                    receiverName = otherUserData?.name.orEmpty(),
-                    isCaller = isCaller,
-                    callReceiverId = otherUserData?.uid ?: receiverId,
-                    callDocId = callDocId
-                )
+                    callViewModel.startCallService(
+                        context = context,
+                        channelName = channelName,
+                        callType = "voice",
+                        callerName = currentUserData?.name.orEmpty(),
+                        receiverName = otherUserData?.name.orEmpty(),
+                        isCaller = isCaller,
+                        callReceiverId = otherUserData?.uid ?: receiverId,
+                        callDocId = callDocId
+                    )
 
-                chatsViewModel.markCallServiceStarted()
+                    chatsViewModel.markCallServiceStarted()
+                }
             }
+        } else {
+            Toast.makeText(context, "Please grant all the required permissions to continue the call.", Toast.LENGTH_SHORT).show()
         }
+
+
 
     }
 
@@ -286,7 +298,17 @@ fun StartVoiceCall(
             ) {
                 ControlButtons(callType = "voice", callViewModel, isCaller)
                 {
-                    callViewModel.joinChannel(channelName, "voice")
+
+                    if (permissionState.allPermissionsGranted)
+                    {
+                        callViewModel.joinChannel(
+                            channelName,
+                            "voice"
+                        )
+                    } else {
+                        Toast.makeText(context, "Can't join the call. Grant permissions to join the call", Toast.LENGTH_SHORT).show()
+                    }
+
                 }
             }
 
@@ -295,6 +317,7 @@ fun StartVoiceCall(
 }
 
 
+@OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun StartVideoCall(
     callViewModel: CallViewModel,
@@ -329,32 +352,39 @@ fun StartVideoCall(
     // Create SurfaceViews for Local and Remote video
     val localView by rememberUpdatedState(SurfaceView(context))
     val remoteView by rememberUpdatedState(SurfaceView(context))
+    val permissionState = requestPerm()
 
 
     val activity = LocalActivity.current
 
-    LaunchedEffect(isJoined, otherUserData) {
+    LaunchedEffect(isJoined, otherUserData, permissionState) {
 
-        if (!chatsViewModel.hasStartedCallService.value) {
+        if (permissionState.allPermissionsGranted)
+        {
+            if (!chatsViewModel.hasStartedCallService.value) {
 
-            if (otherUserData != null && !isJoined && !callEnded) {
+                if (otherUserData != null && !isJoined && !callEnded) {
 
-                callViewModel.enableVideoPreview()
+                    callViewModel.enableVideoPreview()
 
-                callViewModel.startCallService(
-                    context = context,
-                    channelName = channelName,
-                    callType = "video",
-                    callerName = currentUserData?.name.orEmpty(),
-                    receiverName = otherUserData?.name.orEmpty(),
-                    isCaller = isCaller,
-                    callReceiverId = otherUserData?.uid ?: receiverId,
-                    callDocId = callDocId
-                )
+                    callViewModel.startCallService(
+                        context = context,
+                        channelName = channelName,
+                        callType = "video",
+                        callerName = currentUserData?.name.orEmpty(),
+                        receiverName = otherUserData?.name.orEmpty(),
+                        isCaller = isCaller,
+                        callReceiverId = otherUserData?.uid ?: receiverId,
+                        callDocId = callDocId
+                    )
 
-                chatsViewModel.markCallServiceStarted()
+                    chatsViewModel.markCallServiceStarted()
+                }
             }
+        }else {
+            Toast.makeText(context, "Please grant all the required permissions to continue the call.", Toast.LENGTH_SHORT).show()
         }
+
     }
 
 
@@ -475,10 +505,16 @@ fun StartVideoCall(
                     ) {
                         // when the call receiver accepts the call
 
-                        callViewModel.joinChannel(
-                            channelName,
-                            "video"
-                        )
+                       if (permissionState.allPermissionsGranted)
+                       {
+                           callViewModel.joinChannel(
+                               channelName,
+                               "video"
+                           )
+                       } else {
+                           Toast.makeText(context, "Can't join the call. Grant permissions to join the call", Toast.LENGTH_SHORT).show()
+                       }
+
                     }
                 }
             }

@@ -1,6 +1,7 @@
 package com.example.chatapp
 
 import android.app.Application
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -48,14 +49,32 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
     private fun createNotificationChannel() {
 
 
-        val channel = NotificationChannel(
-            CALL_CHANNEL_NOTIFICATION_ID,
+        val callServiceChannel = NotificationChannel(
+            CALL_CHANNEL_NOTIFICATION_NAME_ID,
             "Call Channel",
             NotificationManager.IMPORTANCE_HIGH
         )
 
+        val callFcmChannel = NotificationChannel(
+            CALL_FCM_NOTIFICATION_CHANNEL_STRING,
+            "Incoming Calls",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Incoming call notification"
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
 
-        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        }
+
+        val messageFcmChannel = NotificationChannel(
+            MESSAGE_FCM_CHANNEL_STRING,
+            "Default Channel",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+
+
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannels(
+            listOf(callServiceChannel, callFcmChannel, messageFcmChannel)
+        )
 
 
     }

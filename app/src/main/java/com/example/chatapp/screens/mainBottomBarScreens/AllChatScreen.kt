@@ -57,20 +57,19 @@ import com.example.chatapp.formatTimestamp
 import com.example.chatapp.shimmerEffect
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import com.google.accompanist.permissions.isGranted
-import com.google.accompanist.permissions.rememberPermissionState
-import com.google.accompanist.permissions.shouldShowRationale
+import com.google.accompanist.permissions.MultiplePermissionsState
+import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.firebase.Timestamp
 
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AllChatScreen(
     navController: NavHostController,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
 ) {
 
-    RequestNotificationPermissionIfNeeded()
+     requestPerm()
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
     // val activeChatList by viewmodel.activeChatList.collectAsState()
@@ -409,20 +408,28 @@ fun ChatItemPlaceholder(showLastMsgTime: Boolean) {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun RequestNotificationPermissionIfNeeded() {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        val permissionState = rememberPermissionState(android.Manifest.permission.POST_NOTIFICATIONS)
+fun requestPerm(): MultiplePermissionsState {
 
-        LaunchedEffect(permissionState.status) {
-            if (permissionState.status.isGranted.not() &&
-                permissionState.status.shouldShowRationale.not()
-            ) {
-                // Permission not yet asked or denied permanently – request it
-                permissionState.launchPermissionRequest()
+    val multiplePermissionsState = rememberMultiplePermissionsState(
+        permissions = buildList {
+            add(android.Manifest.permission.RECORD_AUDIO)
+            add(android.Manifest.permission.CAMERA)
+            add(android.Manifest.permission.BLUETOOTH)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                add(android.Manifest.permission.BLUETOOTH_CONNECT)
             }
-            // else: either already granted or permanently denied → do nothing
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                add(android.Manifest.permission.POST_NOTIFICATIONS)
+            }
         }
+    )
+
+    LaunchedEffect(Unit) {
+        multiplePermissionsState.launchMultiplePermissionRequest()
     }
+
+    return multiplePermissionsState
 }
 
 

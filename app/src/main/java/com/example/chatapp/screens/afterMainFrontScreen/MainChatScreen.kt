@@ -380,7 +380,6 @@ fun VoiceCallButton(onStartCall: () -> Unit) {
 
         permissions = buildList {
             add(android.Manifest.permission.RECORD_AUDIO)
-            add(android.Manifest.permission.CAMERA)
             add(android.Manifest.permission.BLUETOOTH)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

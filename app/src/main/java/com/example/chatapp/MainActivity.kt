@@ -44,11 +44,18 @@ class MainActivity : ComponentActivity() {
 
         if (savedInstanceState == null) {
             handleIntent(intent)
+
         }
 
 
         val startDestination = if (chatsViewModel.deepLinkData.value != null) {
             val data = chatsViewModel.deepLinkData.value!!
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
+            {
+                setShowWhenLocked(true)
+                setTurnScreenOn(true)
+            }
 
             "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
 

@@ -41,8 +41,6 @@ class AgoraSetUpRepo @Inject constructor(
     val callDuration = _callDuration.asStateFlow()
 
 
-
-
     private var localUid: Int = 0
 
     fun initializeAgora(appId: String) {
@@ -88,7 +86,7 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
 
-     fun enableVideo() {
+    fun enableVideo() {
         rtcEngine?.apply {
             enableVideo()
             startPreview() //  preview to run before call join
@@ -108,6 +106,7 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
     suspend fun joinChannel(token: String?, channelName: String, callType: String, uid: String) {
+
 
         withContext(Dispatchers.IO)
         {
@@ -166,8 +165,7 @@ class AgoraSetUpRepo @Inject constructor(
 
     }
 
-    fun declineIncomingCall(decline: Boolean)
-    {
+    fun declineIncomingCall(decline: Boolean) {
         _declineTheCall.value = decline
     }
 
@@ -175,7 +173,7 @@ class AgoraSetUpRepo @Inject constructor(
         _callDuration.value = duration
     }
 
-    private fun reset() {
+    private fun resetCallDuration() {
         _callDuration.value = 0L
     }
 
@@ -196,7 +194,7 @@ class AgoraSetUpRepo @Inject constructor(
         _remoteUserLeft.value = false
         _remoteUserJoined.value = null
         _declineTheCall.value = false
-        reset()
+         resetCallDuration()
 
         RtcEngine.destroy()
         rtcEngine = null

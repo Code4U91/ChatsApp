@@ -1,8 +1,6 @@
 package com.example.chatapp.service
 
 import android.app.ActivityManager
-import android.app.Notification
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
@@ -15,11 +13,16 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.graphics.drawable.IconCompat
+import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
+import com.example.chatapp.CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.CallEventHandler
 import com.example.chatapp.CallMetadata
+import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
+import com.example.chatapp.MESSAGE_FCM_NOTIFICATION_ID
 import com.example.chatapp.MainActivity
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
+import com.example.chatapp.repository.CallRingtoneManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessagingService
@@ -42,11 +45,16 @@ class FirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var firebaseDb: FirebaseFirestore
 
+    @Inject
+    lateinit var callRingtoneManager: CallRingtoneManager
+
 
     @RequiresApi(Build.VERSION_CODES.P)
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         // handle the received FCM message
+
+        if (auth.currentUser == null) return
 
         val type = message.data["type"]
         val title = message.data["senderName"]
@@ -83,22 +91,22 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                     uid = "", // current user id, not needed for this case
                     callType = callType,
                     callerName = senderName,
-                    receiverName =  "",
+                    receiverName = "",
                     isCaller = false,
-                    callReceiverId =  senderId, // opposite in case of receiver
+                    callReceiverId = senderId, // opposite in case of receiver
                     callDocId = callId
                 )
 
-                if (isAppInForeground())
-                {
+                callRingtoneManager.playIncomingRingtone()
+                if (isAppInForeground()) {
                     CoroutineScope(Dispatchers.Main).launch {
                         CallEventHandler.incomingCall.emit(callMetadata)
                     }
                 } else {
 
-                    showIncomingCallNotification(
-                        callMetadata
-                    )
+
+                    showIncomingCallNotification(callMetadata)
+
 
                 }
             }
@@ -125,48 +133,52 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
     }
 
-    private fun showIncomingCallNotification(callMetadata: CallMetadata)
-    {
+    private fun showIncomingCallNotification(callMetadata: CallMetadata) {
 
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+//
+//
+//        val channel = NotificationChannel(
+//            CALL_FCM_NOTIFICATION_CHANNEL_STRING,
+//            "Incoming Calls",
+//            NotificationManager.IMPORTANCE_HIGH
+//        ).apply {
+//            description = "Incoming call notification"
+//            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+//
+//        }
+//
+//        notificationManager.createNotificationChannel(channel)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 
-            val channel = NotificationChannel(
-                "call_channel1",
-                "Incoming Calls",
-                NotificationManager.IMPORTANCE_HIGH
-            ).apply {
-                description = "Incoming call notification"
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            }
+        val intentForFullScreen = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("call_metadata", callMetadata)
+        }
 
-            notificationManager.createNotificationChannel(channel)
+        val fullScreenIntent = PendingIntent.getActivity(
+            this, 0, intentForFullScreen,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
 
-            val intent = Intent(this,  MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("call_metadata", callMetadata)
-            }
-
-            val pendingIntent = PendingIntent.getActivity(
-                this, 0, intent,
-                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-            )
-
-            val notificationBuilder = NotificationCompat.Builder(this,  "call_channel1")
+        val notificationBuilder =
+            NotificationCompat.Builder(this, CALL_FCM_NOTIFICATION_CHANNEL_STRING)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setContentTitle("Incoming Call")
-                .setContentText("${callMetadata.callerName} is calling you")
+                .setContentTitle("Tap to return to the call")
+                .setContentText("${callMetadata.callerName} is ${callMetadata.callType} calling you")
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setFullScreenIntent(
+                    fullScreenIntent,
+                    true
+                ) // ONLY SHOWS FULL SCREEN or launches the activity/call ui if the phone is locked
                 .setAutoCancel(true)
-                .setFullScreenIntent(pendingIntent, true)
 
 
-            notificationManager.notify(1001, notificationBuilder.build())
+        notificationManager.notify(CALL_FCM_NOTIFICATION_ID, notificationBuilder.build())
 
-        }
 
     }
 
@@ -176,17 +188,6 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-
-            val channel = NotificationChannel(
-                "default_channel",
-                "Default Channel",
-                NotificationManager.IMPORTANCE_HIGH
-            )
-
-            notificationManager.createNotificationChannel(channel)
-
-        }
 
         val personBuilder = Person.Builder()
             .setName(title ?: "User")
@@ -203,14 +204,14 @@ class FirebaseMessagingService : FirebaseMessagingService() {
             .setConversationTitle("New message")
             .addMessage(message ?: "", System.currentTimeMillis(), person)
 
-        val notificationBuilder = NotificationCompat.Builder(this, "default_channel")
+        val notificationBuilder = NotificationCompat.Builder(this, MESSAGE_FCM_CHANNEL_STRING)
             .setStyle(messagingStyle)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
             .setAutoCancel(true)
 
 
-        notificationManager.notify(1001, notificationBuilder.build())
+        notificationManager.notify(MESSAGE_FCM_NOTIFICATION_ID, notificationBuilder.build())
 
     }
 
@@ -247,7 +248,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         return output
     }
 
-    fun isAppInForeground(): Boolean {
+    private fun isAppInForeground(): Boolean {
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appProcesses = activityManager.runningAppProcesses ?: return false
         val packageName = packageName
