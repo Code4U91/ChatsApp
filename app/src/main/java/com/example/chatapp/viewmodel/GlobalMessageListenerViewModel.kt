@@ -30,7 +30,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val auth: FirebaseAuth,
     private val messageServiceRepository: MessageServiceRepository,
     private val chatManager: ChatManager,
-    private val onlineStatusRepo: OnlineStatusRepo
+    private val onlineStatusRepo: OnlineStatusRepo,
 ) : ViewModel() {
 
     private val _activeChatList = MutableStateFlow<List<ChatItemData>>(emptyList())
@@ -49,12 +49,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val _totalFriend = MutableStateFlow(0)
     val totalFriend: StateFlow<Int> = _totalFriend
 
-    private val _friendData = MutableStateFlow<FriendData?>(null)
-    val friendData: StateFlow<FriendData?> = _friendData
-
-    private val _incomingCallData = MutableStateFlow<CallData?>(null)
-    val incomingCallData = _incomingCallData.asStateFlow()
-
     private val _callHistoryData = MutableStateFlow<List<CallData>>(emptyList())
     val callHistoryData = _callHistoryData.asStateFlow()
 
@@ -67,7 +61,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
         startGlobalListener()
         fetchUserData()
         setOnlineStatus() // -> marks true, online
-        startCallListener()
+
 
         fetchCallHistory()
 
@@ -129,10 +123,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
         return messageServiceRepository.fetchFriendData(friendUserId)
         {
             updatedFriendData(it) // used where multiple new friend data is required at once
-
-            if (friendData.value?.uid == friendUserId) { // only update this if both id same
-                _friendData.value = it  // this one has same friend data at all place
-            }
 
         }
 
@@ -198,13 +188,13 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
-    fun deleteFriend(friendId: String) {
-        messageServiceRepository.deleteFriend(friendId)
+    fun setActiveChat(chatId: String)
+    {
+        onlineStatusRepo.activeChatUpdate(chatId)
     }
 
-    fun updateFriendData(friendData: FriendData) {
-        _friendData.value = friendData
-
+    fun deleteFriend(friendId: String) {
+        messageServiceRepository.deleteFriend(friendId)
     }
 
     fun markAllMessageAsSeen(chatId: String) {
@@ -233,21 +223,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
         friendId: String,
         fetchedChatId: String = ""
     ) {
-        messageServiceRepository.sendMessageToSingleUser(message, friendId, fetchedChatId)
-
-    }
-
-    private fun startCallListener()
-    {
-        messageServiceRepository.callListener { callData ->
-            _incomingCallData.value = callData
+        viewModelScope.launch {
+            messageServiceRepository.sendMessageToSingleUser(message, friendId, fetchedChatId)
         }
+
     }
 
-    fun emptyIncomingCall()
-    {
-        _incomingCallData.value = null
-    }
 
     private fun fetchCallHistory()
     {

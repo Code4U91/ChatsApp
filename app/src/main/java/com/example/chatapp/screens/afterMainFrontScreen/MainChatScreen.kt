@@ -66,6 +66,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.example.chatapp.FriendData
 import com.example.chatapp.Message
 import com.example.chatapp.appInstance
 import com.example.chatapp.formatOnlineStatusTime
@@ -94,7 +95,19 @@ fun MainChatScreen(
 
     val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
 
-    val friendData by globalMessageListenerViewModel.friendData.collectAsState()
+
+    val friendData by produceState<FriendData?>(initialValue = null, key1 = otherId)
+    {
+        val listener = globalMessageListenerViewModel.fetchFriendData(otherId)
+        { data ->
+            value = data
+        }
+
+        awaitDispose {
+
+            listener.remove()
+        }
+    }
 
     val currentChatId by globalMessageListenerViewModel.currentOpenChatId.collectAsState()
 
@@ -136,12 +149,16 @@ fun MainChatScreen(
         }
     }
 
+    LaunchedEffect(key1 = chatId) {
+        globalMessageListenerViewModel.setActiveChat(chatId)
+    }
 
     // marks message as seen on past message received while the app was on pause/stop etc
     DisposableEffect(lifecycleOwner, chatId) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
 
+                globalMessageListenerViewModel.setActiveChat(chatId)
                 // checks if the message has unseen status message
                 if (globalMessageListenerViewModel.hasUnseenMessages(
                         messageList[chatId] ?: emptyList()
@@ -154,6 +171,7 @@ fun MainChatScreen(
         lifecycleOwner.lifecycle.addObserver(observer)
 
         onDispose {
+            globalMessageListenerViewModel.setActiveChat("")
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }

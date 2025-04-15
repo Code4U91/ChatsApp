@@ -1,5 +1,6 @@
 package com.example.chatapp.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.chatapp.CALL_HISTORY
 import com.example.chatapp.CHATS_COLLECTION
@@ -8,9 +9,12 @@ import com.example.chatapp.FRIEND_COLLECTION
 import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
 import com.example.chatapp.MESSAGE_COLLECTION
+import com.example.chatapp.MessageNotificationRequest
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.UserData
+import com.example.chatapp.api.FcmNotificationSender
 import com.example.chatapp.checkEmailPattern
+import com.example.chatapp.localData.FcmTokenManager
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -18,6 +22,8 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessaging
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 // Contains function and listeners for sending message, user data, fcm token, add/delete friend
@@ -27,7 +33,9 @@ import javax.inject.Inject
 class MessageServiceRepository @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
-    private val firebaseMessaging: FirebaseMessaging
+    private val firebaseMessaging: FirebaseMessaging,
+    private val fcmNotificationSender: FcmNotificationSender,
+    @ApplicationContext private val context: Context
 ) {
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
@@ -287,7 +295,7 @@ class MessageServiceRepository @Inject constructor(
         }
     }
 
-    fun sendMessageToSingleUser(
+    suspend fun sendMessageToSingleUser(
         messageText: String,
         otherUserId: String,
         fetchedChatId: String,
@@ -301,52 +309,57 @@ class MessageServiceRepository @Inject constructor(
 
             val chatRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
 
-            chatRef.get().addOnSuccessListener { chat ->
+            val chat = chatRef.get().await()
 
-                // if the chat doesn't already exists
-                if (!chat.exists()) {
-
-
-                    val mapIdWithName = mapOf(
-                        currentUserId to "",
-                        otherUserId to ""
-                    )
-                    val chatData = mapOf(
-                        "participants" to listOf(currentUser.uid, otherUserId),
-                        "lastMessage" to messageText,
-                        "lastMessageTimeStamp" to Timestamp.now(),
-                        "participantsName" to mapIdWithName
-                    )
-
-                    chatRef.set(chatData)
-
-                } else {
-
-                    chatRef.update(
-                        "lastMessage", messageText, "lastMessageTimeStamp", Timestamp.now()
-                    )
-
-                }
-
-                val messageRef = chatRef.collection(MESSAGE_COLLECTION).document()
+            // if the chat doesn't already exists
+            if (!chat.exists()) {
 
 
-                val messageItem = mapOf(
-                    "senderId" to currentUserId,
-                    "receiverId" to otherUserId,
-                    "messageContent" to messageText,
-                    "timeStamp" to Timestamp.now(),
-                    "status" to "sending"
+                val mapIdWithName = mapOf(
+                    currentUserId to "",
+                    otherUserId to ""
+                )
+                val chatData = mapOf(
+                    "participants" to listOf(currentUser.uid, otherUserId),
+                    "lastMessage" to messageText,
+                    "lastMessageTimeStamp" to Timestamp.now(),
+                    "participantsName" to mapIdWithName
                 )
 
-                messageRef.set(messageItem).addOnSuccessListener {
-                    messageRef.update("status", "sent")
+                chatRef.set(chatData)
 
-                }
+            } else {
+
+                chatRef.update(
+                    "lastMessage", messageText, "lastMessageTimeStamp", Timestamp.now()
+                )
 
             }
 
+            val messageRef = chatRef.collection(MESSAGE_COLLECTION).document()
+
+
+            val messageItem = mapOf(
+                "senderId" to currentUserId,
+                "receiverId" to otherUserId,
+                "messageContent" to messageText,
+                "timeStamp" to Timestamp.now(),
+                "status" to "sending"
+            )
+
+            val request = MessageNotificationRequest(
+                senderId = currentUserId,
+                receiverId = otherUserId,
+                messageId = messageRef.id,
+                chatId = chatRef.id
+            )
+
+            messageRef.set(messageItem).await()
+            messageRef.update("status", "sent").await()
+            fcmNotificationSender.sendMessageNotification(request)
+
         }
+
     }
 
 
@@ -392,45 +405,23 @@ class MessageServiceRepository @Inject constructor(
 
     }
 
-    fun updateFcmTokenIfNeeded(savedTokens: List<String>) {
+    suspend fun updateFcmTokenIfNeeded(savedTokens: List<String>) {
         val user = auth.currentUser ?: return
 
-        firebaseMessaging.token.addOnSuccessListener { currentToken ->
+        val currentToken = firebaseMessaging.token.await()
+        // save token locally using datastore
+        FcmTokenManager.saveToken(context, currentToken)
 
-            val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
+        val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 
-            if (currentToken !in savedTokens) {
-                //  adding only unique values automatically
-                userDoc.update("fcmTokens", FieldValue.arrayUnion(currentToken))
-                    .addOnSuccessListener { Log.i("FCMCheck", "FCM Token updated: $currentToken") }
-                    .addOnFailureListener { Log.e("FCMError", "Failed to update token", it) }
-            }
+        if (currentToken !in savedTokens) {
+            //  adding only unique values automatically
+            userDoc.update("fcmTokens", FieldValue.arrayUnion(currentToken))
+                .addOnSuccessListener { Log.i("FCMCheck", "FCM Token updated: $currentToken") }
+                .addOnFailureListener { Log.e("FCMError", "Failed to update token", it) }
         }
     }
 
-    // later to be replaced with fcm notification
-    fun callListener(incomingCall: (CallData?) -> Unit) {
-
-        val currentUserId = auth.currentUser?.uid
-
-        val callListener = firestoreDb.collection(CALL_HISTORY)
-            .whereEqualTo("callReceiverId", currentUserId)
-            .whereEqualTo("status", "ringing")
-            .addSnapshotListener { snapshots, _ ->
-
-                for (doc in snapshots?.documents ?: emptyList()) {
-
-                    val callData = doc.toObject(CallData::class.java)?.copy(
-                        callId = doc.id
-                    )
-
-                    incomingCall(callData)
-                }
-            }
-
-        listenerRegistration.add(callListener)
-
-    }
 
     // fetches call history from the firestore database
     fun fetchCallHistory(callHistory: (List<CallData>) -> Unit) {

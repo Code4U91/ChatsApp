@@ -47,21 +47,42 @@ class MainActivity : ComponentActivity() {
 
         }
 
+        val startDestination = when (intent.action) {
 
-        val startDestination = if (chatsViewModel.deepLinkData.value != null) {
-            val data = chatsViewModel.deepLinkData.value!!
+            CALL_INTENT -> {
+                if (chatsViewModel.deepLinkData.value != null) {
+                    val data = chatsViewModel.deepLinkData.value!!
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1)
-            {
-                setShowWhenLocked(true)
-                setTurnScreenOn(true)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                        setShowWhenLocked(true)
+                        setTurnScreenOn(true)
+                    }
+
+                    "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
+
+                } else {
+                    Screen.AllChatScreen.route
+                }
             }
 
-            "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
+            MESSAGE_FCM_INTENT -> {
 
-        } else {
-            Screen.AllChatScreen.route
+                if (chatsViewModel.fcmMessageMetadata.value != null) {
+                    val data = chatsViewModel.fcmMessageMetadata.value!!
+
+                    "MainChat/${data.senderId}/${data.chatId}"
+
+                } else {
+                    Screen.AllChatScreen.route
+                }
+
+            }
+
+            else -> {
+                Screen.AllChatScreen.route
+            }
         }
+
 
         enableEdgeToEdge()
 
@@ -93,26 +114,43 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
-        if (chatsViewModel.isCallScreenActive.value) {
-            return
-        } else {
-            handleIntent(intent)
-        }
+        handleIntent(intent)
+
 
     }
 
     // handles intent passed via notification icon click
     private fun handleIntent(intent: Intent) {
-        val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent.getParcelableExtra("call_metadata", CallMetadata::class.java)
-        } else {
-            // Fallback for older version
-            @Suppress("DEPRECATION")
-            intent.getParcelableExtra("call_metadata")
+
+        when (intent.action) {
+            CALL_INTENT -> {
+                val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra("call_metadata", CallMetadata::class.java)
+                } else {
+                    // Fallback for older version
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra("call_metadata")
+                }
+
+                chatsViewModel.setDeepLinkData(metaData)
+            }
+
+            MESSAGE_FCM_INTENT -> {
+
+                val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra("fcmMessage", MessageFcmMetadata::class.java)
+                } else {
+                    // Fallback for older version
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra("fcmMessage")
+                }
+
+                chatsViewModel.setFcmMessageMetaData(metaData)
+            }
+
+            else -> {}
         }
 
-
-        chatsViewModel.setDeepLinkData(metaData)
     }
 }
 

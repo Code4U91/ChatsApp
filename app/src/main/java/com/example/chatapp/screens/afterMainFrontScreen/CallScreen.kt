@@ -223,7 +223,7 @@ fun StartVoiceCall(
                 .fillMaxSize()
                 .padding(it)
         ) {
-            if (isJoined) {
+           // if (isJoined) {
 
                 // engine created waiting for other user to join call
 
@@ -272,8 +272,10 @@ fun StartVoiceCall(
                         }
 
                     } else {
+
+
                         Text(
-                            text = "waiting for other user to join the call",
+                            text = if (isCaller) "waiting for other user to join the call" else "Incoming voice call",
                             fontSize = 18.sp
 
                         )
@@ -281,12 +283,7 @@ fun StartVoiceCall(
 
                 }
 
-            } else {
-                Text(
-                    text = "Joining Channel...",
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
+       //
 
             // Control Buttons
             Row(

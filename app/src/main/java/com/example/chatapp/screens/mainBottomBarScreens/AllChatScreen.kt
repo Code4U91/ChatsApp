@@ -276,15 +276,6 @@ fun ChatItemAndFriendListItem(
                         },
                         onTap = {
 
-                            globalMessageListenerViewModel.updateFriendData(
-                                FriendData(
-                                    name = friendData?.name ?: "",
-                                    photoUrl = friendData?.photoUrl ?: "",
-                                    about = friendData?.about ?: "",
-                                    uid = friendId
-                                )
-                            )
-
                             navController.navigate(
                                 "MainChat/$friendId/$chatId"
                             )

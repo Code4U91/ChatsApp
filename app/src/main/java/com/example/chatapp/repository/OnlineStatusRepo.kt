@@ -18,7 +18,19 @@ class OnlineStatusRepo @Inject constructor(
     private val realTimeDb: FirebaseDatabase
 ) {
 
-    fun setOnlineStatusWithDisconnect(status: Boolean) {
+    fun activeChatUpdate(chatId: String)
+    {
+        val userId = auth.currentUser?.uid ?: return
+
+        val realTimeDb = realTimeDb.getReference(USERS_REF).child(userId)
+
+        val activeChatId = mapOf(
+            "currentChattingWith" to chatId
+        )
+        realTimeDb.updateChildren(activeChatId)
+    }
+
+    fun setOnlineStatusWithDisconnect(status: Boolean, chatId: String = "") {
         val user = auth.currentUser
         if (user != null) {
             val realTimeDbRef =
@@ -27,16 +39,18 @@ class OnlineStatusRepo @Inject constructor(
             realTimeDbRef.onDisconnect().setValue(
                 mapOf(
                     "onlineStatus" to false,
+                    "currentChattingWith" to chatId,
                     "lastSeen" to ServerValue.TIMESTAMP
                 )
             )
 
             val statusData = mapOf(
                 "onlineStatus" to status,
+                "currentChattingWith" to chatId,
                 "lastSeen" to ServerValue.TIMESTAMP
             )
 
-            realTimeDbRef.setValue(statusData) // online
+            realTimeDbRef.updateChildren(statusData) // online
 
 
         }

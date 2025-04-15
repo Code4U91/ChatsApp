@@ -32,6 +32,7 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
         ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
+    // setting online status state when user minimizes the app
     override fun onStart(owner: LifecycleOwner) {
         super.onStart(owner) // can remove contains empty default implementation
 

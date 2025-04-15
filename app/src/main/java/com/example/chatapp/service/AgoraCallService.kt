@@ -13,13 +13,16 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.AGORA_ID
 import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
 import com.example.chatapp.CallMetadata
+import com.example.chatapp.CallNotificationRequest
 import com.example.chatapp.MainActivity
 import com.example.chatapp.R
 import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.CallHistoryManager
 import com.example.chatapp.repository.CallRingtoneManager
+import com.example.chatapp.api.FcmNotificationSender
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -41,9 +44,12 @@ class AgoraCallService : LifecycleService() {
     @Inject
     lateinit var callRingtoneManager: CallRingtoneManager
 
+    @Inject
+    lateinit var fcmNotificationSender: FcmNotificationSender
+
     private lateinit var callMetadata: CallMetadata
 
-    private var callId: String? = null
+    private var callId: String? = null   // callDocId
     private var isRemoteUserLeft: Boolean = false
 
     private var isRemoteUserJoined: Int? = null
@@ -51,6 +57,8 @@ class AgoraCallService : LifecycleService() {
     private var serviceJob: Job? = null
 
     private var isCallDeclined: Boolean = false
+
+    private var hasServiceStarted : Boolean = false
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
@@ -73,51 +81,59 @@ class AgoraCallService : LifecycleService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
 
-        val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            intent?.getParcelableExtra("call_metadata", CallMetadata::class.java)
-        } else {
-            // Fallback for older version
-            @Suppress("DEPRECATION")
-            intent?.getParcelableExtra("call_metadata")
-        }
+        // checking so that if service is started again while its already running the functions inside onStartCommand
+        // should not run again, fixes issues like notification spamming
+        if (!hasServiceStarted)
+        {
 
-
-        metaData?.let {
-
-            callMetadata = it
-
-            // support for lower version
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(
-                    CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification(),
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
-                            ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
-                )
+            val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent?.getParcelableExtra("call_metadata", CallMetadata::class.java)
             } else {
-
-                startForeground(
-                    CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification()
-                )
+                // Fallback for older version
+                @Suppress("DEPRECATION")
+                intent?.getParcelableExtra("call_metadata")
             }
 
 
-            if (it.isCaller) // directly join the call if the user is a caller
-            {
-                val speaker = it.callType == "video"
-                callRingtoneManager.playOutGoingRingtone(speaker)
+            metaData?.let {
 
-                lifecycleScope.launch {
-                    agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
+                callMetadata = it
+
+                // support for lower version
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    startForeground(
+                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
+                                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                    )
+                } else {
+
+                    startForeground(
+                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification()
+                    )
                 }
+
+
+                if (it.isCaller) // directly join the call if the user is a caller
+                {
+                    val speaker = it.callType == "video"
+                    callRingtoneManager.playOutGoingRingtone(speaker)
+
+                    lifecycleScope.launch {
+                        agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
+                    }
+                }
+                // incoming calls are received by fcm push notification it runs incoming ringtone there using callRingtoneManager
+
+
+                startFlowCollectors(it.callDocId) // callDocId in case needed by the receiver, its firebase doc id where the current
+                // active call data is store, may require to update the data directly without querying
+
             }
-            // incoming calls are received by fcm push notification it runs incoming ringtone there using callRingtoneManager
-
-
-            startFlowCollectors(it.callDocId) // callDocId in case needed by the receiver, its firebase doc id where the current
-            // active call data is store, may require to update the data directly without querying
 
         }
 
+        hasServiceStarted = true
 
         return START_STICKY
     }
@@ -157,14 +173,25 @@ class AgoraCallService : LifecycleService() {
                                 )
 
                                 // check if the call is declined by the receiver
-                                // if the call is declined, receiver updates the document with status "declined"
+                                // if the call is declined, receiver updates the document with status "declined", we listen for that update here
                                 callId?.let {
+
+                                    fcmNotificationSender.sendCallNotification(
+                                        CallNotificationRequest(
+                                            callId = it,
+                                            channelName = callMetadata.channelName,
+                                            callType = callMetadata.callType,
+                                            senderId = callMetadata.uid,
+                                            receiverId = callMetadata.callReceiverId
+                                        )
+                                    )
 
                                     val listenerForCallDecline =
                                         callHistoryManager.checkAndUpdateCurrentCall(callId = it)
                                         {
                                             isCallDeclined = true
                                             agoraRepo.declineIncomingCall(true) //
+                                            stopSelf() // added today, might create issue in ui, remove later if issue exists
 
                                         }
 
@@ -282,6 +309,7 @@ class AgoraCallService : LifecycleService() {
 
         // reset the state
         isCallDeclined = false
+        hasServiceStarted = false
 
         agoraRepo.destroy()
 
@@ -293,8 +321,7 @@ class AgoraCallService : LifecycleService() {
         val intent = Intent(this, MainActivity::class.java).apply {
 
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-
-
+            action = CALL_INTENT
             putExtra("call_metadata", callMetadata)
         }
 

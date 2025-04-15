@@ -8,6 +8,8 @@ plugins {
     id("com.google.dagger.hilt.android")
     alias(libs.plugins.compose.compiler)
     id("kotlin-parcelize")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.1.20"
+
 }
 
 android {
@@ -133,6 +135,10 @@ dependencies {
     //agora for video call
    // implementation ("io.agora.rtc:full-sdk:4.5.1")
 
+    // data store
+    implementation ("androidx.datastore:datastore-preferences:1.1.4")
+
+
     // light version
     implementation ("io.agora.rtc:lite-sdk:4.5.1") // remove this and use full version if creating issue
 
@@ -141,5 +147,16 @@ dependencies {
     implementation ("com.google.accompanist:accompanist-permissions:0.34.0")
 
     implementation (libs.androidx.lifecycle.service)
+
+    //ktor
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
+    implementation(libs.ktor.client.content.negotiation)
+    implementation(libs.ktor.serialization.kotlinx.json)
+
+
+    implementation(libs.kotlinx.serialization.json)
+
+
 
 }

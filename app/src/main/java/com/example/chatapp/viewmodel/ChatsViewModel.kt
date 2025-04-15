@@ -7,6 +7,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.CallMetadata
+import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.AuthRepository
@@ -45,6 +46,9 @@ class ChatsViewModel @Inject constructor(
 
     private val _deepLinkData = MutableStateFlow<CallMetadata?>(null)
     val deepLinkData = _deepLinkData.asStateFlow()
+
+    private val _fcmMessageMetadata = MutableStateFlow<MessageFcmMetadata?>(null)
+    val fcmMessageMetadata = _fcmMessageMetadata.asStateFlow()
 
     private val _isCallScreenActive = mutableStateOf(false)
     val isCallScreenActive: State<Boolean> get() = _isCallScreenActive
@@ -106,6 +110,11 @@ class ChatsViewModel @Inject constructor(
     {
         _deepLinkData.value = metadata
 
+    }
+
+    fun setFcmMessageMetaData(messageMetaData : MessageFcmMetadata?)
+    {
+        _fcmMessageMetadata.value = messageMetaData
     }
 
 
@@ -326,6 +335,7 @@ class ChatsViewModel @Inject constructor(
     fun signOut() {
 
         viewModelScope.launch {
+
 
             chatManager.clearAllGlobalListeners()
             messageServiceRepository.clearMessageListeners()

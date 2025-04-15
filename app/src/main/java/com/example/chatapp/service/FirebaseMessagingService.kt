@@ -15,11 +15,14 @@ import androidx.core.app.Person
 import androidx.core.graphics.drawable.IconCompat
 import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.CALL_FCM_NOTIFICATION_ID
+import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CallEventHandler
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
+import com.example.chatapp.MESSAGE_FCM_INTENT
 import com.example.chatapp.MESSAGE_FCM_NOTIFICATION_ID
 import com.example.chatapp.MainActivity
+import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.repository.CallRingtoneManager
@@ -57,34 +60,37 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         if (auth.currentUser == null) return
 
         val type = message.data["type"]
-        val title = message.data["senderName"]
-        val body = message.data["message"]
-        val imageUrl = message.data["profileImage"]
+        val senderId = message.data["senderId"].orEmpty()
+        val senderName = message.data["senderName"].orEmpty()
 
-        Log.i("FCMCheck", "title: $title, body: $body, profileUrl: $imageUrl")
 
         when (type) {
             "message" -> {
+
+                val title = message.data["senderName"]
+                val body = message.data["message"]
+                val imageUrl = message.data["profileImage"]
+                val chatId = message.data["chatId"].orEmpty()
+
                 if (imageUrl != null) {
                     CoroutineScope(Dispatchers.IO).launch {
                         val bitmap = getBitmapFromUrl(imageUrl)
                         withContext(Dispatchers.Main) {
-                            showNotification(title, body, bitmap)
+
+                            showNotification(senderName, body, bitmap, senderId, chatId)
                         }
                     }
                 } else {
-                    showNotification(title, body, null)
+                    showNotification(title, body, null, senderId, chatId)
                 }
 
             }
 
             "call" -> {
 
-                val callId = message.data["callId"] ?: ""
-                val callType = message.data["callType"] ?: ""
-                val senderId = message.data["senderId"] ?: ""
-                val senderName = message.data["senderName"] ?: ""
-                val channelName = message.data["channelName"] ?: ""
+                val callId = message.data["callId"].orEmpty()
+                val callType = message.data["callType"].orEmpty()
+                val channelName = message.data["channelName"].orEmpty()
 
                 val callMetadata = CallMetadata(
                     channelName = channelName,
@@ -137,22 +143,10 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-//
-//
-//        val channel = NotificationChannel(
-//            CALL_FCM_NOTIFICATION_CHANNEL_STRING,
-//            "Incoming Calls",
-//            NotificationManager.IMPORTANCE_HIGH
-//        ).apply {
-//            description = "Incoming call notification"
-//            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-//
-//        }
-//
-//        notificationManager.createNotificationChannel(channel)
 
 
         val intentForFullScreen = Intent(this, MainActivity::class.java).apply {
+            action = CALL_INTENT
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("call_metadata", callMetadata)
         }
@@ -183,7 +177,13 @@ class FirebaseMessagingService : FirebaseMessagingService() {
     }
 
     @RequiresApi(Build.VERSION_CODES.P)
-    private fun showNotification(title: String?, message: String?, profilePic: Bitmap?) {
+    private fun showNotification(
+        title: String?,
+        message: String?,
+        profilePic: Bitmap?,
+        senderId: String,
+        chatId: String
+    ) {
 
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
@@ -198,6 +198,20 @@ class FirebaseMessagingService : FirebaseMessagingService() {
             personBuilder.setIcon(IconCompat.createWithBitmap(circularBitMAP))
         }
 
+        val fcmMessageMetaData = MessageFcmMetadata(
+            senderId, chatId
+        )
+
+        val fcmMessageIntent = Intent(this, MainActivity::class.java).apply {
+            action = MESSAGE_FCM_INTENT
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("fcmMessage", fcmMessageMetaData)
+
+        }
+
+        val fcmMessagePendingIntent = PendingIntent.getActivity(this, 1, fcmMessageIntent,
+             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+
         val person = personBuilder.build()
 
         val messagingStyle = NotificationCompat.MessagingStyle(person)
@@ -208,6 +222,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(messagingStyle)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentIntent(fcmMessagePendingIntent)
             .setAutoCancel(true)
 
 

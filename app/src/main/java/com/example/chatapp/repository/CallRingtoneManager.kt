@@ -37,6 +37,12 @@ class CallRingtoneManager @Inject constructor(
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .build()
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+            {
+                incomingRingTonePlayer?.isLooping = true
+            }
+
+
             play()
         }
     }

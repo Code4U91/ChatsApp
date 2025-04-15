@@ -110,6 +110,7 @@ fun MainNavigationHost(
 
 
     val metadata by viewModel.deepLinkData.collectAsState()
+    val messageFcmMetadata by viewModel.fcmMessageMetadata.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
@@ -117,6 +118,7 @@ fun MainNavigationHost(
 
     val activityContext = LocalActivity.current
 
+    // while app is active, use fcm sharedFlow emit value
     LaunchedEffect(Unit) {
         CallEventHandler.incomingCall.collect { data ->
 
@@ -129,6 +131,7 @@ fun MainNavigationHost(
         }
     }
 
+    // when app is inactive, having trouble to do it with shared flow so there may seem to be 2 LE for it
     LaunchedEffect(metadata) {
 
         if (metadata != null && !viewModel.isCallScreenActive.value) {
@@ -140,6 +143,22 @@ fun MainNavigationHost(
         }
 
     }
+
+    // opens main chat screen on click via a fcm notification
+    LaunchedEffect(messageFcmMetadata) {
+
+        messageFcmMetadata?.let { data ->
+
+            // checking if the user is already in the notified chat
+            if (currentChatId != data.chatId) {
+
+                navController.navigate("MainChat/${data.senderId}/${data.chatId}")
+                viewModel.setFcmMessageMetaData(null)
+            }
+        }
+    }
+
+
 
     LaunchedEffect(currentChatId) {
 

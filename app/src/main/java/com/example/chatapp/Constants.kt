@@ -29,6 +29,10 @@ const val MESSAGE_FCM_NOTIFICATION_ID = 201
 
 const val AGORA_ID = BuildConfig.AGORA_APP_ID
 
+const val MESSAGE_FCM_INTENT = "fcmMessageNotification"
+const val CALL_INTENT = "callInvitation"
+
 object CallEventHandler {
     val incomingCall = MutableSharedFlow<CallMetadata>(replay = 0)
 }
+
