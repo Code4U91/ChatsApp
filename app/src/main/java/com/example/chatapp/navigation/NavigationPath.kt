@@ -113,6 +113,9 @@ fun MainNavigationHost(
     val messageFcmMetadata by viewModel.fcmMessageMetadata.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+    val isCallScreenActive by viewModel.isCallScreenActive.collectAsState()
+    val isCallHistoryActive by viewModel.callHistoryScreenActive.collectAsState()
+    val moveToCallHistory by viewModel.moveToCallHistory.collectAsState()
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
 
@@ -122,7 +125,7 @@ fun MainNavigationHost(
     LaunchedEffect(Unit) {
         CallEventHandler.incomingCall.collect { data ->
 
-            if (!viewModel.isCallScreenActive.value) {
+            if (!isCallScreenActive) {
                 navController.navigate(
                     "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
                 )
@@ -134,7 +137,7 @@ fun MainNavigationHost(
     // when app is inactive, having trouble to do it with shared flow so there may seem to be 2 LE for it
     LaunchedEffect(metadata) {
 
-        if (metadata != null && !viewModel.isCallScreenActive.value) {
+        if (metadata != null && !isCallScreenActive) {
 
             navController.navigate(
                 "CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}/${metadata!!.callDocId}"
@@ -155,6 +158,13 @@ fun MainNavigationHost(
                 navController.navigate("MainChat/${data.senderId}/${data.chatId}")
                 viewModel.setFcmMessageMetaData(null)
             }
+        }
+    }
+
+    // When clicked on missed call notification
+    LaunchedEffect(moveToCallHistory) {
+        if (moveToCallHistory && !isCallHistoryActive) {
+            navController.navigate(Screen.CallHistoryScreen.route)
         }
     }
 
@@ -221,7 +231,7 @@ fun MainNavigationHost(
             }
 
             composable(Screen.CallHistoryScreen.route) {
-                CallHistoryScreen(globalMessageListenerViewModel, navController)
+                CallHistoryScreen(globalMessageListenerViewModel, navController, viewModel)
             }
 
             composable("FriendListScreen") {

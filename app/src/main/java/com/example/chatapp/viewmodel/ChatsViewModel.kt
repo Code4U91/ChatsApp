@@ -2,8 +2,6 @@ package com.example.chatapp.viewmodel
 
 import android.app.Activity
 import android.util.Log
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.CallMetadata
@@ -42,7 +40,7 @@ class ChatsViewModel @Inject constructor(
     val authState: StateFlow<AuthState> = _authState
 
     private var _loadingIndicator = MutableStateFlow(false)
-    val loadingIndicator: StateFlow<Boolean> = _loadingIndicator
+    val loadingIndicator = _loadingIndicator.asStateFlow()
 
     private val _deepLinkData = MutableStateFlow<CallMetadata?>(null)
     val deepLinkData = _deepLinkData.asStateFlow()
@@ -50,26 +48,17 @@ class ChatsViewModel @Inject constructor(
     private val _fcmMessageMetadata = MutableStateFlow<MessageFcmMetadata?>(null)
     val fcmMessageMetadata = _fcmMessageMetadata.asStateFlow()
 
-    private val _isCallScreenActive = mutableStateOf(false)
-    val isCallScreenActive: State<Boolean> get() = _isCallScreenActive
+    private val _isCallScreenActive = MutableStateFlow(false)
+    val isCallScreenActive  = _isCallScreenActive.asStateFlow()
 
-    private val _hasStartedCallService = mutableStateOf(false)
-    val hasStartedCallService: State<Boolean> get() = _hasStartedCallService
+    private val _isCallHistoryScreenActive = MutableStateFlow(false)
+    val callHistoryScreenActive = _isCallHistoryScreenActive.asStateFlow()
 
-    fun markCallServiceStarted() {
+    private val _moveToCallHistory = MutableStateFlow(false)
+    val moveToCallHistory = _moveToCallHistory.asStateFlow()
 
-        if (!_hasStartedCallService.value) _hasStartedCallService.value = true
-
-    }
-
-    fun resetCallServiceFlag() {
-        if (_hasStartedCallService.value) _hasStartedCallService.value = false
-    }
-
-
-    fun setCallScreenActive(active: Boolean) {
-        _isCallScreenActive.value = active
-    }
+    private val _hasStartedCallService = MutableStateFlow(false)
+    val hasStartedCallService = _hasStartedCallService.asStateFlow()
 
 
 
@@ -93,6 +82,32 @@ class ChatsViewModel @Inject constructor(
             }
         }
     }
+
+
+    fun markCallServiceStarted() {
+
+        if (!_hasStartedCallService.value) _hasStartedCallService.value = true
+
+    }
+
+    fun resetCallServiceFlag() {
+        if (_hasStartedCallService.value) _hasStartedCallService.value = false
+    }
+
+    fun moveToCallHistory(move : Boolean){
+        _moveToCallHistory.value = move
+    }
+
+    fun setHistoryScreenActive(state : Boolean)
+    {
+         _isCallHistoryScreenActive.value = state
+    }
+
+
+    fun setCallScreenActive(active: Boolean) {
+        _isCallScreenActive.value = active
+    }
+
 
 
     fun checkAuthStatus(user: FirebaseUser? = auth.currentUser) {

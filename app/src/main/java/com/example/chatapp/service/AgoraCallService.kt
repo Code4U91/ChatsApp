@@ -327,7 +327,7 @@ class AgoraCallService : LifecycleService() {
 
         val pendingIntent = PendingIntent.getActivity(
             this,
-            5,
+            4,
             intent,
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )

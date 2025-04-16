@@ -14,13 +14,16 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.graphics.drawable.IconCompat
 import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
-import com.example.chatapp.CALL_FCM_NOTIFICATION_ID
+import com.example.chatapp.CALL_HISTORY
+import com.example.chatapp.CALL_HISTORY_INTENT
 import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CallEventHandler
 import com.example.chatapp.CallMetadata
+import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
 import com.example.chatapp.MESSAGE_FCM_INTENT
 import com.example.chatapp.MESSAGE_FCM_NOTIFICATION_ID
+import com.example.chatapp.MISSED_CALL_FCM_NOTIFICATION
 import com.example.chatapp.MainActivity
 import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
@@ -28,6 +31,7 @@ import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.repository.CallRingtoneManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
@@ -50,6 +54,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject
     lateinit var callRingtoneManager: CallRingtoneManager
+
+    private var callStatusListener: ListenerRegistration? = null
 
 
     @RequiresApi(Build.VERSION_CODES.P)
@@ -102,6 +108,15 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                     callReceiverId = senderId, // opposite in case of receiver
                     callDocId = callId
                 )
+
+                // If the call ends before use picks or call has already timed out
+                listenToCallStatus(callId) {
+
+                    showMissedCallNotification(senderName, callType)
+
+                    callStatusListener?.remove()
+                    callStatusListener = null
+                }
 
                 callRingtoneManager.playIncomingRingtone()
                 if (isAppInForeground()) {
@@ -171,11 +186,12 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 .setAutoCancel(true)
 
 
-        notificationManager.notify(CALL_FCM_NOTIFICATION_ID, notificationBuilder.build())
+        notificationManager.notify(INCOMING_CALL_FCM_NOTIFICATION_ID, notificationBuilder.build())
 
 
     }
 
+    // shows message notification
     @RequiresApi(Build.VERSION_CODES.P)
     private fun showNotification(
         title: String?,
@@ -209,8 +225,10 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
         }
 
-        val fcmMessagePendingIntent = PendingIntent.getActivity(this, 1, fcmMessageIntent,
-             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        val fcmMessagePendingIntent = PendingIntent.getActivity(
+            this, 1, fcmMessageIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
         val person = personBuilder.build()
 
@@ -228,6 +246,49 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
         notificationManager.notify(MESSAGE_FCM_NOTIFICATION_ID, notificationBuilder.build())
 
+    }
+
+    private fun showMissedCallNotification(callerName: String, callType: String) {
+
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
+
+        val callHistoryIntent = Intent(this, MainActivity::class.java).apply {
+            action = CALL_HISTORY_INTENT
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val callHistoryPendingIntent = PendingIntent.getActivity(
+            this, 2, callHistoryIntent,
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        val notificationBuilder =
+            NotificationCompat.Builder(this, CALL_FCM_NOTIFICATION_CHANNEL_STRING)
+                .setSmallIcon(R.drawable.ic_launcher_foreground)
+                .setContentTitle("Missed call")
+                .setContentText("You missed a $callType call from $callerName")
+                .setContentIntent(callHistoryPendingIntent)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setAutoCancel(true)
+
+        notificationManager.notify(MISSED_CALL_FCM_NOTIFICATION, notificationBuilder.build())
+    }
+
+    private fun listenToCallStatus(callId: String, onCallMissed: () -> Unit) {
+        callStatusListener = firebaseDb.collection(CALL_HISTORY).document(callId)
+            .addSnapshotListener { snapshot, error ->
+
+                if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+
+                val status = snapshot.getString("status") ?: return@addSnapshotListener
+                if (status == "missed") {
+
+                    callRingtoneManager.stopAllSounds()
+                    onCallMissed()
+                }
+            }
     }
 
     private fun getBitmapFromUrl(imageUrl: String): Bitmap? {
@@ -263,11 +324,20 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         return output
     }
 
+
+
     private fun isAppInForeground(): Boolean {
         val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val appProcesses = activityManager.runningAppProcesses ?: return false
         val packageName = packageName
         return appProcesses.any { it.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && it.processName == packageName }
+    }
+
+    override fun onDestroy() {
+
+        callStatusListener?.remove()
+        callStatusListener = null
+        super.onDestroy()
     }
 
 }

@@ -78,6 +78,8 @@ class MainActivity : ComponentActivity() {
 
             }
 
+            CALL_HISTORY_INTENT -> { Screen.CallHistoryScreen.route }
+
             else -> {
                 Screen.AllChatScreen.route
             }
@@ -147,6 +149,8 @@ class MainActivity : ComponentActivity() {
 
                 chatsViewModel.setFcmMessageMetaData(metaData)
             }
+
+            CALL_HISTORY_INTENT -> { chatsViewModel.moveToCallHistory(true)}
 
             else -> {}
         }

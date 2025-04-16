@@ -36,6 +36,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +67,7 @@ import com.example.chatapp.screens.afterMainFrontScreen.DateChip
 import com.example.chatapp.screens.afterMainFrontScreen.VideoCallButton
 import com.example.chatapp.screens.afterMainFrontScreen.VoiceCallButton
 import com.example.chatapp.toLocalDate
+import com.example.chatapp.viewmodel.ChatsViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
@@ -74,9 +76,18 @@ import kotlinx.coroutines.delay
 @Composable
 fun CallHistoryScreen(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    navController: NavHostController
+    navController: NavHostController,
+    chatsViewModel: ChatsViewModel
 ) {
 
+    DisposableEffect(Unit) {
+
+        chatsViewModel.setHistoryScreenActive(true)
+
+        onDispose {
+            chatsViewModel.setHistoryScreenActive(false)
+        }
+    }
 
     var searchQuery by rememberSaveable {
         mutableStateOf("")

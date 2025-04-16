@@ -86,11 +86,10 @@ fun CallScreen(
     val isJoined by callViewModel.isJoined.collectAsState()
 
 
-
-    LaunchedEffect(Unit) {
-        chatsViewModel.setCallScreenActive(true)
-    }
     DisposableEffect(Unit) {
+
+        chatsViewModel.setCallScreenActive(true)
+
         onDispose {
             chatsViewModel.setCallScreenActive(false)
         }
@@ -182,6 +181,7 @@ fun StartVoiceCall(
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
     val callDuration by callViewModel.callDuration.collectAsState()
     val callEnded by callViewModel.callEnded.collectAsState() // may be replace with remoteUserLeft
+    val hasStartedCallService by chatsViewModel.hasStartedCallService.collectAsState()
     val context = LocalContext.current
 
     val permissionState = requestPerm()
@@ -191,7 +191,7 @@ fun StartVoiceCall(
 
         if (permissionState.allPermissionsGranted)
         {
-            if (!chatsViewModel.hasStartedCallService.value) {
+            if (!hasStartedCallService) {
 
                 if (otherUserData != null && !isJoined && !callEnded) {
 
@@ -349,6 +349,7 @@ fun StartVideoCall(
     // Create SurfaceViews for Local and Remote video
     val localView by rememberUpdatedState(SurfaceView(context))
     val remoteView by rememberUpdatedState(SurfaceView(context))
+    val hasStartedCallService by chatsViewModel.hasStartedCallService.collectAsState()
     val permissionState = requestPerm()
 
 
@@ -358,7 +359,7 @@ fun StartVideoCall(
 
         if (permissionState.allPermissionsGranted)
         {
-            if (!chatsViewModel.hasStartedCallService.value) {
+            if (!hasStartedCallService) {
 
                 if (otherUserData != null && !isJoined && !callEnded) {
 
