@@ -1,7 +1,9 @@
 [versions]
+accompanistPermissions = "0.34.0"
 agp = "8.5.2"
 coilNetworkOkhttp = "3.1.0"
 credentialsPlayServicesAuth = "1.5.0-rc01"
+datastorePreferences = "1.1.4"
 firebaseMessaging = "24.1.1"
 hiltAndroidCompiler = "2.55"
 hiltNavigationCompose = "1.2.0"
@@ -18,6 +20,7 @@ ktorSerializationKotlinxJson = "3.1.2"
 lifecycleRuntimeKtx = "2.8.7"
 activityCompose = "1.10.1"
 composeBom = "2025.02.00"
+liteSdk = "4.5.1"
 materialIconsExtended = "1.7.8"
 navigationCompose = " 2.8.8"
 firebaseAuthKtx = "23.2.0"
@@ -30,8 +33,10 @@ lifecycleProcess = "2.8.7"
 composeMaterial3 = "1.0.0-alpha34"
 
 [libraries]
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanistPermissions" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentialsPlayServicesAuth" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "hiltNavigationCompose" }
 androidx-lifecycle-service = { module = "androidx.lifecycle:lifecycle-service", version.ref = "lifecycleRuntimeKtx" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
@@ -67,6 +72,7 @@ ktor-client-content-negotiation = { module = "io.ktor:ktor-client-content-negoti
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktorClientCore" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktorClientOkhttp" }
 ktor-serialization-kotlinx-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktorSerializationKotlinxJson" }
+lite-sdk = { module = "io.agora.rtc:lite-sdk", version.ref = "liteSdk" }
 
 
 [plugins]

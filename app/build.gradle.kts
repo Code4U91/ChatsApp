@@ -136,15 +136,15 @@ dependencies {
    // implementation ("io.agora.rtc:full-sdk:4.5.1")
 
     // data store
-    implementation ("androidx.datastore:datastore-preferences:1.1.4")
+    implementation (libs.androidx.datastore.preferences)
 
 
     // light version
-    implementation ("io.agora.rtc:lite-sdk:4.5.1") // remove this and use full version if creating issue
+    implementation (libs.lite.sdk) // remove this and use full version if creating issue
 
 
     //
-    implementation ("com.google.accompanist:accompanist-permissions:0.34.0")
+    implementation (libs.accompanist.permissions)
 
     implementation (libs.androidx.lifecycle.service)
 

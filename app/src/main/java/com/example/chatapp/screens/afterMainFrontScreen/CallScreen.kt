@@ -189,8 +189,7 @@ fun StartVoiceCall(
 
     LaunchedEffect(isJoined, otherUserData, callEnded, permissionState) {
 
-        if (permissionState.allPermissionsGranted)
-        {
+        if (permissionState.allPermissionsGranted) {
             if (!hasStartedCallService) {
 
                 if (otherUserData != null && !isJoined && !callEnded) {
@@ -210,9 +209,12 @@ fun StartVoiceCall(
                 }
             }
         } else {
-            Toast.makeText(context, "Please grant all the required permissions to continue the call.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                context,
+                "Please grant all the required permissions to continue the call.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
-
 
 
     }
@@ -223,67 +225,67 @@ fun StartVoiceCall(
                 .fillMaxSize()
                 .padding(it)
         ) {
-           // if (isJoined) {
+            // if (isJoined) {
 
-                // engine created waiting for other user to join call
+            // engine created waiting for other user to join call
 
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
 
-                    Image(
-                        painter = rememberAsyncImagePainter(model = otherUserData?.photoUrl),
-                        contentDescription = "profile picture",
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .size(150.dp)
-                            .border(1.dp, Color.Gray, shape = CircleShape),
-                    )
+                Image(
+                    painter = rememberAsyncImagePainter(model = otherUserData?.photoUrl),
+                    contentDescription = "profile picture",
+                    modifier = Modifier
+                        .clip(CircleShape)
+                        .size(150.dp)
+                        .border(1.dp, Color.Gray, shape = CircleShape),
+                )
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(10.dp))
 
-                    Text(
-                        text = otherUserData?.name ?: "",
-                        fontSize = 20.sp
-                    )
+                Text(
+                    text = otherUserData?.name ?: "",
+                    fontSize = 20.sp
+                )
 
-                    Spacer(modifier = Modifier.height(20.dp))
-
-
-                    if (remoteUserJoined != null) {  // remote/other user joined the call
+                Spacer(modifier = Modifier.height(20.dp))
 
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Text(
-                                text = "Call active: ",
-                                color = Color.Green,
-                                fontSize = 18.sp
-                            )
+                if (remoteUserJoined != null) {  // remote/other user joined the call
 
-                            Text(
-                                text = formatCallDuration(callDuration),
-                                fontSize = 18.sp
-                            )
-                        }
 
-                    } else {
-
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Text(
+                            text = "Call active: ",
+                            color = Color.Green,
+                            fontSize = 18.sp
+                        )
 
                         Text(
-                            text = if (isCaller) "waiting for other user to join the call" else "Incoming voice call",
+                            text = formatCallDuration(callDuration),
                             fontSize = 18.sp
-
                         )
                     }
 
+                } else {
+
+
+                    Text(
+                        text = if (isCaller) "waiting for other user to join the call" else "Incoming voice call",
+                        fontSize = 18.sp
+
+                    )
                 }
 
-       //
+            }
+
+            //
 
             // Control Buttons
             Row(
@@ -296,14 +298,17 @@ fun StartVoiceCall(
                 ControlButtons(callType = "voice", callViewModel, isCaller)
                 {
 
-                    if (permissionState.allPermissionsGranted)
-                    {
+                    if (permissionState.allPermissionsGranted) {
                         callViewModel.joinChannel(
                             channelName,
                             "voice"
                         )
                     } else {
-                        Toast.makeText(context, "Can't join the call. Grant permissions to join the call", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            context,
+                            "Can't join the call. Grant permissions to join the call",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
 
                 }
@@ -357,8 +362,7 @@ fun StartVideoCall(
 
     LaunchedEffect(isJoined, otherUserData, permissionState) {
 
-        if (permissionState.allPermissionsGranted)
-        {
+        if (permissionState.allPermissionsGranted) {
             if (!hasStartedCallService) {
 
                 if (otherUserData != null && !isJoined && !callEnded) {
@@ -379,33 +383,33 @@ fun StartVideoCall(
                     chatsViewModel.markCallServiceStarted()
                 }
             }
-        }else {
-            Toast.makeText(context, "Please grant all the required permissions to continue the call.", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(
+                context,
+                "Please grant all the required permissions to continue the call.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
 
     }
 
-
-    LaunchedEffect(isJoined) {
-
-        if (isJoined) {
-
-            delay(200) // Small delay to ensure the SurfaceView is ready
-            callViewModel.setUpLocalVideo(localView)
-
-            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        }
-    }
 
     LaunchedEffect(remoteUserJoined) {
 
         if (remoteUserJoined != null) {
             callViewModel.setUpRemoteVideo(remoteView, remoteUserJoined!!)
+            callViewModel.setUpLocalVideo(localView) //re attach the local view, moving from full screen to mini screen
         }
     }
 
 
-    DisposableEffect(Unit) {
+    DisposableEffect(isJoined) {
+        if (isJoined) {
+
+            callViewModel.setUpLocalVideo(localView)
+
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         onDispose {
             activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         }
@@ -450,10 +454,38 @@ fun StartVideoCall(
                     }
                 }
             } else {
-                Text(
-                    text = "Joining Channel...",
-                    modifier = Modifier.align(Alignment.Center)
-                )
+
+                if (isCaller) {
+                    Text(
+                        text = "Establishing connection...",
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+
+                        Image(
+                            painter = rememberAsyncImagePainter(model = otherUserData?.photoUrl),
+                            contentDescription = "profile picture",
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .size(150.dp)
+                                .border(1.dp, Color.Gray, shape = CircleShape),
+                        )
+
+                        Spacer(modifier = Modifier.height(15.dp))
+
+                        Text(
+                            text = otherUserData?.name ?: "",
+                            fontSize = 20.sp
+                        )
+                    }
+                }
+
             }
 
 
@@ -484,7 +516,7 @@ fun StartVideoCall(
                 } else {
 
                     Text(
-                        text = "Video Calling....",
+                        text = if (isCaller) "Video calling to ${otherUserData?.name}" else "Incoming video call from :",
                         fontSize = 18.sp
                     )
                 }
@@ -503,15 +535,18 @@ fun StartVideoCall(
                     ) {
                         // when the call receiver accepts the call
 
-                       if (permissionState.allPermissionsGranted)
-                       {
-                           callViewModel.joinChannel(
-                               channelName,
-                               "video"
-                           )
-                       } else {
-                           Toast.makeText(context, "Can't join the call. Grant permissions to join the call", Toast.LENGTH_SHORT).show()
-                       }
+                        if (permissionState.allPermissionsGranted) {
+                            callViewModel.joinChannel(
+                                channelName,
+                                "video"
+                            )
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Can't join the call. Grant permissions to join the call",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
 
                     }
                 }

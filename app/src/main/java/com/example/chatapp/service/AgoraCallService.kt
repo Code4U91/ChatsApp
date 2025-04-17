@@ -60,7 +60,7 @@ class AgoraCallService : LifecycleService() {
 
     private var isCallDeclined: Boolean = false
 
-    private var hasServiceStarted : Boolean = false
+    private var hasServiceStarted: Boolean = false
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
@@ -84,8 +84,7 @@ class AgoraCallService : LifecycleService() {
 
         // checking so that if service is started again while its already running the functions inside onStartCommand
         // should not run again, fixes issues like notification spamming
-        if (!hasServiceStarted)
-        {
+        if (!hasServiceStarted) {
 
             val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 intent?.getParcelableExtra("call_metadata", CallMetadata::class.java)
@@ -100,19 +99,21 @@ class AgoraCallService : LifecycleService() {
 
                 callMetadata = it
 
-                val inOrOut = if(it.isCaller) "Outgoing" else "Incoming"
+                val inOrOut = if (it.isCaller) "Outgoing" else "Incoming"
 
                 // support for lower version
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     startForeground(
-                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification("$inOrOut ${it.callType} call"),
+                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
+                        buildNotification("$inOrOut ${it.callType} call"),
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                     )
                 } else {
 
                     startForeground(
-                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification("$inOrOut ${it.callType} call")
+                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
+                        buildNotification("$inOrOut ${it.callType} call")
                     )
                 }
 
@@ -162,7 +163,7 @@ class AgoraCallService : LifecycleService() {
                             // to listen whether the call got cancelled by caller
                             clearListeners()
 
-                            // only caller creates a document
+                            // only caller creates a document/session
                             // upload data if the user have joined the channel and the user is an caller
                             if (callMetadata.isCaller) {
 
@@ -179,6 +180,7 @@ class AgoraCallService : LifecycleService() {
                                 // if the call is declined, receiver updates the document with status "declined", we listen for that update here
                                 callId?.let {
 
+                                    // sending call invitation after creating call session/ call document
                                     fcmNotificationSender.sendCallNotification(
                                         CallNotificationRequest(
                                             callId = it,
@@ -189,12 +191,13 @@ class AgoraCallService : LifecycleService() {
                                         )
                                     )
 
+                                    // when the receiver declines the call, may be show a notification saying call declined later
                                     val listenerForCallDecline =
                                         callHistoryManager.checkAndUpdateCurrentCall(callId = it)
                                         {
                                             isCallDeclined = true
-                                            agoraRepo.declineIncomingCall(true) //
-                                            stopSelf() // added today, might create issue in ui, remove later if issue exists
+                                            agoraRepo.declineIncomingCall(true)
+                                            stopSelf() //  if the auto re- calling issue occurs after ending the call them check for this stopSelf
 
                                         }
 
@@ -238,9 +241,13 @@ class AgoraCallService : LifecycleService() {
                             startCallTimer()
                             isRemoteUserJoined = remoteUser
 
-                            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                            val notificationManager =
+                                getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-                            notificationManager.notify(CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification("Ongoing call"))
+                            notificationManager.notify(
+                                CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
+                                buildNotification("Ongoing call")
+                            )
 
 
                             callId?.let { callDocId ->

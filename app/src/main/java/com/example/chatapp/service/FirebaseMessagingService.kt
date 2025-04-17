@@ -110,26 +110,24 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 )
 
                 // If the call ends before use picks or call has already timed out
-                listenToCallStatus(callId) {
-
+                listenToCallStatus(callId, onCallMissed = {
                     showMissedCallNotification(senderName, callType)
 
-                    callStatusListener?.remove()
-                    callStatusListener = null
-                }
 
-                callRingtoneManager.playIncomingRingtone()
-                if (isAppInForeground()) {
-                    CoroutineScope(Dispatchers.Main).launch {
-                        CallEventHandler.incomingCall.emit(callMetadata)
+                }, onIncomingCall = {
+                    callRingtoneManager.playIncomingRingtone()
+                    if (isAppInForeground()) {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            CallEventHandler.incomingCall.emit(callMetadata)
+                        }
+                    } else {
+
+                        showIncomingCallNotification(callMetadata)
+
                     }
-                } else {
+                })
 
 
-                    showIncomingCallNotification(callMetadata)
-
-
-                }
             }
 
             else -> {}
@@ -276,24 +274,43 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         notificationManager.notify(MISSED_CALL_FCM_NOTIFICATION, notificationBuilder.build())
     }
 
-    private fun listenToCallStatus(callId: String, onCallMissed: () -> Unit) {
+    private fun listenToCallStatus(
+        callId: String,
+        onCallMissed: () -> Unit,
+        onIncomingCall: () -> Unit
+    ) {
         callStatusListener = firebaseDb.collection(CALL_HISTORY).document(callId)
             .addSnapshotListener { snapshot, error ->
 
                 if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
 
                 val status = snapshot.getString("status") ?: return@addSnapshotListener
-                if (status == "missed") {
 
-                    callRingtoneManager.stopAllSounds()
-                    onCallMissed()
+
+                when (status) {
+                    "missed" -> {
+                        callRingtoneManager.stopAllSounds()
+                        onCallMissed()
+                        callStatusListener?.remove()
+                        callStatusListener = null
+                    }
+
+                    "ringing" -> {
+                        onIncomingCall()
+                    }
+
+                    else -> {
+                        callRingtoneManager.stopAllSounds()
+                        callStatusListener?.remove()
+                        callStatusListener = null
+                    }
                 }
+
             }
     }
 
     private fun getBitmapFromUrl(imageUrl: String): Bitmap? {
 
-        Log.i("FCMCheck", imageUrl)
         return try {
             val url = URL(imageUrl)
             BitmapFactory.decodeStream(url.openConnection().getInputStream())
@@ -323,7 +340,6 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
         return output
     }
-
 
 
     private fun isAppInForeground(): Boolean {
