@@ -54,7 +54,9 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
             CALL_CHANNEL_NOTIFICATION_NAME_ID,
             "Call Channel",
             NotificationManager.IMPORTANCE_HIGH
-        )
+        ).apply {
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
 
         val callFcmChannel = NotificationChannel(
             CALL_FCM_NOTIFICATION_CHANNEL_STRING,

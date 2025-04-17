@@ -30,7 +30,7 @@ class FcmNotificationSender @Inject constructor(
                 return
             }
 
-            val response = client.post("http://10.0.2.2:8080/sendCallNotification") {
+            val response = client.post("https://chatappktorserver.up.railway.app/sendCallNotification") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
 
@@ -55,10 +55,10 @@ class FcmNotificationSender @Inject constructor(
             val token = getFirebaseIdToken()
             if (token == null)
             {
-                Log.e("ktor_CALL_SENDER", "No firebase token found")
+                Log.e("ktor_MESSAGE_SENDER", "No firebase token found")
                 return
             }
-            val response = client.post("http://10.0.2.2:8080/sendMessageNotification") {
+            val response = client.post("https://chatappktorserver.up.railway.app/sendMessageNotification") {
                 contentType(ContentType.Application.Json)
                 setBody(request)
 

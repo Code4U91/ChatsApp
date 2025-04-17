@@ -2,6 +2,7 @@ package com.example.chatapp.service
 
 import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -17,6 +18,7 @@ import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.CallNotificationRequest
+import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.MainActivity
 import com.example.chatapp.R
 import com.example.chatapp.repository.AgoraSetUpRepo
@@ -62,7 +64,6 @@ class AgoraCallService : LifecycleService() {
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
-
     private val _callDuration = MutableStateFlow(0L) // in seconds
 
     private var callTimerJob: Job? = null
@@ -99,17 +100,19 @@ class AgoraCallService : LifecycleService() {
 
                 callMetadata = it
 
+                val inOrOut = if(it.isCaller) "Outgoing" else "Incoming"
+
                 // support for lower version
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     startForeground(
-                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification(),
+                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification("$inOrOut ${it.callType} call"),
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                     )
                 } else {
 
                     startForeground(
-                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification()
+                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification("$inOrOut ${it.callType} call")
                     )
                 }
 
@@ -235,6 +238,11 @@ class AgoraCallService : LifecycleService() {
                             startCallTimer()
                             isRemoteUserJoined = remoteUser
 
+                            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+                            notificationManager.notify(CALL_SERVICE_ACTIVE_NOTIFICATION_ID, buildNotification("Ongoing call"))
+
+
                             callId?.let { callDocId ->
                                 callHistoryManager.updateCallStatus("ongoing", callDocId)
                             }
@@ -316,7 +324,11 @@ class AgoraCallService : LifecycleService() {
     }
 
 
-    private fun buildNotification(): Notification {
+    private fun buildNotification(contextText: String): Notification {
+
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+        notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
 
         val intent = Intent(this, MainActivity::class.java).apply {
 
@@ -336,11 +348,12 @@ class AgoraCallService : LifecycleService() {
         return NotificationCompat.Builder(this, CALL_CHANNEL_NOTIFICATION_NAME_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // change to app icon or profile pic later
             .setContentTitle(callMetadata.receiverName)
-            .setContentText("Ongoing call")
+            .setContentText(contextText)
             .setCategory(Notification.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(pendingIntent)
+            .setSilent(true)
             .setAutoCancel(false)
             .setOngoing(true)
             .build()
