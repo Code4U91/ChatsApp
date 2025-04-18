@@ -115,7 +115,7 @@ fun MainChatScreen(
         mutableStateOf(fetchedChatId.ifEmpty {
             globalMessageListenerViewModel.calculateChatId(
                 otherId
-            )
+            )?:""
         })
     } // temporary creates an id when chatId is empty
 

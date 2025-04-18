@@ -9,8 +9,9 @@ import kotlinx.coroutines.flow.first
 
 private val Context.dataStore by preferencesDataStore(name = "fcm_prefs")
 
-// user for storing current device fcm token and later removing it from database and local memory when user logs out
-object FcmTokenManager{
+// used for storing current device fcm token and later removing it from database
+// and local memory when user logs out
+object LocalFcmTokenManager{
 
     private val TOKEN_KEY = stringPreferencesKey("fcm_token")
 

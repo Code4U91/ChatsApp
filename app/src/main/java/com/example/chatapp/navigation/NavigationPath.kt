@@ -103,11 +103,6 @@ fun MainNavigationHost(
 
     val navController = rememberNavController()
 
-    Log.d(
-        "ViewModelInstance",
-        "globalMessageListenerViewModel hash: ${globalMessageListenerViewModel.hashCode()}"
-    )
-
 
     val metadata by viewModel.deepLinkData.collectAsState()
     val messageFcmMetadata by viewModel.fcmMessageMetadata.collectAsState()
@@ -121,7 +116,7 @@ fun MainNavigationHost(
 
     val activityContext = LocalActivity.current
 
-    // while app is active, use fcm sharedFlow emit value
+    // while app is active, use fcm sharedFlow emit value to immediately navigate to call screen
     LaunchedEffect(Unit) {
         CallEventHandler.incomingCall.collect { data ->
 
@@ -169,7 +164,8 @@ fun MainNavigationHost(
     }
 
 
-
+    // used to store the chatId of the screen where the user visit,
+    // later used to identify the active screen/chat and mark message as seen
     LaunchedEffect(currentChatId) {
 
         // pass even null, pass everything or else old id would remain in viewmodel

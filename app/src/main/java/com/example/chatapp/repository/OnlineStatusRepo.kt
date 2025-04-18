@@ -50,7 +50,7 @@ class OnlineStatusRepo @Inject constructor(
                 "lastSeen" to ServerValue.TIMESTAMP
             )
 
-            realTimeDbRef.updateChildren(statusData) // online
+            realTimeDbRef.updateChildren(statusData)
 
 
         }

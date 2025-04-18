@@ -7,7 +7,7 @@ import android.app.NotificationManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.chatapp.repository.MessageServiceRepository
+import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -19,7 +19,7 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
     lateinit var onlineStatusRepo: OnlineStatusRepo
 
     @Inject
-    lateinit var messageServiceRepository: MessageServiceRepository
+    lateinit var messagingHandlerRepo: MessagingHandlerRepo
 
     var isInForeground = false
 

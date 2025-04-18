@@ -8,8 +8,10 @@ import com.google.firebase.firestore.ListenerRegistration
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// class used for creating a session/call document which maintains the call data and later
+// is used as a record in a call history
 @Singleton
-class CallHistoryManager @Inject constructor(
+class CallSessionUpdaterRepo @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore
 ) {

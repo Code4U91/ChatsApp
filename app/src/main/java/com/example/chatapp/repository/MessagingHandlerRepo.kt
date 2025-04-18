@@ -14,7 +14,7 @@ import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.UserData
 import com.example.chatapp.api.FcmNotificationSender
 import com.example.chatapp.checkEmailPattern
-import com.example.chatapp.localData.FcmTokenManager
+import com.example.chatapp.localData.LocalFcmTokenManager
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -30,7 +30,7 @@ import javax.inject.Inject
 // call listener and history fetch also is in here
 
 
-class MessageServiceRepository @Inject constructor(
+class MessagingHandlerRepo @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
     private val firebaseMessaging: FirebaseMessaging,
@@ -410,7 +410,7 @@ class MessageServiceRepository @Inject constructor(
 
         val currentToken = firebaseMessaging.token.await()
         // save token locally using datastore
-        FcmTokenManager.saveToken(context, currentToken)
+        LocalFcmTokenManager.saveToken(context, currentToken)
 
         val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 

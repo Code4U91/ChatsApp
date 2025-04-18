@@ -9,8 +9,8 @@ import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
 import com.example.chatapp.Message
 import com.example.chatapp.UserData
-import com.example.chatapp.repository.ChatManager
-import com.example.chatapp.repository.MessageServiceRepository
+import com.example.chatapp.repository.GlobalMessageListenerRepo
+import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
@@ -28,8 +28,8 @@ import javax.inject.Inject
 @HiltViewModel
 class GlobalMessageListenerViewModel @Inject constructor(
     private val auth: FirebaseAuth,
-    private val messageServiceRepository: MessageServiceRepository,
-    private val chatManager: ChatManager,
+    private val messagingHandlerRepo: MessagingHandlerRepo,
+    private val globalMessageListenerRepo: GlobalMessageListenerRepo,
     private val onlineStatusRepo: OnlineStatusRepo,
 ) : ViewModel() {
 
@@ -67,14 +67,14 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         viewModelScope.launch {
             userData.filterNotNull().collect { user ->
-                messageServiceRepository.updateFcmTokenIfNeeded(user.fcmTokens)
+                messagingHandlerRepo.updateFcmTokenIfNeeded(user.fcmTokens)
             }
         }
 
     }
 
     private fun startGlobalListener() {
-        chatManager.startGlobalMessageListener(
+        globalMessageListenerRepo.startGlobalMessageListener(
             isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId },
             onFetchAllActiveChat = { chatList ->
 
@@ -99,7 +99,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private fun fetchUserData() {
         val user = auth.currentUser
         if (user != null) {
-            messageServiceRepository.fetchUserData(user)
+            messagingHandlerRepo.fetchUserData(user)
             { updatedUserData ->
 
                 _userData.value = updatedUserData
@@ -109,7 +109,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
 
-        return messageServiceRepository.fetchFriendList { friendDocument, updatedTotalFriend ->
+        return messagingHandlerRepo.fetchFriendList { friendDocument, updatedTotalFriend ->
             onFriendUpdated(friendDocument)
             _totalFriend.value = updatedTotalFriend
         }
@@ -120,7 +120,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
         updatedFriendData: (FriendData?) -> Unit
     ): ListenerRegistration {
 
-        return messageServiceRepository.fetchFriendData(friendUserId)
+        return messagingHandlerRepo.fetchFriendData(friendUserId)
         {
             updatedFriendData(it) // used where multiple new friend data is required at once
 
@@ -133,7 +133,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        messageServiceRepository.addFriend(
+        messagingHandlerRepo.addFriend(
             friendUserId,
             onSuccess = { onSuccess() },
             onFailure = { e -> onFailure(e) }
@@ -157,26 +157,24 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         if (whichList == "friendList") {
             userID?.let { currentUserId ->
-                messageServiceRepository.updateFriendNameOnFriendList(
+                messagingHandlerRepo.updateFriendNameOnFriendList(
                     friendName,
                     currentUserId,
                     friendId
                 )
             }
         } else {
-            messageServiceRepository.updateFriendNameOnChatList(friendName, friendId, chatId)
+            messagingHandlerRepo.updateFriendNameOnChatList(friendName, friendId, chatId)
         }
 
     }
 
-    fun calculateChatId(otherId: String): String {
+    fun calculateChatId(otherId: String): String? {
 
         val currentUserId = auth.currentUser?.uid
-        currentUserId?.let {
-            return messageServiceRepository.chatIdCreator(it, otherId, "")
+        return currentUserId?.let {
+             messagingHandlerRepo.chatIdCreator(it, otherId, "")
         }
-
-        return ""
     }
 
     fun fetchOnlineStatus(
@@ -194,14 +192,14 @@ class GlobalMessageListenerViewModel @Inject constructor(
     }
 
     fun deleteFriend(friendId: String) {
-        messageServiceRepository.deleteFriend(friendId)
+        messagingHandlerRepo.deleteFriend(friendId)
     }
 
     fun markAllMessageAsSeen(chatId: String) {
         val user = auth.currentUser
         if (user != null) {
             val currentUserId = user.uid
-            messageServiceRepository.markMessageAsSeen(chatId, currentUserId)
+            messagingHandlerRepo.markMessageAsSeen(chatId, currentUserId)
         }
     }
 
@@ -224,7 +222,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
         fetchedChatId: String = ""
     ) {
         viewModelScope.launch {
-            messageServiceRepository.sendMessageToSingleUser(message, friendId, fetchedChatId)
+            messagingHandlerRepo.sendMessageToSingleUser(message, friendId, fetchedChatId)
         }
 
     }
@@ -233,7 +231,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private fun fetchCallHistory()
     {
 
-        messageServiceRepository.fetchCallHistory { callList ->
+        messagingHandlerRepo.fetchCallHistory { callList ->
 
             _callHistoryData.value = callList
 
@@ -245,8 +243,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
     override fun onCleared() {
 
         Log.i("TimesEx", "OnDestroy")
-        chatManager.clearAllGlobalListeners()
-        messageServiceRepository.clearMessageListeners()
+        globalMessageListenerRepo.clearAllGlobalListeners()
+        messagingHandlerRepo.clearMessageListeners()
         super.onCleared()
     }
 }

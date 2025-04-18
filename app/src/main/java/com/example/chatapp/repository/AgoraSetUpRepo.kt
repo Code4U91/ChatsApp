@@ -17,7 +17,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 // Contains all function needed to make and receive call
-
+// used by AgoraCallService class for running it in the service class
 @Singleton
 class AgoraSetUpRepo @Inject constructor(
     @ApplicationContext private val context: Context

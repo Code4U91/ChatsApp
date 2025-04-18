@@ -18,7 +18,7 @@ import javax.inject.Inject
 // responsible for listening to all active chats, providing active chat lists, fetching and storing new messages
 // updating message state, clearing listeners
 
-class ChatManager @Inject constructor(
+class GlobalMessageListenerRepo @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
     @ApplicationContext private val context: Context

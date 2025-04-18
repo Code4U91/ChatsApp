@@ -61,6 +61,13 @@ fun Modifier.shimmerEffect(): Modifier = composed {
     this.background(brush)
 }
 
+fun Timestamp.toLocalDate(): LocalDate {
+    return this.toDate().toInstant()
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+}
+
+
 fun getMessageStatusIcon(messageStatus: String?): ImageVector {
 
     return when (messageStatus) {
@@ -157,13 +164,6 @@ fun getDateLabelForMessage(date: LocalDate): String {
 
         else -> date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
     }
-}
-
-
-fun Timestamp.toLocalDate(): LocalDate {
-    return this.toDate().toInstant()
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
 }
 
 

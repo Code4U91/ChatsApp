@@ -14,6 +14,7 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// manage incoming and outgoing ringtones
 @Singleton
 class CallRingtoneManager @Inject constructor(
     @ApplicationContext private val context: Context

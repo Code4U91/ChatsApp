@@ -9,7 +9,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.USERS_REF
-import com.example.chatapp.localData.FcmTokenManager
+import com.example.chatapp.localData.LocalFcmTokenManager
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
@@ -50,7 +50,6 @@ class AuthRepository @Inject constructor(
 
 
         // Use this when you want to show the login option on click of the button by user
-
         val signInWithGoogleOption = GetSignInWithGoogleOption
             .Builder(
                 serverClientId = context.getString(R.string.default_web_client_id)
@@ -206,7 +205,7 @@ class AuthRepository @Inject constructor(
         if (user != null) {
 
             val userId = user.uid
-            val token = FcmTokenManager.getToken(context)
+            val token = LocalFcmTokenManager.getToken(context)
             val realTimeDbRef = realTimeDb.getReference(USERS_REF).child(user.uid)
 
             realTimeDbRef.setValue(
@@ -218,7 +217,7 @@ class AuthRepository @Inject constructor(
 
             token?.let {
                 removeFcmTokenFromUser(userId, it)
-                FcmTokenManager.clearToken(context)
+                LocalFcmTokenManager.clearToken(context)
             }
             auth.signOut()
         }

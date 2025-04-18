@@ -22,7 +22,7 @@ import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.MainActivity
 import com.example.chatapp.R
 import com.example.chatapp.repository.AgoraSetUpRepo
-import com.example.chatapp.repository.CallHistoryManager
+import com.example.chatapp.repository.CallSessionUpdaterRepo
 import com.example.chatapp.repository.CallRingtoneManager
 import com.example.chatapp.api.FcmNotificationSender
 import com.google.firebase.firestore.ListenerRegistration
@@ -41,7 +41,7 @@ class AgoraCallService : LifecycleService() {
     lateinit var agoraRepo: AgoraSetUpRepo
 
     @Inject
-    lateinit var callHistoryManager: CallHistoryManager
+    lateinit var callSessionUpdaterRepo: CallSessionUpdaterRepo
 
     @Inject
     lateinit var callRingtoneManager: CallRingtoneManager
@@ -167,7 +167,7 @@ class AgoraCallService : LifecycleService() {
                             // upload data if the user have joined the channel and the user is an caller
                             if (callMetadata.isCaller) {
 
-                                callId = callHistoryManager.uploadCallData(
+                                callId = callSessionUpdaterRepo.uploadCallData(
                                     callReceiverId = callMetadata.callReceiverId,
                                     callType = callMetadata.callType,
                                     channelId = callMetadata.channelName,
@@ -193,7 +193,7 @@ class AgoraCallService : LifecycleService() {
 
                                     // when the receiver declines the call, may be show a notification saying call declined later
                                     val listenerForCallDecline =
-                                        callHistoryManager.checkAndUpdateCurrentCall(callId = it)
+                                        callSessionUpdaterRepo.checkAndUpdateCurrentCall(callId = it)
                                         {
                                             isCallDeclined = true
                                             agoraRepo.declineIncomingCall(true)
@@ -215,7 +215,7 @@ class AgoraCallService : LifecycleService() {
                             // checked by the receiver, i.e isCaller false
 
                             val listenerForDeclineByCaller =
-                                callHistoryManager.checkAndUpdateCurrentCall(callId = callDocId)
+                                callSessionUpdaterRepo.checkAndUpdateCurrentCall(callId = callDocId)
                                 {
 
                                     agoraRepo.declineIncomingCall(true) // helper flag to update the ui, listened by callViewmodel
@@ -251,7 +251,7 @@ class AgoraCallService : LifecycleService() {
 
 
                             callId?.let { callDocId ->
-                                callHistoryManager.updateCallStatus("ongoing", callDocId)
+                                callSessionUpdaterRepo.updateCallStatus("ongoing", callDocId)
                             }
 
                         }
@@ -282,7 +282,7 @@ class AgoraCallService : LifecycleService() {
 
                             if (callDeclined) {
                                 // call is declined by receiver
-                                callHistoryManager.updateCallStatus("declined", callDocId)
+                                callSessionUpdaterRepo.updateCallStatus("declined", callDocId)
 
                             }
 
@@ -317,7 +317,7 @@ class AgoraCallService : LifecycleService() {
 
                 val status = if (isRemoteUserJoined != null) "ended" else "missed"
 
-                callHistoryManager.uploadOnCallEnd(status, callDocId)
+                callSessionUpdaterRepo.uploadOnCallEnd(status, callDocId)
 
             }
         }

@@ -228,7 +228,7 @@ fun FriendListScreen(
                         globalMessageListenerViewModel = globalMessageListenerViewModel,
                         oldFriendName = friendList.friendName,
                         whichList = "friendList",
-                        chatId = globalMessageListenerViewModel.calculateChatId(friendList.friendId)
+                        chatId = globalMessageListenerViewModel.calculateChatId(friendList.friendId) ?:""
                     )
 
                 }
