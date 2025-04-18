@@ -77,10 +77,6 @@ lite-sdk = { module = "io.agora.rtc:lite-sdk", version.ref = "liteSdk" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
-#noinspection SimilarGradleDependency
 jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-
-#noinspection SimilarGradleDependency
-org-jetbrains-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 
