@@ -161,11 +161,13 @@ class GlobalMessageListenerRepo @Inject constructor(
                     }
                     val chatList = snapshots?.documents?.mapNotNull { doc ->
 
+                        @Suppress("UNCHECKED_CAST")
                         val participants =
                             doc.get("participants") as? List<String> ?: return@mapNotNull null
 
                         val otherId = participants.firstOrNull { it != currentUserId }
 
+                        @Suppress("UNCHECKED_CAST")
                         val participantsName = doc.get("participantsName") as? Map<String, String>
 
                         val otherUserName = participantsName?.get(otherId)

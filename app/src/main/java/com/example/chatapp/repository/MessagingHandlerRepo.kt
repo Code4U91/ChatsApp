@@ -54,6 +54,7 @@ class MessagingHandlerRepo @Inject constructor(
 
                 val fetchedUserData = snapshot.toObject(UserData::class.java)
 
+                @Suppress("UNCHECKED_CAST")
                 val fcmTokens = snapshot.get("fcmTokens") as? List<String> ?: emptyList()
 
                 val userData = fetchedUserData?.copy(
@@ -443,12 +444,14 @@ class MessagingHandlerRepo @Inject constructor(
                         val status = doc.getString("status") ?: return@mapNotNull null
                         if (status == "ringing" || status == "ongoing") return@mapNotNull null
 
+                        @Suppress("UNCHECKED_CAST")
                         val participants =
                             doc.get("participants") as? List<String> ?: return@mapNotNull null
 
                         val otherUserId =
                             participants.firstOrNull { it != currentUserId } // pulling other participant
 
+                        @Suppress("UNCHECKED_CAST")
                         val participantsName = doc.get("participantsName") as? Map<String, String>
 
                         val otherUserName = participantsName?.get(otherUserId)
