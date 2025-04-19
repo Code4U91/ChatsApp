@@ -42,6 +42,7 @@ import com.example.chatapp.screens.mainBottomBarScreens.onSaveOrCancel
 import com.example.chatapp.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 
+// used in profile screen for inputting values like name
 @Composable
 fun PopUpBox(
     valueDescription: String,

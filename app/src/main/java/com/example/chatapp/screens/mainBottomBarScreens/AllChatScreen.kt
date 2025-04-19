@@ -157,6 +157,11 @@ fun AllChatScreen(
             )
             {
 
+                if (filteredActiveChatList.isEmpty()){
+
+                    Text(text = "Chat is Empty. All active chats are shown here.",
+                        fontSize = 18.sp)
+                }
 
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),

@@ -225,9 +225,7 @@ fun StartVoiceCall(
                 .fillMaxSize()
                 .padding(it)
         ) {
-            // if (isJoined) {
 
-            // engine created waiting for other user to join call
 
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -285,7 +283,6 @@ fun StartVoiceCall(
 
             }
 
-            //
 
             // Control Buttons
             Row(
