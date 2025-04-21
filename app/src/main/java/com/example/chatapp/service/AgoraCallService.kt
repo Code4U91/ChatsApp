@@ -122,10 +122,9 @@ class AgoraCallService : LifecycleService() {
                 {
                     val speaker = it.callType == "video"
                     callRingtoneManager.playOutGoingRingtone(speaker)
-
-                    lifecycleScope.launch {
-                        agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
-                    }
+                }
+                lifecycleScope.launch {
+                    agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
                 }
                 // incoming calls are received by fcm push notification it runs incoming ringtone there using callRingtoneManager
 
@@ -271,25 +270,6 @@ class AgoraCallService : LifecycleService() {
                         }
                         Log.i("AGORA_CALL_SERVICE", "RemoteUserLeft: $remoteUserLeft")
                     }
-                }
-
-                // if the current user is receiver and declines the call update the document with
-                // decline status so that the call gets cancelled
-                if (!callMetadata.isCaller) {
-                    launch {
-
-                        agoraRepo.declineTheCall.collect { callDeclined ->
-
-                            if (callDeclined) {
-                                // call is declined by receiver
-                                callSessionUpdaterRepo.updateCallStatus("declined", callDocId)
-
-                            }
-
-                        }
-                    }
-
-
                 }
 
             }

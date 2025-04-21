@@ -28,6 +28,7 @@ import com.example.chatapp.MainActivity
 import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
+import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.CallRingtoneManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -54,6 +55,9 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject
     lateinit var callRingtoneManager: CallRingtoneManager
+
+    @Inject
+    lateinit var agoraRepo: AgoraSetUpRepo
 
     private var callStatusListener: ListenerRegistration? = null
 
@@ -111,13 +115,17 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                 // If the call ends before use picks or call has already timed out
                 listenToCallStatus(callId, onCallMissed = {
-                    showMissedCallNotification(senderName, callType)
 
+                    agoraRepo.declineIncomingCall(true) // for closing the call screen ui when missed
+                    showMissedCallNotification(senderName, callType)
 
                 }, onIncomingCall = {
                     callRingtoneManager.playIncomingRingtone()
+
+                    // if the call comes while the app is alive but in background and screen is locked then app crashes
                     if (isAppInForeground()) {
                         CoroutineScope(Dispatchers.Main).launch {
+                            showIncomingCallNotification(callMetadata)
                             CallEventHandler.incomingCall.emit(callMetadata)
                         }
                     } else {
@@ -279,6 +287,11 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         onCallMissed: () -> Unit,
         onIncomingCall: () -> Unit
     ) {
+
+        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+
+
         callStatusListener = firebaseDb.collection(CALL_HISTORY).document(callId)
             .addSnapshotListener { snapshot, error ->
 
@@ -299,8 +312,10 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                         onIncomingCall()
                     }
 
+
                     else -> {
                         callRingtoneManager.stopAllSounds()
+                        notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
                         callStatusListener?.remove()
                         callStatusListener = null
                     }

@@ -1,5 +1,6 @@
 package com.example.chatapp.viewmodel
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -9,6 +10,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.repository.AgoraSetUpRepo
+import com.example.chatapp.repository.CallSessionUpdaterRepo
 import com.example.chatapp.service.AgoraCallService
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,7 +23,8 @@ import javax.inject.Inject
 @HiltViewModel
 class CallViewModel @Inject constructor(
     private val agoraRepo: AgoraSetUpRepo,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private var callSessionUpdaterRepo: CallSessionUpdaterRepo
 ) : ViewModel() {
 
 
@@ -80,6 +83,7 @@ class CallViewModel @Inject constructor(
 
     }
 
+    @SuppressLint("ObsoleteSdkInt")
     fun startCallService(
         context: Context,
         channelName: String,
@@ -125,21 +129,13 @@ class CallViewModel @Inject constructor(
     }
 
 
-    fun joinChannel(
-        channelName: String, callType: String
-    ) {
-        val userId = auth.currentUser?.uid ?: return
-
-        viewModelScope.launch {
-            agoraRepo.joinChannel(null, channelName, callType, userId)
-        }
-    }
-
     fun leaveChannel() {
         _callEnded.value = true
     }
 
-    fun declineTheCall(decline: Boolean) {
+    fun declineTheCall(decline: Boolean, callDocId: String) {
+
+        callSessionUpdaterRepo.updateCallStatus("declined", callDocId)
         agoraRepo.declineIncomingCall(decline)
     }
 

@@ -192,7 +192,7 @@ fun StartVoiceCall(
         if (permissionState.allPermissionsGranted) {
             if (!hasStartedCallService) {
 
-                if (otherUserData != null && !isJoined && !callEnded) {
+                if (otherUserData != null && !isJoined && !callEnded && isCaller) {
 
                     callViewModel.startCallService(
                         context = context,
@@ -200,7 +200,7 @@ fun StartVoiceCall(
                         callType = "voice",
                         callerName = currentUserData?.name.orEmpty(),
                         receiverName = otherUserData?.name.orEmpty(),
-                        isCaller = isCaller,
+                        isCaller = true,
                         callReceiverId = otherUserData?.uid ?: receiverId,
                         callDocId = callDocId
                     )
@@ -292,14 +292,30 @@ fun StartVoiceCall(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                ControlButtons(callType = "voice", callViewModel, isCaller)
+                ControlButtons(callType = "voice", callViewModel, isCaller, callDocId)
                 {
 
                     if (permissionState.allPermissionsGranted) {
-                        callViewModel.joinChannel(
-                            channelName,
-                            "voice"
-                        )
+
+                        if (!hasStartedCallService) {
+
+                            if (otherUserData != null && !isJoined && !callEnded && !isCaller) {
+
+                                callViewModel.startCallService(
+                                    context = context,
+                                    channelName = channelName,
+                                    callType = "voice",
+                                    callerName = currentUserData?.name.orEmpty(),
+                                    receiverName = otherUserData?.name.orEmpty(),
+                                    isCaller = false,
+                                    callReceiverId = otherUserData?.uid ?: receiverId,
+                                    callDocId = callDocId
+                                )
+
+                                chatsViewModel.markCallServiceStarted()
+                            }
+                        }
+
                     } else {
                         Toast.makeText(
                             context,
@@ -362,7 +378,7 @@ fun StartVideoCall(
         if (permissionState.allPermissionsGranted) {
             if (!hasStartedCallService) {
 
-                if (otherUserData != null && !isJoined && !callEnded) {
+                if (otherUserData != null && !isJoined && !callEnded && isCaller) {
 
                     callViewModel.enableVideoPreview()
 
@@ -372,7 +388,7 @@ fun StartVideoCall(
                         callType = "video",
                         callerName = currentUserData?.name.orEmpty(),
                         receiverName = otherUserData?.name.orEmpty(),
-                        isCaller = isCaller,
+                        isCaller = true,
                         callReceiverId = otherUserData?.uid ?: receiverId,
                         callDocId = callDocId
                     )
@@ -528,15 +544,34 @@ fun StartVideoCall(
                     ControlButtons(
                         callType = "video",
                         callViewModel = callViewModel,
-                        isCaller = isCaller
+                        isCaller = isCaller,
+                        callDocId
                     ) {
                         // when the call receiver accepts the call
 
                         if (permissionState.allPermissionsGranted) {
-                            callViewModel.joinChannel(
-                                channelName,
-                                "video"
-                            )
+
+                            if (!hasStartedCallService) {
+
+                                if (otherUserData != null && !isJoined && !callEnded && !isCaller) {
+
+                                    callViewModel.enableVideoPreview()
+
+                                    callViewModel.startCallService(
+                                        context = context,
+                                        channelName = channelName,
+                                        callType = "video",
+                                        callerName = currentUserData?.name.orEmpty(),
+                                        receiverName = otherUserData?.name.orEmpty(),
+                                        isCaller = false,
+                                        callReceiverId = otherUserData?.uid ?: receiverId,
+                                        callDocId = callDocId
+                                    )
+
+                                    chatsViewModel.markCallServiceStarted()
+                                }
+                            }
+
                         } else {
                             Toast.makeText(
                                 context,
@@ -558,6 +593,7 @@ fun ControlButtons(
     callType: String,
     callViewModel: CallViewModel,
     isCaller: Boolean,
+    callDocId: String,
     onJoinCall: () -> Unit
 ) {
 
@@ -565,6 +601,7 @@ fun ControlButtons(
     val isRemoteAudioDeafen by callViewModel.isRemoteAudioDeafen.collectAsState()
     val isSpeakerPhoneEnabled by callViewModel.isSpeakerPhoneEnabled.collectAsState()
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+
 
     if (remoteUserJoined == null) {
         Box(
@@ -583,9 +620,6 @@ fun ControlButtons(
                 if (isCaller) {
                     // current user is a caller, only show call cut button till the remote user joins
 
-                    // common
-
-
                     IconButton(onClick = {
                         callViewModel.leaveChannel()
                     }) {
@@ -603,7 +637,7 @@ fun ControlButtons(
 
                     // cancel button
                     IconButton(onClick = {
-                        callViewModel.declineTheCall(true)
+                        callViewModel.declineTheCall(true, callDocId)
                     }) {
                         Icon(
                             imageVector = Icons.Default.CallEnd,
