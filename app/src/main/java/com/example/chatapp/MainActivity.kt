@@ -3,6 +3,7 @@ package com.example.chatapp
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -53,11 +54,6 @@ class MainActivity : ComponentActivity() {
                 if (chatsViewModel.deepLinkData.value != null) {
                     val data = chatsViewModel.deepLinkData.value!!
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                        setShowWhenLocked(true)
-                        setTurnScreenOn(true)
-                    }
-
                     "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
 
                 } else {
@@ -78,7 +74,9 @@ class MainActivity : ComponentActivity() {
 
             }
 
-            CALL_HISTORY_INTENT -> { Screen.CallHistoryScreen.route }
+            CALL_HISTORY_INTENT -> {
+                Screen.CallHistoryScreen.route
+            }
 
             else -> {
                 Screen.AllChatScreen.route
@@ -116,6 +114,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
 
+
         handleIntent(intent)
 
 
@@ -125,12 +124,25 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent) {
 
         when (intent.action) {
+
             CALL_INTENT -> {
+
+                @Suppress("DEPRECATION")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+                    setShowWhenLocked(true)
+                    setTurnScreenOn(true)
+                } else {
+                    window.addFlags(
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                    )
+                }
+
                 val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     intent.getParcelableExtra("call_metadata", CallMetadata::class.java)
                 } else {
-                    // Fallback for older version
-                    @Suppress("DEPRECATION")
+                    @Suppress("DEPRECATION")   // Fallback for older version
+
                     intent.getParcelableExtra("call_metadata")
                 }
 
@@ -150,7 +162,9 @@ class MainActivity : ComponentActivity() {
                 chatsViewModel.setFcmMessageMetaData(metaData)
             }
 
-            CALL_HISTORY_INTENT -> { chatsViewModel.moveToCallHistory(true)}
+            CALL_HISTORY_INTENT -> {
+                chatsViewModel.moveToCallHistory(true)
+            }
 
             else -> {}
         }

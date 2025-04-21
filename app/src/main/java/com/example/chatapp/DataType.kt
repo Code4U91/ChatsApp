@@ -90,6 +90,17 @@ data class MessageFcmMetadata(
     val chatId: String
 ): Parcelable
 
+@Parcelize
+data class CallScreenData(
+    val channelName: String,
+    val callType: String,
+    val receiverName: String,
+    val receiverPhoto : String,
+    val receiverId : String,
+    val callDoc : String
+
+): Parcelable
+
 @Serializable
 data class MessageNotificationRequest(
     val senderId: String,

@@ -292,13 +292,12 @@ fun MainNavigationHost(
                 {
                     Log.d("CallScreen", "onCallEnd triggered!")
 
+
                     if (startDestination.startsWith("CallScreen")) {
                         activityContext?.finishAndRemoveTask()
                     } else {
-
                         navController.popBackStack()
                     }
-
 
                 }
 

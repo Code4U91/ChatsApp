@@ -11,21 +11,16 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-
-
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-    <!-- For Android 12.0 or higher, the following permissions are also required -->
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> <!-- For Android 12.0 or higher, the following permissions are also required -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name=".ChatsApplication"
@@ -37,6 +32,12 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
+        <activity
+            android:name=".CallActivity"
+            android:exported="false"
+            android:label="@string/title_activity_call"
+            android:theme="@style/Theme.ChatApp" />
+
         <service
             android:name=".service.AgoraCallService"
             android:exported="false"
@@ -58,6 +59,7 @@
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
