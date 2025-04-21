@@ -46,6 +46,12 @@ class CallViewModel @Inject constructor(
     private val _callEnded = MutableStateFlow(false)
     val callEnded = _callEnded.asStateFlow()
 
+    private val _callScreenData = MutableStateFlow<CallMetadata?>(null)
+    val callScreenData = _callScreenData.asStateFlow()
+
+    private val _hasStartedCallService = MutableStateFlow(false)
+    val hasStartedCallService = _hasStartedCallService.asStateFlow()
+
 
     val callDuration = agoraRepo.callDuration
 
@@ -81,6 +87,35 @@ class CallViewModel @Inject constructor(
             }
         }
 
+        viewModelScope.launch {
+
+            agoraRepo.isJoined.collect{isJoined ->
+
+                Log.i("CHATS_VM_IS_JOINED", isJoined.toString())
+                if(isJoined)
+                {
+                    markCallServiceStarted()
+                } else {
+                    resetCallServiceFlag()
+                }
+            }
+        }
+
+    }
+
+    fun markCallServiceStarted() {
+
+        if (!_hasStartedCallService.value) _hasStartedCallService.value = true
+
+    }
+
+    fun resetCallServiceFlag() {
+        if (_hasStartedCallService.value) _hasStartedCallService.value = false
+    }
+
+    fun setCallScreenData(data: CallMetadata?)
+    {
+        _callScreenData.value = data
     }
 
     @SuppressLint("ObsoleteSdkInt")
@@ -92,7 +127,8 @@ class CallViewModel @Inject constructor(
         callerName: String,
         receiverName: String,
         isCaller: Boolean,
-        callDocId: String
+        photo: String,
+        callDocId: String?
     ) {
         val userId = auth.currentUser?.uid ?: return
 
@@ -104,6 +140,7 @@ class CallViewModel @Inject constructor(
             receiverName = receiverName,
             isCaller = isCaller,
             callReceiverId = callReceiverId,
+            receiverPhoto = photo,
             callDocId = callDocId
         )
 

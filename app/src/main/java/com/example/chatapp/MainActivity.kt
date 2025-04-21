@@ -3,7 +3,6 @@ package com.example.chatapp
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -49,17 +48,6 @@ class MainActivity : ComponentActivity() {
         }
 
         val startDestination = when (intent.action) {
-
-            CALL_INTENT -> {
-                if (chatsViewModel.deepLinkData.value != null) {
-                    val data = chatsViewModel.deepLinkData.value!!
-
-                    "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
-
-                } else {
-                    Screen.AllChatScreen.route
-                }
-            }
 
             MESSAGE_FCM_INTENT -> {
 
@@ -124,30 +112,6 @@ class MainActivity : ComponentActivity() {
     private fun handleIntent(intent: Intent) {
 
         when (intent.action) {
-
-            CALL_INTENT -> {
-
-                @Suppress("DEPRECATION")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
-                    setShowWhenLocked(true)
-                    setTurnScreenOn(true)
-                } else {
-                    window.addFlags(
-                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
-                                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
-                    )
-                }
-
-                val metaData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    intent.getParcelableExtra("call_metadata", CallMetadata::class.java)
-                } else {
-                    @Suppress("DEPRECATION")   // Fallback for older version
-
-                    intent.getParcelableExtra("call_metadata")
-                }
-
-                chatsViewModel.setDeepLinkData(metaData)
-            }
 
             MESSAGE_FCM_INTENT -> {
 

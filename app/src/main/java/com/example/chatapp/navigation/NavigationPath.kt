@@ -2,7 +2,6 @@ package com.example.chatapp.navigation
 
 import android.annotation.SuppressLint
 import android.util.Log
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.fillMaxSize
@@ -40,18 +39,16 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.AUTH_GRAPH_ROUTE
-import com.example.chatapp.CallEventHandler
 import com.example.chatapp.MAIN_GRAPH_ROUTE
-import com.example.chatapp.screens.mainBottomBarScreens.AllChatScreen
-import com.example.chatapp.screens.mainBottomBarScreens.CallHistoryScreen
-import com.example.chatapp.screens.afterMainFrontScreen.CallScreen
 import com.example.chatapp.screens.afterMainFrontScreen.ChangeEmailAddressScreen
 import com.example.chatapp.screens.afterMainFrontScreen.FriendListScreen
 import com.example.chatapp.screens.afterMainFrontScreen.MainChatScreen
-import com.example.chatapp.screens.mainBottomBarScreens.ProfileSettingScreen
 import com.example.chatapp.screens.logInSignUp.ForgotPasswordScreen
 import com.example.chatapp.screens.logInSignUp.SignInScreenUI
 import com.example.chatapp.screens.logInSignUp.SignUpScreenUI
+import com.example.chatapp.screens.mainBottomBarScreens.AllChatScreen
+import com.example.chatapp.screens.mainBottomBarScreens.CallHistoryScreen
+import com.example.chatapp.screens.mainBottomBarScreens.ProfileSettingScreen
 import com.example.chatapp.viewmodel.ChatsViewModel
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
@@ -104,43 +101,14 @@ fun MainNavigationHost(
     val navController = rememberNavController()
 
 
-    val metadata by viewModel.deepLinkData.collectAsState()
     val messageFcmMetadata by viewModel.fcmMessageMetadata.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val isCallScreenActive by viewModel.isCallScreenActive.collectAsState()
     val isCallHistoryActive by viewModel.callHistoryScreenActive.collectAsState()
     val moveToCallHistory by viewModel.moveToCallHistory.collectAsState()
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
 
-    val activityContext = LocalActivity.current
-
-    // while app is active, use fcm sharedFlow emit value to immediately navigate to call screen
-    LaunchedEffect(Unit) {
-        CallEventHandler.incomingCall.collect { data ->
-
-            if (!isCallScreenActive) {
-                navController.navigate(
-                    "CallScreen/${data.channelName}/${data.callType}/${data.isCaller}/${data.callReceiverId}/${data.callDocId}"
-                )
-            }
-
-        }
-    }
-
-    // when app is inactive, having trouble to do it with shared flow so there may seem to be 2 LE for it
-    LaunchedEffect(metadata) {
-
-        if (metadata != null && !isCallScreenActive) {
-
-            navController.navigate(
-                "CallScreen/${metadata!!.channelName}/${metadata!!.callType}/${metadata!!.isCaller}/${metadata!!.callReceiverId}/${metadata!!.callDocId}"
-            )
-            viewModel.setDeepLinkData(null)
-        }
-
-    }
 
     // opens main chat screen on click via a fcm notification
     LaunchedEffect(messageFcmMetadata) {
@@ -227,7 +195,7 @@ fun MainNavigationHost(
             }
 
             composable(Screen.CallHistoryScreen.route) {
-                CallHistoryScreen(globalMessageListenerViewModel, navController, viewModel)
+                CallHistoryScreen(globalMessageListenerViewModel, viewModel)
             }
 
             composable("FriendListScreen") {
@@ -260,47 +228,6 @@ fun MainNavigationHost(
                         globalMessageListenerViewModel
                     )
                 }
-            }
-
-            composable("CallScreen/{channelName}/{callType}/{isCaller}/{receiverId}/{callDocId}",
-                arguments = listOf(
-                    navArgument("channelName") { type = NavType.StringType },
-                    navArgument("callType") { type = NavType.StringType },
-                    navArgument("isCaller") { type = NavType.BoolType },
-                    navArgument("receiverId") { type = NavType.StringType },
-                    navArgument("callDocId") { type = NavType.StringType }
-                    //  navArgument("token"){type = NavType.StringType} // token for agora if on secure mode
-                )
-            )
-            { backStackEntry ->
-                val channelName = backStackEntry.arguments?.getString("channelName") ?: ""
-                val callType = backStackEntry.arguments?.getString("callType") ?: ""
-                val isCaller = backStackEntry.arguments?.getBoolean("isCaller") ?: true
-                val receiverId = backStackEntry.arguments?.getString("receiverId") ?: ""
-                val callDocId = backStackEntry.arguments?.getString("callDocId") ?: ""
-                //   val token = backStackEntry.arguments?.getString("token") ?: ""
-
-                CallScreen(
-                    channelName,
-                    callType,
-                    globalMessageListenerViewModel = globalMessageListenerViewModel,
-                    receiverId = receiverId,
-                    isCaller = isCaller,
-                    chatsViewModel = viewModel,
-                    callDocId = callDocId
-                )
-                {
-                    Log.d("CallScreen", "onCallEnd triggered!")
-
-
-                    if (startDestination.startsWith("CallScreen")) {
-                        activityContext?.finishAndRemoveTask()
-                    } else {
-                        navController.popBackStack()
-                    }
-
-                }
-
             }
         }
     }

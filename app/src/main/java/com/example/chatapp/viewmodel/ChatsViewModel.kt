@@ -1,13 +1,10 @@
 package com.example.chatapp.viewmodel
 
 import android.app.Activity
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.CallMetadata
 import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.GlobalMessageListenerRepo
 import com.example.chatapp.repository.MessagingHandlerRepo
@@ -31,8 +28,7 @@ class ChatsViewModel @Inject constructor(
     private val firestoreDb: FirebaseFirestore,
     private val messagingHandlerRepo: MessagingHandlerRepo,
     private val globalMessageListenerRepo: GlobalMessageListenerRepo,
-    private val onlineStatusRepo: OnlineStatusRepo,
-    private val agoraRepo: AgoraSetUpRepo
+    private val onlineStatusRepo: OnlineStatusRepo
 ) : ViewModel() {
 
 
@@ -42,14 +38,8 @@ class ChatsViewModel @Inject constructor(
     private var _loadingIndicator = MutableStateFlow(false)
     val loadingIndicator = _loadingIndicator.asStateFlow()
 
-    private val _deepLinkData = MutableStateFlow<CallMetadata?>(null)
-    val deepLinkData = _deepLinkData.asStateFlow()
-
     private val _fcmMessageMetadata = MutableStateFlow<MessageFcmMetadata?>(null)
     val fcmMessageMetadata = _fcmMessageMetadata.asStateFlow()
-
-    private val _isCallScreenActive = MutableStateFlow(false)
-    val isCallScreenActive  = _isCallScreenActive.asStateFlow()
 
     private val _isCallHistoryScreenActive = MutableStateFlow(false)
     val callHistoryScreenActive = _isCallHistoryScreenActive.asStateFlow()
@@ -57,57 +47,20 @@ class ChatsViewModel @Inject constructor(
     private val _moveToCallHistory = MutableStateFlow(false)
     val moveToCallHistory = _moveToCallHistory.asStateFlow()
 
-    private val _hasStartedCallService = MutableStateFlow(false)
-    val hasStartedCallService = _hasStartedCallService.asStateFlow()
-
-
 
     init {
         checkAuthStatus()
 
-        // collecting it so that even if the app restarts, we always will know if the call is active or not
-        // if the app was not to be killed then we could just have relied on global viewmodel to save the state
-        // agora is injected to service class so it should survive the app close
-        viewModelScope.launch {
-
-            agoraRepo.isJoined.collect{isJoined ->
-
-                Log.i("CHATS_VM_IS_JOINED", isJoined.toString())
-                if(isJoined)
-                {
-                    markCallServiceStarted()
-                } else {
-                    resetCallServiceFlag()
-                }
-            }
-        }
     }
 
 
-    fun markCallServiceStarted() {
-
-        if (!_hasStartedCallService.value) _hasStartedCallService.value = true
-
-    }
-
-    fun resetCallServiceFlag() {
-        if (_hasStartedCallService.value) _hasStartedCallService.value = false
-    }
-
-    fun moveToCallHistory(move : Boolean){
+    fun moveToCallHistory(move: Boolean) {
         _moveToCallHistory.value = move
     }
 
-    fun setHistoryScreenActive(state : Boolean)
-    {
-         _isCallHistoryScreenActive.value = state
+    fun setHistoryScreenActive(state: Boolean) {
+        _isCallHistoryScreenActive.value = state
     }
-
-
-    fun setCallScreenActive(active: Boolean) {
-        _isCallScreenActive.value = active
-    }
-
 
 
     fun checkAuthStatus(user: FirebaseUser? = auth.currentUser) {
@@ -121,14 +74,7 @@ class ChatsViewModel @Inject constructor(
         }
     }
 
-    fun setDeepLinkData(metadata: CallMetadata?)
-    {
-        _deepLinkData.value = metadata
-
-    }
-
-    fun setFcmMessageMetaData(messageMetaData : MessageFcmMetadata?)
-    {
+    fun setFcmMessageMetaData(messageMetaData: MessageFcmMetadata?) {
         _fcmMessageMetadata.value = messageMetaData
     }
 

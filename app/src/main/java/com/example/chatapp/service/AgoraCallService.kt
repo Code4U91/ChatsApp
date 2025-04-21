@@ -16,15 +16,15 @@ import com.example.chatapp.AGORA_ID
 import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_NAME_ID
 import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
+import com.example.chatapp.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.CallNotificationRequest
 import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
-import com.example.chatapp.MainActivity
 import com.example.chatapp.R
-import com.example.chatapp.repository.AgoraSetUpRepo
-import com.example.chatapp.repository.CallSessionUpdaterRepo
-import com.example.chatapp.repository.CallRingtoneManager
 import com.example.chatapp.api.FcmNotificationSender
+import com.example.chatapp.repository.AgoraSetUpRepo
+import com.example.chatapp.repository.CallRingtoneManager
+import com.example.chatapp.repository.CallSessionUpdaterRepo
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -105,7 +105,9 @@ class AgoraCallService : LifecycleService() {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     startForeground(
                         CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
-                        buildNotification("$inOrOut ${it.callType} call"),
+                        buildNotification(
+                            title = if (it.isCaller) it.receiverName else it.callerName,
+                            contextText = "$inOrOut ${it.callType} call"),
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                     )
@@ -113,7 +115,9 @@ class AgoraCallService : LifecycleService() {
 
                     startForeground(
                         CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
-                        buildNotification("$inOrOut ${it.callType} call")
+                        buildNotification(
+                            title = if (it.isCaller) it.receiverName else it.callerName,
+                            contextText = "$inOrOut ${it.callType} call")
                     )
                 }
 
@@ -143,7 +147,7 @@ class AgoraCallService : LifecycleService() {
 
     // handles all the coroutine background tasks
 
-    private fun startFlowCollectors(callDocId: String) {
+    private fun startFlowCollectors(callDocId: String?) {
 
         serviceJob = lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -213,15 +217,18 @@ class AgoraCallService : LifecycleService() {
                             // receiver can't join if call isn't picked so join is false
                             // checked by the receiver, i.e isCaller false
 
-                            val listenerForDeclineByCaller =
-                                callSessionUpdaterRepo.checkAndUpdateCurrentCall(callId = callDocId)
-                                {
+                            callDocId?.let {
+                                val listenerForDeclineByCaller =
+                                    callSessionUpdaterRepo.checkAndUpdateCurrentCall(callId = it)
+                                    {
 
-                                    agoraRepo.declineIncomingCall(true) // helper flag to update the ui, listened by callViewmodel
+                                        agoraRepo.declineIncomingCall(true) // helper flag to update the ui, listened by callViewmodel
 
-                                }
+                                    }
 
-                            listenerRegistration.add(listenerForDeclineByCaller)
+                                listenerRegistration.add(listenerForDeclineByCaller)
+                            }
+
 
                         }
 
@@ -245,7 +252,9 @@ class AgoraCallService : LifecycleService() {
 
                             notificationManager.notify(
                                 CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
-                                buildNotification("Ongoing call")
+                                buildNotification(
+                                    title = if (callMetadata.isCaller) callMetadata.receiverName else callMetadata.callerName,
+                                    contextText = "Ongoing call")
                             )
 
 
@@ -311,13 +320,13 @@ class AgoraCallService : LifecycleService() {
     }
 
 
-    private fun buildNotification(contextText: String): Notification {
+    private fun buildNotification(title: String, contextText: String): Notification {
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
 
-        val intent = Intent(this, MainActivity::class.java).apply {
+        val intent = Intent(this, CallActivity::class.java).apply {
 
             flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
             action = CALL_INTENT
@@ -334,7 +343,7 @@ class AgoraCallService : LifecycleService() {
 
         return NotificationCompat.Builder(this, CALL_CHANNEL_NOTIFICATION_NAME_ID)
             .setSmallIcon(R.drawable.ic_launcher_foreground) // change to app icon or profile pic later
-            .setContentTitle(callMetadata.receiverName)
+            .setContentTitle(title)
             .setContentText(contextText)
             .setCategory(Notification.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_MAX)

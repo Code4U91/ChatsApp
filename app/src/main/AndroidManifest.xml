@@ -36,6 +36,7 @@
             android:name=".CallActivity"
             android:exported="false"
             android:label="@string/title_activity_call"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.ChatApp" />
 
         <service

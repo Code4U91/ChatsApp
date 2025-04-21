@@ -39,7 +39,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,14 +48,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.hilt.navigation.compose.hiltViewModel
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.FriendData
+import com.example.chatapp.CallMetadata
 import com.example.chatapp.formatCallDuration
 import com.example.chatapp.screens.mainBottomBarScreens.requestPerm
 import com.example.chatapp.viewmodel.CallViewModel
-import com.example.chatapp.viewmodel.ChatsViewModel
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.delay
 
@@ -65,13 +61,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun CallScreen(
     channelName: String,
-    callType: String,
-    callViewModel: CallViewModel = hiltViewModel(),
-    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    receiverId: String,
-    isCaller: Boolean,
-    chatsViewModel: ChatsViewModel,
-    callDocId: String,
+    callViewModel: CallViewModel,
+    callScreenData: CallMetadata,
     onCallEnd: () -> Unit
 ) {
 
@@ -86,15 +77,6 @@ fun CallScreen(
     val isJoined by callViewModel.isJoined.collectAsState()
 
 
-    DisposableEffect(Unit) {
-
-        chatsViewModel.setCallScreenActive(true)
-
-        onDispose {
-            chatsViewModel.setCallScreenActive(false)
-        }
-    }
-
 
     LaunchedEffect(remoteUserLeft, callEnded) {
         if (callEnded || remoteUserLeft) {
@@ -102,7 +84,7 @@ fun CallScreen(
             Log.i("ON_END_CALLED", "callEnd: $callEnded remoteUser : $remoteUserLeft ")
 
             callViewModel.stopCallService(context)
-            chatsViewModel.resetCallServiceFlag()
+            callViewModel.resetCallServiceFlag()
             onCallEnd()
         }
 
@@ -125,26 +107,16 @@ fun CallScreen(
     }
 
     // switch compose based on the call type passes as parameter to callScreen compose
-    if (callType == "video") {
+    if (callScreenData.callType == "video") {
         StartVideoCall(
             callViewModel = callViewModel,
-            channelName = channelName,
-            isCaller,
-            receiverId,
-            globalMessageListenerViewModel,
-            chatsViewModel,
-            callDocId
+            callScreenData = callScreenData
         )
     } else {
 
         StartVoiceCall(
             callViewModel = callViewModel,
-            channelName = channelName,
-            isCaller = isCaller,
-            receiverId,
-            globalMessageListenerViewModel,
-            chatsViewModel,
-            callDocId
+            callScreenData = callScreenData
         )
 
     }
@@ -155,57 +127,40 @@ fun CallScreen(
 @Composable
 fun StartVoiceCall(
     callViewModel: CallViewModel,
-    channelName: String,
-    isCaller: Boolean,
-    receiverId: String,
-    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    chatsViewModel: ChatsViewModel,
-    callDocId: String
+    callScreenData: CallMetadata
 ) {
 
-    val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
-    {
-        val listener = globalMessageListenerViewModel.fetchFriendData(receiverId)
-        { data ->
-            value = data
-        }
-
-        awaitDispose {
-
-            listener.remove()
-        }
-    }
-
-    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
     val isJoined by callViewModel.isJoined.collectAsState()
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
     val callDuration by callViewModel.callDuration.collectAsState()
     val callEnded by callViewModel.callEnded.collectAsState() // may be replace with remoteUserLeft
-    val hasStartedCallService by chatsViewModel.hasStartedCallService.collectAsState()
+
+    val hasStartedCallService by callViewModel.hasStartedCallService.collectAsState()
     val context = LocalContext.current
 
     val permissionState = requestPerm()
 
 
-    LaunchedEffect(isJoined, otherUserData, callEnded, permissionState) {
+    LaunchedEffect(isJoined, callEnded, permissionState) {
 
         if (permissionState.allPermissionsGranted) {
             if (!hasStartedCallService) {
 
-                if (otherUserData != null && !isJoined && !callEnded && isCaller) {
+                if (!isJoined && !callEnded && callScreenData.isCaller) {
 
                     callViewModel.startCallService(
                         context = context,
-                        channelName = channelName,
+                        channelName = callScreenData.channelName,
                         callType = "voice",
-                        callerName = currentUserData?.name.orEmpty(),
-                        receiverName = otherUserData?.name.orEmpty(),
+                        callerName = callScreenData.callerName,
+                        receiverName = callScreenData.receiverName,
                         isCaller = true,
-                        callReceiverId = otherUserData?.uid ?: receiverId,
-                        callDocId = callDocId
+                        callReceiverId = callScreenData.callReceiverId,
+                        callDocId = callScreenData.callDocId,
+                        photo = callScreenData.receiverPhoto
                     )
 
-                    chatsViewModel.markCallServiceStarted()
+                    callViewModel.markCallServiceStarted()
                 }
             }
         } else {
@@ -234,7 +189,7 @@ fun StartVoiceCall(
             ) {
 
                 Image(
-                    painter = rememberAsyncImagePainter(model = otherUserData?.photoUrl),
+                    painter = rememberAsyncImagePainter(model = callScreenData.receiverPhoto),
                     contentDescription = "profile picture",
                     modifier = Modifier
                         .clip(CircleShape)
@@ -245,7 +200,7 @@ fun StartVoiceCall(
                 Spacer(modifier = Modifier.height(10.dp))
 
                 Text(
-                    text = otherUserData?.name ?: "",
+                    text = callScreenData.receiverName,
                     fontSize = 20.sp
                 )
 
@@ -275,7 +230,7 @@ fun StartVoiceCall(
 
 
                     Text(
-                        text = if (isCaller) "waiting for other user to join the call" else "Incoming voice call",
+                        text = if (callScreenData.isCaller) "waiting for other user to join the call" else "Incoming voice call",
                         fontSize = 18.sp
 
                     )
@@ -292,27 +247,33 @@ fun StartVoiceCall(
                     .padding(16.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                ControlButtons(callType = "voice", callViewModel, isCaller, callDocId)
+                ControlButtons(
+                    callType = "voice",
+                    callViewModel,
+                    callScreenData.isCaller,
+                    callScreenData.callDocId
+                )
                 {
 
                     if (permissionState.allPermissionsGranted) {
 
                         if (!hasStartedCallService) {
 
-                            if (otherUserData != null && !isJoined && !callEnded && !isCaller) {
+                            if (!isJoined && !callEnded && !callScreenData.isCaller) {
 
                                 callViewModel.startCallService(
                                     context = context,
-                                    channelName = channelName,
+                                    channelName = callScreenData.channelName,
                                     callType = "voice",
-                                    callerName = currentUserData?.name.orEmpty(),
-                                    receiverName = otherUserData?.name.orEmpty(),
+                                    callerName = callScreenData.callerName,
+                                    receiverName = callScreenData.receiverName,
                                     isCaller = false,
-                                    callReceiverId = otherUserData?.uid ?: receiverId,
-                                    callDocId = callDocId
+                                    callReceiverId = callScreenData.callReceiverId,
+                                    callDocId = callScreenData.callDocId,
+                                    photo = callScreenData.receiverPhoto
                                 )
 
-                                chatsViewModel.markCallServiceStarted()
+                                callViewModel.markCallServiceStarted()
                             }
                         }
 
@@ -336,28 +297,11 @@ fun StartVoiceCall(
 @Composable
 fun StartVideoCall(
     callViewModel: CallViewModel,
-    channelName: String,
-    isCaller: Boolean,
-    receiverId: String,
-    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    chatsViewModel: ChatsViewModel,
-    callDocId: String
+    callScreenData: CallMetadata
 ) {
 
-    val otherUserData by produceState<FriendData?>(initialValue = null, key1 = receiverId)
-    {
-        val listener = globalMessageListenerViewModel.fetchFriendData(receiverId)
-        { data ->
-            value = data
-        }
 
-        awaitDispose {
-
-            listener.remove()
-        }
-    }
-
-    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
+    // val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
     val context = LocalContext.current
     val isJoined by callViewModel.isJoined.collectAsState()
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // remote user numeric id
@@ -367,33 +311,34 @@ fun StartVideoCall(
     // Create SurfaceViews for Local and Remote video
     val localView by rememberUpdatedState(SurfaceView(context))
     val remoteView by rememberUpdatedState(SurfaceView(context))
-    val hasStartedCallService by chatsViewModel.hasStartedCallService.collectAsState()
+    val hasStartedCallService by callViewModel.hasStartedCallService.collectAsState()
     val permissionState = requestPerm()
 
 
     val activity = LocalActivity.current
 
-    LaunchedEffect(isJoined, otherUserData, permissionState) {
+    LaunchedEffect(isJoined, permissionState) {
 
         if (permissionState.allPermissionsGranted) {
             if (!hasStartedCallService) {
 
-                if (otherUserData != null && !isJoined && !callEnded && isCaller) {
+                if (!isJoined && !callEnded && callScreenData.isCaller) {
 
                     callViewModel.enableVideoPreview()
 
                     callViewModel.startCallService(
                         context = context,
-                        channelName = channelName,
+                        channelName = callScreenData.channelName,
                         callType = "video",
-                        callerName = currentUserData?.name.orEmpty(),
-                        receiverName = otherUserData?.name.orEmpty(),
+                        callerName = callScreenData.callerName,
+                        receiverName = callScreenData.receiverName,
                         isCaller = true,
-                        callReceiverId = otherUserData?.uid ?: receiverId,
-                        callDocId = callDocId
+                        callReceiverId = callScreenData.callReceiverId,
+                        callDocId = callScreenData.callDocId,
+                        photo = callScreenData.receiverPhoto
                     )
 
-                    chatsViewModel.markCallServiceStarted()
+                    callViewModel.markCallServiceStarted()
                 }
             }
         } else {
@@ -468,7 +413,7 @@ fun StartVideoCall(
                 }
             } else {
 
-                if (isCaller) {
+                if (callScreenData.isCaller) {
                     Text(
                         text = "Establishing connection...",
                         modifier = Modifier.align(Alignment.Center)
@@ -482,7 +427,7 @@ fun StartVideoCall(
                     ) {
 
                         Image(
-                            painter = rememberAsyncImagePainter(model = otherUserData?.photoUrl),
+                            painter = rememberAsyncImagePainter(model = callScreenData.receiverPhoto),
                             contentDescription = "profile picture",
                             modifier = Modifier
                                 .clip(CircleShape)
@@ -493,7 +438,7 @@ fun StartVideoCall(
                         Spacer(modifier = Modifier.height(15.dp))
 
                         Text(
-                            text = otherUserData?.name ?: "",
+                            text = callScreenData.receiverName,
                             fontSize = 20.sp
                         )
                     }
@@ -529,7 +474,7 @@ fun StartVideoCall(
                 } else {
 
                     Text(
-                        text = if (isCaller) "Video calling to ${otherUserData?.name}" else "Incoming video call from :",
+                        text = if (callScreenData.isCaller) "Video calling to ${callScreenData.receiverName}" else "Incoming video call from :",
                         fontSize = 18.sp
                     )
                 }
@@ -544,8 +489,8 @@ fun StartVideoCall(
                     ControlButtons(
                         callType = "video",
                         callViewModel = callViewModel,
-                        isCaller = isCaller,
-                        callDocId
+                        isCaller = callScreenData.isCaller,
+                        callScreenData.callDocId
                     ) {
                         // when the call receiver accepts the call
 
@@ -553,22 +498,23 @@ fun StartVideoCall(
 
                             if (!hasStartedCallService) {
 
-                                if (otherUserData != null && !isJoined && !callEnded && !isCaller) {
+                                if (!isJoined && !callEnded && !callScreenData.isCaller) {
 
                                     callViewModel.enableVideoPreview()
 
                                     callViewModel.startCallService(
                                         context = context,
-                                        channelName = channelName,
+                                        channelName = callScreenData.channelName,
                                         callType = "video",
-                                        callerName = currentUserData?.name.orEmpty(),
-                                        receiverName = otherUserData?.name.orEmpty(),
+                                        callerName = callScreenData.callerName,
+                                        receiverName = callScreenData.receiverName,
                                         isCaller = false,
-                                        callReceiverId = otherUserData?.uid ?: receiverId,
-                                        callDocId = callDocId
+                                        callReceiverId = callScreenData.callReceiverId,
+                                        callDocId = callScreenData.callDocId,
+                                        photo = callScreenData.receiverPhoto
                                     )
 
-                                    chatsViewModel.markCallServiceStarted()
+                                    callViewModel.markCallServiceStarted()
                                 }
                             }
 
@@ -593,7 +539,7 @@ fun ControlButtons(
     callType: String,
     callViewModel: CallViewModel,
     isCaller: Boolean,
-    callDocId: String,
+    callDocId: String?,
     onJoinCall: () -> Unit
 ) {
 
@@ -637,7 +583,10 @@ fun ControlButtons(
 
                     // cancel button
                     IconButton(onClick = {
-                        callViewModel.declineTheCall(true, callDocId)
+                        callDocId?.let {
+                            callViewModel.declineTheCall(true, it)
+                        }
+
                     }) {
                         Icon(
                             imageVector = Icons.Default.CallEnd,

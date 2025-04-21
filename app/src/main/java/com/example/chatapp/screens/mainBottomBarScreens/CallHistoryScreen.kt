@@ -1,5 +1,6 @@
 package com.example.chatapp.screens.mainBottomBarScreens
 
+import android.content.Intent
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,14 +52,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.example.chatapp.CALL_INTENT
+import com.example.chatapp.CallActivity
 import com.example.chatapp.CallData
+import com.example.chatapp.CallMetadata
 import com.example.chatapp.FriendData
 import com.example.chatapp.formatDurationText
 import com.example.chatapp.formatTimestampToDateTime
@@ -76,7 +80,6 @@ import kotlinx.coroutines.delay
 @Composable
 fun CallHistoryScreen(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    navController: NavHostController,
     chatsViewModel: ChatsViewModel
 ) {
 
@@ -175,8 +178,7 @@ fun CallHistoryScreen(
 
                 CallLazyColumn(
                     filteredCallList,
-                    globalMessageListenerViewModel,
-                    navController
+                    globalMessageListenerViewModel
                 )
 
             }
@@ -188,9 +190,12 @@ fun CallHistoryScreen(
 fun CallLazyColumn(
     filteredCallList: List<CallData>,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    navController: NavHostController,
     listState: LazyListState = rememberLazyListState()
 ) {
+
+    val context = LocalContext.current
+    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
+
     LaunchedEffect(filteredCallList.firstOrNull()?.callId) {
 
         if (filteredCallList.isNotEmpty() && listState.firstVisibleItemIndex <= 2) {
@@ -227,8 +232,27 @@ fun CallLazyColumn(
                 isCaller = callData.callReceiverId == callData.otherUserId, // checking if other user is caller, otherUserId is other participantId
                 callStatus = callData.status ?: ""
             ) {
-                navController.navigate("CallScreen/${callData.channelId}/${callData.callType}/true/${callData.otherUserId}/n"){
-                    launchSingleTop = true
+
+                currentUserData?.let { currentUser ->
+
+                    val callMetaData = CallMetadata(
+                        channelName = callData.channelId.orEmpty(),
+                        uid = currentUser.uid.orEmpty(),
+                        callType = callData.callType.orEmpty(),
+                        callerName = currentUser.name.orEmpty(),
+                        callReceiverId = it.uid.orEmpty(),
+                        isCaller = true,
+                        receiverPhoto = it.photoUrl.orEmpty(),
+                        receiverName = it.name.orEmpty(),
+                        callDocId = null
+                    )
+
+                    val intent = Intent(context, CallActivity::class.java).apply {
+                        action = CALL_INTENT
+                        putExtra("call_metadata", callMetaData)
+                    }
+
+                    context.startActivity(intent)
                 }
             }
 
@@ -251,7 +275,7 @@ fun CallListItem(
     callType: String,
     isCaller: Boolean,
     callStatus: String,
-    startCall: () -> Unit
+    startCall: (FriendData) -> Unit
 ) {
 
     val friendData by produceState<FriendData?>(initialValue = null, key1 = otherUserId)
@@ -266,6 +290,8 @@ fun CallListItem(
             listener.remove()
         }
     }
+
+
 
     val time by remember {
         mutableStateOf(formatTimestampToDateTime(callStartTime ?: Timestamp.now()))
@@ -385,11 +411,17 @@ fun CallListItem(
 
             when (callType) {
                 "voice" -> VoiceCallButton {
-                    startCall()
+                    friendData?.let {
+                        startCall(it)
+                    }
+
                 }
 
                 "video" -> VideoCallButton {
-                    startCall()
+
+                    friendData?.let {
+                        startCall(it)
+                    }
                 }
 
                 else -> {}

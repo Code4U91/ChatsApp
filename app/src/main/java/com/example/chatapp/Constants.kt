@@ -1,7 +1,5 @@
 package com.example.chatapp
 
-import kotlinx.coroutines.flow.MutableSharedFlow
-
 const val USERS_COLLECTION = "users"
 
 const val USERS_REF = "users"
@@ -33,8 +31,4 @@ const val AGORA_ID = BuildConfig.AGORA_APP_ID
 const val MESSAGE_FCM_INTENT = "fcmMessageNotification"
 const val CALL_INTENT = "callInvitation"
 const val CALL_HISTORY_INTENT = "callHistory"
-
-object CallEventHandler {
-    val incomingCall = MutableSharedFlow<CallMetadata>(replay = 0)
-}
 

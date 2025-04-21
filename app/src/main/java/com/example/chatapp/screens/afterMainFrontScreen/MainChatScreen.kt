@@ -1,5 +1,6 @@
 package com.example.chatapp.screens.afterMainFrontScreen
 
+import android.content.Intent
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -66,6 +67,9 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
+import com.example.chatapp.CALL_INTENT
+import com.example.chatapp.CallActivity
+import com.example.chatapp.CallMetadata
 import com.example.chatapp.FriendData
 import com.example.chatapp.Message
 import com.example.chatapp.appInstance
@@ -94,6 +98,8 @@ fun MainChatScreen(
     }
 
     val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
+
+    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
 
 
     val friendData by produceState<FriendData?>(initialValue = null, key1 = otherId)
@@ -235,17 +241,48 @@ fun MainChatScreen(
 
 
                             VideoCallButton {
-                                navController.navigate("CallScreen/$chatId/video/true/$otherId/n") {
-                                    launchSingleTop = true
+
+                                val callMetaData = CallMetadata(
+                                    channelName = chatId,
+                                    uid = currentUserData?.uid.orEmpty(),
+                                    callType = "video",
+                                    callerName = currentUserData?.name.orEmpty(),
+                                    callReceiverId = friendData?.uid.orEmpty(),
+                                    isCaller = true,
+                                    receiverPhoto = friendData?.photoUrl.orEmpty(),
+                                    receiverName = friendData?.name.orEmpty(),
+                                    callDocId = null
+                                )
+
+                                val intent = Intent(context, CallActivity::class.java).apply {
+                                    action = CALL_INTENT
+                                    putExtra("call_metadata", callMetaData)
                                 }
+
+                                context.startActivity(intent)
+
                             }
 
                             VoiceCallButton {
 
-                                navController.navigate("CallScreen/$chatId/voice/true/$otherId/n")
-                                {
-                                    launchSingleTop = true
+                                val callMetaData = CallMetadata(
+                                    channelName = chatId,
+                                    uid = currentUserData?.uid.orEmpty(),
+                                    callType = "voice",
+                                    callerName = currentUserData?.name.orEmpty(),
+                                    callReceiverId = friendData?.uid.orEmpty(),
+                                    isCaller = true,
+                                    receiverPhoto = friendData?.photoUrl.orEmpty(),
+                                    receiverName = friendData?.name.orEmpty(),
+                                    callDocId = null
+                                )
+
+                                val intent = Intent(context, CallActivity::class.java).apply {
+                                    action = CALL_INTENT
+                                    putExtra("call_metadata", callMetaData)
                                 }
+
+                                context.startActivity(intent)
                             }
 
                         }

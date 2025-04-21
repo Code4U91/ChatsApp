@@ -17,7 +17,7 @@ import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.CALL_HISTORY
 import com.example.chatapp.CALL_HISTORY_INTENT
 import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallEventHandler
+import com.example.chatapp.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
@@ -36,6 +36,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,6 +60,10 @@ class FirebaseMessagingService : FirebaseMessagingService() {
     @Inject
     lateinit var agoraRepo: AgoraSetUpRepo
 
+    @Inject
+    @ApplicationContext
+    lateinit var context: Context
+
     private var callStatusListener: ListenerRegistration? = null
 
 
@@ -72,6 +77,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         val type = message.data["type"]
         val senderId = message.data["senderId"].orEmpty()
         val senderName = message.data["senderName"].orEmpty()
+        val imageUrl = message.data["profileImage"]
 
 
         when (type) {
@@ -79,7 +85,6 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                 val title = message.data["senderName"]
                 val body = message.data["message"]
-                val imageUrl = message.data["profileImage"]
                 val chatId = message.data["chatId"].orEmpty()
 
                 if (imageUrl != null) {
@@ -107,10 +112,11 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                     uid = "", // current user id, not needed for this case
                     callType = callType,
                     callerName = senderName,
-                    receiverName = "",
+                    receiverName = "", // leaving it empty for now since we have no use of it when the user is a receiver
                     isCaller = false,
                     callReceiverId = senderId, // opposite in case of receiver
-                    callDocId = callId
+                    callDocId = callId,
+                    receiverPhoto = imageUrl.orEmpty()
                 )
 
                 // If the call ends before use picks or call has already timed out
@@ -124,10 +130,15 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                     // if the call comes while the app is alive but in background and screen is locked then app crashes
                     if (isAppInForeground()) {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            showIncomingCallNotification(callMetadata)
-                            CallEventHandler.incomingCall.emit(callMetadata)
+
+                        val intent = Intent(context, CallActivity::class.java).apply {
+                            action = CALL_INTENT
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            putExtra("call_metadata", callMetadata)
                         }
+
+                        context.startActivity(intent)
+
                     } else {
 
                         showIncomingCallNotification(callMetadata)
@@ -166,9 +177,9 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
 
-        val intentForFullScreen = Intent(this, MainActivity::class.java).apply {
+        val intentForFullScreen = Intent(this, CallActivity::class.java).apply {
             action = CALL_INTENT
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            flags =  Intent.FLAG_ACTIVITY_NEW_TASK
             putExtra("call_metadata", callMetadata)
         }
 
