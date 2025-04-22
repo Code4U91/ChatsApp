@@ -35,6 +35,8 @@
         <activity
             android:name=".call.activity.CallActivity"
             android:exported="false"
+            android:showOnLockScreen="true"
+            android:turnScreenOn="true"
             android:label="@string/title_activity_call"
             android:launchMode="singleTop"
             android:theme="@style/Theme.ChatApp" />
