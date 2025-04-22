@@ -17,7 +17,7 @@ import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.CALL_HISTORY
 import com.example.chatapp.CALL_HISTORY_INTENT
 import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallActivity
+import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
@@ -28,7 +28,7 @@ import com.example.chatapp.MainActivity
 import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.repository.AgoraSetUpRepo
+import com.example.chatapp.call.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.CallRingtoneManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

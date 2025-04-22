@@ -1,4 +1,4 @@
-package com.example.chatapp.repository
+package com.example.chatapp.call.repository
 
 import com.example.chatapp.CALL_HISTORY
 import com.google.firebase.Timestamp

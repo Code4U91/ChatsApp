@@ -68,7 +68,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallActivity
+import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.FriendData
 import com.example.chatapp.Message

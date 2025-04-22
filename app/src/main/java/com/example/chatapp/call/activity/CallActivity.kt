@@ -1,4 +1,4 @@
-package com.example.chatapp
+package com.example.chatapp.call.activity
 
 import android.content.Intent
 import android.os.Build
@@ -11,9 +11,11 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import com.example.chatapp.screens.afterMainFrontScreen.CallScreen
+import com.example.chatapp.CALL_INTENT
+import com.example.chatapp.CallMetadata
+import com.example.chatapp.call.screen.CallScreen
 import com.example.chatapp.ui.theme.ChatsAppTheme
-import com.example.chatapp.viewmodel.CallViewModel
+import com.example.chatapp.call.viewmodel.CallViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint

@@ -60,7 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallActivity
+import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.CallData
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.FriendData

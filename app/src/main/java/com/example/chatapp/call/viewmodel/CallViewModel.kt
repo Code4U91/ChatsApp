@@ -1,4 +1,4 @@
-package com.example.chatapp.viewmodel
+package com.example.chatapp.call.viewmodel
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -9,9 +9,9 @@ import android.view.SurfaceView
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.CallMetadata
-import com.example.chatapp.repository.AgoraSetUpRepo
-import com.example.chatapp.repository.CallSessionUpdaterRepo
-import com.example.chatapp.service.AgoraCallService
+import com.example.chatapp.call.repository.AgoraSetUpRepo
+import com.example.chatapp.call.repository.CallSessionUpdaterRepo
+import com.example.chatapp.call.service.AgoraCallService
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

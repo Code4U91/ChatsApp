@@ -1,4 +1,4 @@
-package com.example.chatapp.service
+package com.example.chatapp.call.service
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -16,15 +16,15 @@ import com.example.chatapp.AGORA_ID
 import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_NAME_ID
 import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
-import com.example.chatapp.CallActivity
+import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.CallNotificationRequest
 import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.R
 import com.example.chatapp.api.FcmNotificationSender
-import com.example.chatapp.repository.AgoraSetUpRepo
+import com.example.chatapp.call.repository.AgoraSetUpRepo
 import com.example.chatapp.repository.CallRingtoneManager
-import com.example.chatapp.repository.CallSessionUpdaterRepo
+import com.example.chatapp.call.repository.CallSessionUpdaterRepo
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job

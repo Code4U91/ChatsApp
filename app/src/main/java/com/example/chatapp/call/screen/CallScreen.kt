@@ -1,4 +1,4 @@
-package com.example.chatapp.screens.afterMainFrontScreen
+package com.example.chatapp.call.screen
 
 import android.util.Log
 import android.view.SurfaceView
@@ -52,7 +52,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.formatCallDuration
 import com.example.chatapp.screens.mainBottomBarScreens.requestPerm
-import com.example.chatapp.viewmodel.CallViewModel
+import com.example.chatapp.call.viewmodel.CallViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import kotlinx.coroutines.delay
 
