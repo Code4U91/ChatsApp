@@ -29,7 +29,7 @@ import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.call.repository.AgoraSetUpRepo
-import com.example.chatapp.repository.CallRingtoneManager
+import com.example.chatapp.call.repository.CallRingtoneManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration

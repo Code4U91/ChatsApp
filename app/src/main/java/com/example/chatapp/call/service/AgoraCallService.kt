@@ -23,7 +23,7 @@ import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.R
 import com.example.chatapp.api.FcmNotificationSender
 import com.example.chatapp.call.repository.AgoraSetUpRepo
-import com.example.chatapp.repository.CallRingtoneManager
+import com.example.chatapp.call.repository.CallRingtoneManager
 import com.example.chatapp.call.repository.CallSessionUpdaterRepo
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint

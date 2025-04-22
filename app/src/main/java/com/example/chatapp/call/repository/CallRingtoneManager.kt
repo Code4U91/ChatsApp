@@ -1,4 +1,4 @@
-package com.example.chatapp.repository
+package com.example.chatapp.call.repository
 
 import android.content.Context
 import android.media.AudioAttributes
