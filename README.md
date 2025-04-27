@@ -14,7 +14,7 @@ Uses Agora SDK for handling voice and video call.
 2. Add group chat.
 3. Fix the issue where notification is dismissable even though it was set as ongoing and ran using startForeground, make it undismissable till the call ends.
 4. Increase fuildity of call screen ui and may be use call state instead, currently when the call ends for some reason due to delay or other reason for a split second user can see a UI which are shown when the remote user is not connected or call not accepted.
-6. Improve UI look, probide UI customization options
+6. Improve UI look, provide UI customization options
 7. Update firebase rules for better protection
 8. Add end to to end Encryption 
 
