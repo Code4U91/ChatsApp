@@ -100,24 +100,27 @@ class AgoraCallService : LifecycleService() {
                 callMetadata = it
 
                 val inOrOut = if (it.isCaller) "Outgoing" else "Incoming"
+                val callNotification = it.channelName.hashCode()
 
                 // support for lower version
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     startForeground(
-                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
+                        callNotification + CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
                         buildNotification(
                             title = if (it.isCaller) it.receiverName else it.callerName,
-                            contextText = "$inOrOut ${it.callType} call"),
+                            contextText = "$inOrOut ${it.callType} call",
+                            callNotification),
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA or
                                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
                     )
                 } else {
 
                     startForeground(
-                        CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
+                        callNotification + CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
                         buildNotification(
                             title = if (it.isCaller) it.receiverName else it.callerName,
-                            contextText = "$inOrOut ${it.callType} call")
+                            contextText = "$inOrOut ${it.callType} call",
+                            callNotification)
                     )
                 }
 
@@ -133,7 +136,7 @@ class AgoraCallService : LifecycleService() {
                 // incoming calls are received by fcm push notification it runs incoming ringtone there using callRingtoneManager
 
 
-                startFlowCollectors(it.callDocId) // callDocId in case needed by the receiver, its firebase doc id where the current
+                startFlowCollectors(it.callDocId, callNotification) // callDocId in case needed by the receiver, its firebase doc id where the current
                 // active call data is store, may require to update the data directly without querying
 
             }
@@ -147,7 +150,7 @@ class AgoraCallService : LifecycleService() {
 
     // handles all the coroutine background tasks
 
-    private fun startFlowCollectors(callDocId: String?) {
+    private fun startFlowCollectors(callDocId: String?, callNotification: Int) {
 
         serviceJob = lifecycleScope.launch {
             repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
@@ -250,11 +253,14 @@ class AgoraCallService : LifecycleService() {
                             val notificationManager =
                                 getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
+
+
                             notificationManager.notify(
-                                CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
+                               callNotification + CALL_SERVICE_ACTIVE_NOTIFICATION_ID,
                                 buildNotification(
                                     title = if (callMetadata.isCaller) callMetadata.receiverName else callMetadata.callerName,
-                                    contextText = "Ongoing call")
+                                    contextText = "Ongoing call",
+                                    callNotificationId = callNotification)
                             )
 
 
@@ -320,11 +326,11 @@ class AgoraCallService : LifecycleService() {
     }
 
 
-    private fun buildNotification(title: String, contextText: String): Notification {
+    private fun buildNotification(title: String, contextText: String, callNotificationId: Int): Notification {
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
+        notificationManager.cancel(callNotificationId + INCOMING_CALL_FCM_NOTIFICATION_ID)
 
         val intent = Intent(this, CallActivity::class.java).apply {
 

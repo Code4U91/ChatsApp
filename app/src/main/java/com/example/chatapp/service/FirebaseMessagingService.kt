@@ -17,7 +17,6 @@ import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.CALL_HISTORY
 import com.example.chatapp.CALL_HISTORY_INTENT
 import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
@@ -28,6 +27,7 @@ import com.example.chatapp.MainActivity
 import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
+import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.call.repository.AgoraSetUpRepo
 import com.example.chatapp.call.repository.CallRingtoneManager
 import com.google.firebase.auth.FirebaseAuth
@@ -107,6 +107,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 val callType = message.data["callType"].orEmpty()
                 val channelName = message.data["channelName"].orEmpty()
 
+                val callNotificationId = channelName.hashCode()
+
                 val callMetadata = CallMetadata(
                     channelName = channelName,
                     uid = "", // current user id, not needed for this case
@@ -120,16 +122,19 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 )
 
                 // If the call ends before use picks or call has already timed out
-                listenToCallStatus(callId, onCallMissed = {
+                listenToCallStatus(callId, notificationId = callNotificationId, onCallMissed = {
 
                     agoraRepo.declineIncomingCall(true) // for closing the call screen ui when missed
-                    showMissedCallNotification(senderName, callType)
+                    showMissedCallNotification(senderName, callType, callNotificationId)
 
                 }, onIncomingCall = {
                     callRingtoneManager.playIncomingRingtone()
 
+
                     // if the call comes while the app is alive but in background and screen is locked then app crashes
                     if (isAppInForeground()) {
+
+                        showIncomingCallNotification(callMetadata, callNotificationId)
 
                         val intent = Intent(context, CallActivity::class.java).apply {
                             action = CALL_INTENT
@@ -141,7 +146,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                     } else {
 
-                        showIncomingCallNotification(callMetadata)
+                        showIncomingCallNotification(callMetadata, callNotificationId)
 
                     }
                 })
@@ -171,7 +176,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
     }
 
-    private fun showIncomingCallNotification(callMetadata: CallMetadata) {
+    private fun showIncomingCallNotification(callMetadata: CallMetadata, callNotificationId: Int) {
 
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
@@ -203,7 +208,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 .setAutoCancel(true)
 
 
-        notificationManager.notify(INCOMING_CALL_FCM_NOTIFICATION_ID, notificationBuilder.build())
+        notificationManager.notify(callNotificationId + INCOMING_CALL_FCM_NOTIFICATION_ID, notificationBuilder.build())
 
 
     }
@@ -220,6 +225,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
         val notificationManager =
             getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        val notificationId = chatId.hashCode()
 
 
         val personBuilder = Person.Builder()
@@ -261,15 +268,19 @@ class FirebaseMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
 
 
-        notificationManager.notify(MESSAGE_FCM_NOTIFICATION_ID, notificationBuilder.build())
+        notificationManager.notify(notificationId + MESSAGE_FCM_NOTIFICATION_ID, notificationBuilder.build())
 
     }
 
-    private fun showMissedCallNotification(callerName: String, callType: String) {
+    private fun showMissedCallNotification(
+        callerName: String,
+        callType: String,
+        callNotificationId: Int
+    ) {
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
-        notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
+        notificationManager.cancel(callNotificationId + INCOMING_CALL_FCM_NOTIFICATION_ID)
 
         val callHistoryIntent = Intent(this, MainActivity::class.java).apply {
             action = CALL_HISTORY_INTENT
@@ -290,11 +301,12 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
 
-        notificationManager.notify(MISSED_CALL_FCM_NOTIFICATION, notificationBuilder.build())
+        notificationManager.notify(callNotificationId + MISSED_CALL_FCM_NOTIFICATION, notificationBuilder.build())
     }
 
     private fun listenToCallStatus(
         callId: String,
+        notificationId: Int,
         onCallMissed: () -> Unit,
         onIncomingCall: () -> Unit
     ) {
@@ -326,7 +338,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                     else -> {
                         callRingtoneManager.stopAllSounds()
-                        notificationManager.cancel(INCOMING_CALL_FCM_NOTIFICATION_ID)
+                        notificationManager.cancel(notificationId + INCOMING_CALL_FCM_NOTIFICATION_ID)
                         callStatusListener?.remove()
                         callStatusListener = null
                     }

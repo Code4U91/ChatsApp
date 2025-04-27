@@ -58,6 +58,7 @@ class CallViewModel @Inject constructor(
 
     init {
 
+
         // when the outgoing call gets declined, used to close the call
         val job = viewModelScope.launch {
             declineCall.collect { decline ->
@@ -90,8 +91,6 @@ class CallViewModel @Inject constructor(
         viewModelScope.launch {
 
             agoraRepo.isJoined.collect{isJoined ->
-
-                Log.i("CHATS_VM_IS_JOINED", isJoined.toString())
                 if(isJoined)
                 {
                     markCallServiceStarted()
@@ -206,6 +205,15 @@ class CallViewModel @Inject constructor(
 
     fun enableVideoPreview() {
         agoraRepo.enableVideo()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+
+        // needed to reset the value when agoraCallService is not active
+        // as the default value reset only works on destruction of the agoraCallService and
+        // call service only activates if the user accepts the call or is a caller
+        agoraRepo.declineIncomingCall(false)
     }
 
 
