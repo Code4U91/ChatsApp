@@ -2,8 +2,10 @@ package com.example.chatapp.screens.afterMainFrontScreen
 
 import android.content.Intent
 import android.os.Build
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +50,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -68,11 +72,11 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.CallMetadata
 import com.example.chatapp.FriendData
 import com.example.chatapp.Message
 import com.example.chatapp.appInstance
+import com.example.chatapp.call.activity.CallActivity
 import com.example.chatapp.formatOnlineStatusTime
 import com.example.chatapp.getDateLabelForMessage
 import com.example.chatapp.getMessageIconColor
@@ -101,6 +105,12 @@ fun MainChatScreen(
 
     val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
 
+    val messageDeletionSet = rememberSaveable {
+        mutableStateOf<Set<String>>(emptySet())
+    }
+
+    val isDeleteBarOn = messageDeletionSet.value.isNotEmpty()
+
 
     val friendData by produceState<FriendData?>(initialValue = null, key1 = otherId)
     {
@@ -121,7 +131,7 @@ fun MainChatScreen(
         mutableStateOf(fetchedChatId.ifEmpty {
             globalMessageListenerViewModel.calculateChatId(
                 otherId
-            )?:""
+            ) ?: ""
         })
     } // temporary creates an id when chatId is empty
 
@@ -159,6 +169,8 @@ fun MainChatScreen(
         globalMessageListenerViewModel.setActiveChat(chatId)
     }
 
+
+
     // marks message as seen on past message received while the app was on pause/stop etc
     DisposableEffect(lifecycleOwner, chatId) {
         val observer = LifecycleEventObserver { _, event ->
@@ -191,9 +203,17 @@ fun MainChatScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
+
+
                     IconButton(onClick = {
 
-                        navController.popBackStack()
+                        if (!isDeleteBarOn) {
+                            navController.popBackStack()
+                        } else {
+                            messageDeletionSet.value = emptySet()
+
+                        }
+
 
                     }) {
                         Icon(
@@ -201,92 +221,119 @@ fun MainChatScreen(
                             contentDescription = "back button"
                         )
                     }
+
+
                 },
                 title = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        AsyncImage(
-                            model = friendData?.photoUrl ?: "",
-                            contentDescription = "Profile picture",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .border(0.dp, Color.Transparent, CircleShape)
-                        )
 
-                        Column(modifier = Modifier.wrapContentWidth()) {
-                            // Profile user name
-                            Text(
-                                text = friendData?.name ?: "",
-                                fontSize = 18.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-
-                            Text(
-                                text = onlineStatus,
-                                fontSize = 12.sp,
-                                color = Color.Gray,
-                            )
-                        }
-
+                    if (!isDeleteBarOn) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.End
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
+                            AsyncImage(
+                                model = friendData?.photoUrl ?: "",
+                                contentDescription = "Profile picture",
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .border(0.dp, Color.Transparent, CircleShape)
+                            )
 
-
-                            VideoCallButton {
-
-                                val callMetaData = CallMetadata(
-                                    channelName = chatId,
-                                    uid = currentUserData?.uid.orEmpty(),
-                                    callType = "video",
-                                    callerName = currentUserData?.name.orEmpty(),
-                                    callReceiverId = friendData?.uid.orEmpty(),
-                                    isCaller = true,
-                                    receiverPhoto = friendData?.photoUrl.orEmpty(),
-                                    receiverName = friendData?.name.orEmpty(),
-                                    callDocId = null
+                            Column(modifier = Modifier.wrapContentWidth()) {
+                                // Profile user name
+                                Text(
+                                    text = friendData?.name ?: "",
+                                    fontSize = 18.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
 
-                                val intent = Intent(context, CallActivity::class.java).apply {
-                                    action = CALL_INTENT
-                                    putExtra("call_metadata", callMetaData)
-                                }
-
-                                context.startActivity(intent)
-
+                                Text(
+                                    text = onlineStatus,
+                                    fontSize = 12.sp,
+                                    color = Color.Gray,
+                                )
                             }
 
-                            VoiceCallButton {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.End
+                            ) {
 
-                                val callMetaData = CallMetadata(
-                                    channelName = chatId,
-                                    uid = currentUserData?.uid.orEmpty(),
-                                    callType = "voice",
-                                    callerName = currentUserData?.name.orEmpty(),
-                                    callReceiverId = friendData?.uid.orEmpty(),
-                                    isCaller = true,
-                                    receiverPhoto = friendData?.photoUrl.orEmpty(),
-                                    receiverName = friendData?.name.orEmpty(),
-                                    callDocId = null
-                                )
 
-                                val intent = Intent(context, CallActivity::class.java).apply {
-                                    action = CALL_INTENT
-                                    putExtra("call_metadata", callMetaData)
+                                VideoCallButton {
+
+                                    val callMetaData = CallMetadata(
+                                        channelName = chatId,
+                                        uid = currentUserData?.uid.orEmpty(),
+                                        callType = "video",
+                                        callerName = currentUserData?.name.orEmpty(),
+                                        callReceiverId = friendData?.uid.orEmpty(),
+                                        isCaller = true,
+                                        receiverPhoto = friendData?.photoUrl.orEmpty(),
+                                        receiverName = friendData?.name.orEmpty(),
+                                        callDocId = null
+                                    )
+
+                                    val intent = Intent(context, CallActivity::class.java).apply {
+                                        action = CALL_INTENT
+                                        putExtra("call_metadata", callMetaData)
+                                    }
+
+                                    context.startActivity(intent)
+
                                 }
 
-                                context.startActivity(intent)
+                                VoiceCallButton {
+
+                                    val callMetaData = CallMetadata(
+                                        channelName = chatId,
+                                        uid = currentUserData?.uid.orEmpty(),
+                                        callType = "voice",
+                                        callerName = currentUserData?.name.orEmpty(),
+                                        callReceiverId = friendData?.uid.orEmpty(),
+                                        isCaller = true,
+                                        receiverPhoto = friendData?.photoUrl.orEmpty(),
+                                        receiverName = friendData?.name.orEmpty(),
+                                        callDocId = null
+                                    )
+
+                                    val intent = Intent(context, CallActivity::class.java).apply {
+                                        action = CALL_INTENT
+                                        putExtra("call_metadata", callMetaData)
+                                    }
+
+                                    context.startActivity(intent)
+                                }
+
                             }
 
                         }
+                    }
 
+
+                },
+                actions = {
+                    if (isDeleteBarOn) {
+                        IconButton(onClick = {
+                            // on click delete the message and close the delete bar
+                            globalMessageListenerViewModel.deleteMessage(
+                                chatId,
+                                messageDeletionSet.value
+                            )
+                            messageDeletionSet.value = emptySet()
+
+                        }) {
+
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete button"
+                            )
+
+                        }
                     }
 
                 },
@@ -321,7 +368,19 @@ fun MainChatScreen(
                             senderId
                         )
                     },
-                    getDateLabel = { date -> getDateLabelForMessage(date) }
+                    getDateLabel = { date -> getDateLabelForMessage(date) },
+                    updateSelectedMessages = { id ->
+
+                        messageDeletionSet.value = if (messageDeletionSet.value.contains(id)) {
+                            messageDeletionSet.value - id
+                        } else {
+                            messageDeletionSet.value + id
+                        }
+
+                    },
+                    selectedMessageSet = messageDeletionSet,
+                    isDeleteBarOn = isDeleteBarOn
+
                 )
             }
 
@@ -383,6 +442,9 @@ fun ChatLazyColumn(
     listState: LazyListState = rememberLazyListState(),
     isCurrentUser: (String) -> Boolean,
     getDateLabel: (LocalDate) -> String,
+    updateSelectedMessages: (String) -> Unit,
+    selectedMessageSet: MutableState<Set<String>>,
+    isDeleteBarOn: Boolean,
     contentPadding: PaddingValues = PaddingValues(10.dp)
 ) {
     LaunchedEffect(messageList.firstOrNull()?.messageId) {
@@ -390,6 +452,7 @@ fun ChatLazyColumn(
             listState.animateScrollToItem(0)
         }
     }
+
 
     LazyColumn(
         modifier = Modifier
@@ -408,12 +471,29 @@ fun ChatLazyColumn(
             val previousMessageDate = nextMessage?.timeStamp?.toLocalDate()
 
             val isNewGroup = nextMessage?.senderId != message.senderId
+            val isSelected = selectedMessageSet.value.contains(message.messageId)
 
-            ChatBubble(
-                message = message,
-                isCurrentUser = isCurrentUser(message.senderId ?: ""),
-                isNewGroup = isNewGroup
-            )
+            val color =
+                if (isDeleteBarOn && isSelected) Color.Gray else Color.Transparent
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+                    .background(color, shape = RoundedCornerShape(10.dp))
+            ) {
+                ChatBubble(
+                    message = message,
+                    isCurrentUser = isCurrentUser(message.senderId ?: ""),
+                    isNewGroup = isNewGroup,
+                    isDeleteBarOn = isDeleteBarOn
+                ) { msgId ->
+
+                    updateSelectedMessages(msgId)
+
+                }
+            }
+
 
             if (isNewGroup) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -424,6 +504,112 @@ fun ChatLazyColumn(
                     DateChip(dateLabel = getDateLabel(date))
                 }
             }
+        }
+    }
+}
+
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ChatBubble(
+    message: Message,
+    isCurrentUser: Boolean,
+    isNewGroup: Boolean,
+    isDeleteBarOn: Boolean,
+    selectedForDeletion: (String) -> Unit
+) {
+    val bubbleShape = if (isNewGroup) {
+        RoundedCornerShape(
+            topStart = if (isCurrentUser) 12.dp else 0.dp,
+            topEnd = if (isCurrentUser) 0.dp else 12.dp,
+            bottomStart = 12.dp,
+            bottomEnd = 12.dp
+        )
+    } else {
+        RoundedCornerShape(8.dp)
+    }
+
+    // Select icon and color based on message status
+    val statusIcon = getMessageStatusIcon(message.status)
+
+    val iconColor = getMessageIconColor(message.status)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .combinedClickable(
+                onClick = {
+                    if (isDeleteBarOn) {
+                        selectedForDeletion(message.messageId)
+                    }
+                },
+
+                onLongClick = {
+                    selectedForDeletion(message.messageId)
+                }
+            ),
+        horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start,
+        verticalAlignment = Alignment.Bottom
+    ) {
+
+        if (isCurrentUser) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(end = 4.dp)
+            ) {
+                Text(
+                    text = getTimeOnly(message.timeStamp!!),
+                    color = Color.Gray,
+                    fontSize = 8.sp,
+                    modifier = Modifier
+                        .offset(y = 4.dp)
+                )
+
+                statusIcon.let {
+                    Spacer(modifier = Modifier.width(2.dp))
+
+                    Icon(
+                        imageVector = it,
+                        contentDescription = message.status,
+                        tint = iconColor,
+                        modifier = Modifier
+                            .size(12.dp)
+                            .offset(y = 4.dp)
+                    )
+                }
+            }
+
+        }
+
+        Box(
+            modifier = Modifier
+                .wrapContentWidth()
+                .widthIn(max = 300.dp)
+                .background(
+                    color = if (isCurrentUser) Color(0xFFDCF8C6) else Color.LightGray,
+                    shape = bubbleShape
+                )
+                .padding(8.dp)
+        ) {
+            Text(
+                text = message.messageContent.orEmpty(),
+                fontSize = 16.sp,
+                color = Color.Black
+            )
+        }
+
+        if (!isCurrentUser) {
+            Text(
+                text = getTimeOnly(message.timeStamp!!),
+                color = Color.Gray,
+                fontSize = 8.sp,
+                modifier = Modifier
+                    .padding(start = 4.dp)
+                    .offset(y = 4.dp)
+            )
+
+
         }
     }
 }
@@ -490,98 +676,6 @@ fun VideoCallButton(onStartCall: () -> Unit) {
 
     }
 
-}
-
-
-@Composable
-fun ChatBubble(
-    message: Message,
-    isCurrentUser: Boolean,
-    isNewGroup: Boolean
-) {
-    val bubbleShape = if (isNewGroup) {
-        RoundedCornerShape(
-            topStart = if (isCurrentUser) 12.dp else 0.dp,
-            topEnd = if (isCurrentUser) 0.dp else 12.dp,
-            bottomStart = 12.dp,
-            bottomEnd = 12.dp
-        )
-    } else {
-        RoundedCornerShape(8.dp)
-    }
-
-    // Select icon and color based on message status
-    val statusIcon = getMessageStatusIcon(message.status)
-
-    val iconColor = getMessageIconColor(message.status)
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        horizontalArrangement = if (isCurrentUser) Arrangement.End else Arrangement.Start,
-        verticalAlignment = Alignment.Bottom
-    ) {
-
-        if (isCurrentUser) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(end = 4.dp)
-            ) {
-                Text(
-                    text = getTimeOnly(message.timeStamp!!),
-                    color = Color.Gray,
-                    fontSize = 8.sp,
-                    modifier = Modifier
-                        .offset(y = 4.dp)
-                )
-
-                statusIcon.let {
-                    Spacer(modifier = Modifier.width(2.dp))
-
-                    Icon(
-                        imageVector = it,
-                        contentDescription = message.status,
-                        tint = iconColor,
-                        modifier = Modifier
-                            .size(12.dp)
-                            .offset(y = 4.dp)
-                    )
-                }
-            }
-
-        }
-
-        Box(
-            modifier = Modifier
-                .wrapContentWidth()
-                .widthIn(max = 300.dp)
-                .background(
-                    color = if (isCurrentUser) Color(0xFFDCF8C6) else Color.LightGray,
-                    shape = bubbleShape
-                )
-                .padding(8.dp)
-        ) {
-            Text(
-                text = message.messageContent.orEmpty(),
-                fontSize = 16.sp,
-                color = Color.Black
-            )
-        }
-
-        if (!isCurrentUser) {
-            Text(
-                text = getTimeOnly(message.timeStamp!!),
-                color = Color.Gray,
-                fontSize = 8.sp,
-                modifier = Modifier
-                    .padding(start = 4.dp)
-                    .offset(y = 4.dp)
-            )
-
-
-        }
-    }
 }
 
 

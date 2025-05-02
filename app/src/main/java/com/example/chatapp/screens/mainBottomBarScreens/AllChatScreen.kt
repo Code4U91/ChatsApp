@@ -2,7 +2,6 @@ package com.example.chatapp.screens.mainBottomBarScreens
 
 import android.annotation.SuppressLint
 import android.os.Build
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -84,7 +83,6 @@ fun AllChatScreen(
         mutableStateOf(false)
     }
 
-    Log.i("ChatList", activeChatList.toString())
 
 
     val filteredActiveChatList = activeChatList.filter {
@@ -177,8 +175,7 @@ fun AllChatScreen(
                             globalMessageListenerViewModel = globalMessageListenerViewModel,
                             navController = navController,
                             chatId = chatItemData.chatId,
-                            lastMessageTimStamp = chatItemData.lastMessageTimeStamp,
-                            lastMessage = chatItemData.lastMessage ?: "",
+                            lastMessageTimeStamp = chatItemData.lastMessageTimeStamp,
                             oldFriendName = chatItemData.otherUserName,
                             whichList = "chatList"
                         )
@@ -205,12 +202,22 @@ fun ChatItemAndFriendListItem(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     navController: NavHostController,
     chatId: String = "",
-    lastMessageTimStamp: Timestamp? = null,
-    lastMessage: String = "",
+    lastMessageTimeStamp: Timestamp? = null,
     oldFriendName: String? = null,
     whichList: String
 
 ) {
+
+    val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
+    val message = messageList[chatId]
+    val lastMessage = message?.sortedByDescending { it.timeStamp }?.first()
+    val lastMsgStamp = lastMessage?.timeStamp
+
+    LaunchedEffect(lastMsgStamp) {
+        if (lastMsgStamp != lastMessageTimeStamp){
+            globalMessageListenerViewModel.updateMessageTimeStamp(chatId, lastMsgStamp)
+        }
+    }
 
 
     //  auto offs if ui goes out of view, may be similar to launched effect but used to observe state, snapshot etc
@@ -228,8 +235,8 @@ fun ChatItemAndFriendListItem(
     }
 
 
-    val dateAndTime by remember(lastMessageTimStamp) {
-        mutableStateOf(formatTimestamp(lastMessageTimStamp ?: Timestamp.now()))
+    val dateAndTime by remember(lastMessageTimeStamp) {
+        mutableStateOf(formatTimestamp(lastMessageTimeStamp ?: Timestamp.now()))
     }
 
 
@@ -320,7 +327,7 @@ fun ChatItemAndFriendListItem(
 
 
                 Text(
-                    text = if (chatItemWithMsg) lastMessage else friendData?.about
+                    text = if (chatItemWithMsg) lastMessage?.messageContent.orEmpty() else friendData?.about
                         ?: "",
                     fontSize = 16.sp,
                     color = Color.Gray,

@@ -322,7 +322,6 @@ class MessagingHandlerRepo @Inject constructor(
                 )
                 val chatData = mapOf(
                     "participants" to listOf(currentUser.uid, otherUserId),
-                    "lastMessage" to messageText,
                     "lastMessageTimeStamp" to Timestamp.now(),
                     "participantsName" to mapIdWithName
                 )
@@ -332,7 +331,7 @@ class MessagingHandlerRepo @Inject constructor(
             } else {
 
                 chatRef.update(
-                    "lastMessage", messageText, "lastMessageTimeStamp", Timestamp.now()
+                    "lastMessageTimeStamp", Timestamp.now()
                 )
 
             }
@@ -472,6 +471,35 @@ class MessagingHandlerRepo @Inject constructor(
         }
 
 
+    }
+
+    fun deleteMessage(chatId: String, messageId: Set<String>) {
+
+        val dbRef =
+            firestoreDb.collection(CHATS_COLLECTION).document(chatId).collection(MESSAGE_COLLECTION)
+
+        val chunks = messageId.chunked(500)
+        for (chunk in chunks) {
+
+            val batch = firestoreDb.batch()
+            for (id in chunk) {
+
+                val docRef = dbRef.document(id)
+                batch.delete(docRef)
+            }
+            batch.commit().addOnFailureListener {
+                Log.e("FIREStore_DEBUG", "Batch delete failed: ${it.message}")
+            }
+        }
+
+    }
+
+    fun updateTimeStamp(timeStamp: Timestamp, chatId: String) {
+        val dbRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
+
+        dbRef.update(
+            "lastMessageTimeStamp", timeStamp
+        )
     }
 
     // clear all active listeners

@@ -12,6 +12,7 @@ import com.example.chatapp.UserData
 import com.example.chatapp.repository.GlobalMessageListenerRepo
 import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
@@ -235,6 +236,19 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
             _callHistoryData.value = callList
 
+        }
+
+    }
+
+    fun deleteMessage(chatId: String, messageId: Set<String>)
+    {
+        messagingHandlerRepo.deleteMessage(chatId,messageId)
+    }
+
+    fun updateMessageTimeStamp(chatId: String, lastMsgStamp: Timestamp?){
+
+        lastMsgStamp?.let {
+            messagingHandlerRepo.updateTimeStamp(it, chatId)
         }
 
     }

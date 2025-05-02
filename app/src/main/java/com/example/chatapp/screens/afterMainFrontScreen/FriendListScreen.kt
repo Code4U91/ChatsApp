@@ -224,11 +224,11 @@ fun FriendListScreen(
                     ChatItemAndFriendListItem(
                         chatItemWithMsg = false,
                         friendId = friendList.friendId,
-                        navController = navController,
                         globalMessageListenerViewModel = globalMessageListenerViewModel,
+                        navController = navController,
+                        chatId = globalMessageListenerViewModel.calculateChatId(friendList.friendId) ?:"",
                         oldFriendName = friendList.friendName,
-                        whichList = "friendList",
-                        chatId = globalMessageListenerViewModel.calculateChatId(friendList.friendId) ?:""
+                        whichList = "friendList"
                     )
 
                 }
