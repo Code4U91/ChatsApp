@@ -68,7 +68,7 @@ fun AllChatScreen(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
 ) {
 
-     requestPerm()
+    requestPerm()
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
     // val activeChatList by viewmodel.activeChatList.collectAsState()
@@ -82,7 +82,6 @@ fun AllChatScreen(
     var showSearchBar by rememberSaveable {
         mutableStateOf(false)
     }
-
 
 
     val filteredActiveChatList = activeChatList.filter {
@@ -155,10 +154,12 @@ fun AllChatScreen(
             )
             {
 
-                if (filteredActiveChatList.isEmpty()){
+                if (filteredActiveChatList.isEmpty()) {
 
-                    Text(text = "Chat is Empty. All active chats are shown here.",
-                        fontSize = 18.sp)
+                    Text(
+                        text = "Chat is Empty. All active chats are shown here.",
+                        fontSize = 18.sp
+                    )
                 }
 
                 LazyColumn(
@@ -210,11 +211,13 @@ fun ChatItemAndFriendListItem(
 
     val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
     val message = messageList[chatId]
-    val lastMessage = message?.sortedByDescending { it.timeStamp }?.first()
+    val lastMessage = if (message?.isNotEmpty() == true) message.sortedByDescending { it.timeStamp }
+        .first() else null
+
     val lastMsgStamp = lastMessage?.timeStamp
 
     LaunchedEffect(lastMsgStamp) {
-        if (lastMsgStamp != lastMessageTimeStamp){
+        if (lastMsgStamp != lastMessageTimeStamp) {
             globalMessageListenerViewModel.updateMessageTimeStamp(chatId, lastMsgStamp)
         }
     }
@@ -327,8 +330,7 @@ fun ChatItemAndFriendListItem(
 
 
                 Text(
-                    text = if (chatItemWithMsg) lastMessage?.messageContent.orEmpty() else friendData?.about
-                        ?: "",
+                    text = if (chatItemWithMsg) lastMessage?.messageContent.orEmpty() else friendData?.about.orEmpty(),
                     fontSize = 16.sp,
                     color = Color.Gray,
                     maxLines = 1,
