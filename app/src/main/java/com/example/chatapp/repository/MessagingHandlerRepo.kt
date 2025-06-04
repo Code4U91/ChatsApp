@@ -300,6 +300,8 @@ class MessagingHandlerRepo @Inject constructor(
         messageText: String,
         otherUserId: String,
         fetchedChatId: String,
+        friendName: String?,
+        currentUsername: String?,
     ) {
         val currentUser = auth.currentUser
         if (currentUser != null) {
@@ -315,10 +317,9 @@ class MessagingHandlerRepo @Inject constructor(
             // if the chat doesn't already exists
             if (!chat.exists()) {
 
-
                 val mapIdWithName = mapOf(
-                    currentUserId to "",
-                    otherUserId to ""
+                    currentUserId to currentUsername.orEmpty(),
+                    otherUserId to friendName.orEmpty()
                 )
                 val chatData = mapOf(
                     "participants" to listOf(currentUser.uid, otherUserId),
