@@ -415,7 +415,9 @@ fun MainChatScreen(
                             globalMessageListenerViewModel.sendMessageToOneFriend(
                                 messageText,
                                 otherId,
-                                chatId
+                                chatId,
+                                friendData?.name,
+                                currentUserData?.name
                             )
                             messageText = ""
                         }
