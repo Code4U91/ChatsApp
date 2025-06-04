@@ -113,8 +113,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                     channelName = channelName,
                     uid = "", // current user id, not needed for this case
                     callType = callType,
-                    callerName = senderName,
-                    receiverName = "", // leaving it empty for now since we have no use of it when the user is a receiver
+                    callerName = "",// leaving it empty for now since we have no use of it when the user is a receiver
+                    receiverName = senderName,
                     isCaller = false,
                     callReceiverId = senderId, // opposite in case of receiver
                     callDocId = callId,
