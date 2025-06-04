@@ -220,10 +220,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
     fun sendMessageToOneFriend(
         message: String,
         friendId: String,
-        fetchedChatId: String = ""
+        fetchedChatId: String = "",
+        friendName: String?,
+        currentUsername: String?
     ) {
         viewModelScope.launch {
-            messagingHandlerRepo.sendMessageToSingleUser(message, friendId, fetchedChatId)
+            messagingHandlerRepo.sendMessageToSingleUser(message, friendId, fetchedChatId, friendName, currentUsername)
         }
 
     }
