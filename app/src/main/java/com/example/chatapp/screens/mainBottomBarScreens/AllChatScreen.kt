@@ -282,6 +282,9 @@ fun ChatItemAndFriendListItem(
                 .padding(vertical = 10.dp)
                 .pointerInput(Unit)
                 {
+
+                    // currently directly deletes the friend from friend list on long press
+                    // later upgrade it to better UI like on the MainChatScreen
                     detectTapGestures(
                         onLongPress = {
 
