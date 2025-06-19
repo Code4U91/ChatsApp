@@ -2,9 +2,10 @@ package com.example.chatapp.screens.mainBottomBarScreens
 
 import android.annotation.SuppressLint
 import android.os.Build
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -178,8 +178,10 @@ fun AllChatScreen(
                             chatId = chatItemData.chatId,
                             lastMessageTimeStamp = chatItemData.lastMessageTimeStamp,
                             oldFriendName = chatItemData.otherUserName,
-                            whichList = "chatList"
-                        )
+                            whichList = "chatList",
+                        ) {
+                            // selected string id
+                        }
                     }
 
                     // adding space at the end of list so it doesn't get covered by bottom bar
@@ -196,6 +198,7 @@ fun AllChatScreen(
 }
 
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatItemAndFriendListItem(
     chatItemWithMsg: Boolean,
@@ -205,22 +208,16 @@ fun ChatItemAndFriendListItem(
     chatId: String = "",
     lastMessageTimeStamp: Timestamp? = null,
     oldFriendName: String? = null,
-    whichList: String
+    whichList: String,
+    isDeleteBarActive: Boolean = false,
+    selectedForDeletion: (String) -> Unit,
 
-) {
+    ) {
 
     val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
     val message = messageList[chatId]
     val lastMessage = if (message?.isNotEmpty() == true) message.sortedByDescending { it.timeStamp }
         .first() else null
-
-    val lastMsgStamp = lastMessage?.timeStamp
-
-    LaunchedEffect(lastMsgStamp) {
-        if (lastMsgStamp != lastMessageTimeStamp) {
-            globalMessageListenerViewModel.updateMessageTimeStamp(chatId, lastMsgStamp)
-        }
-    }
 
 
     //  auto offs if ui goes out of view, may be similar to launched effect but used to observe state, snapshot etc
@@ -280,28 +277,30 @@ fun ChatItemAndFriendListItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 10.dp)
-                .pointerInput(Unit)
-                {
+                .combinedClickable(
+                    onClick = {
 
-                    // currently directly deletes the friend from friend list on long press
-                    // later upgrade it to better UI like on the MainChatScreen
-                    detectTapGestures(
-                        onLongPress = {
-
-                            if (currentRoute == "FriendListScreen") {
-                                globalMessageListenerViewModel.deleteFriend(friendId)
-                            }
-                        },
-                        onTap = {
-
+                        if (isDeleteBarActive) {
+                            selectedForDeletion(friendId)
+                        } else {
                             navController.navigate(
                                 "MainChat/$friendId/$chatId"
                             )
-
-
                         }
-                    )
-                }
+
+                    },
+
+                    onLongClick = {
+
+                        if (currentRoute == "FriendListScreen") {
+
+                            selectedForDeletion(friendId)
+                            // globalMessageListenerViewModel.deleteFriend(friendId)
+                        }
+                    }
+
+                )
+
         ) {
 
             //Profile image

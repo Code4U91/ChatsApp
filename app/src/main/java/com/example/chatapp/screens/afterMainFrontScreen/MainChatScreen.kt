@@ -50,7 +50,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -105,11 +104,11 @@ fun MainChatScreen(
 
     val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
 
-    val messageDeletionSet = rememberSaveable {
+    var messageDeletionSet by rememberSaveable {
         mutableStateOf<Set<String>>(emptySet())
     }
 
-    val isDeleteBarOn = messageDeletionSet.value.isNotEmpty()
+    val isDeleteBarOn = messageDeletionSet.isNotEmpty()
 
 
     val friendData by produceState<FriendData?>(initialValue = null, key1 = otherId)
@@ -210,7 +209,7 @@ fun MainChatScreen(
                         if (!isDeleteBarOn) {
                             navController.popBackStack()
                         } else {
-                            messageDeletionSet.value = emptySet()
+                            messageDeletionSet = emptySet()
 
                         }
 
@@ -322,9 +321,9 @@ fun MainChatScreen(
                             // on click delete the message and close the delete bar
                             globalMessageListenerViewModel.deleteMessage(
                                 chatId,
-                                messageDeletionSet.value
+                                messageDeletionSet
                             )
-                            messageDeletionSet.value = emptySet()
+                            messageDeletionSet = emptySet()
 
                         }) {
 
@@ -371,10 +370,10 @@ fun MainChatScreen(
                     getDateLabel = { date -> getDateLabelForMessage(date) },
                     updateSelectedMessages = { id ->
 
-                        messageDeletionSet.value = if (messageDeletionSet.value.contains(id)) {
-                            messageDeletionSet.value - id
+                        messageDeletionSet = if (messageDeletionSet.contains(id)) {
+                            messageDeletionSet - id
                         } else {
-                            messageDeletionSet.value + id
+                            messageDeletionSet + id
                         }
 
                     },
@@ -445,7 +444,7 @@ fun ChatLazyColumn(
     isCurrentUser: (String) -> Boolean,
     getDateLabel: (LocalDate) -> String,
     updateSelectedMessages: (String) -> Unit,
-    selectedMessageSet: MutableState<Set<String>>,
+    selectedMessageSet: Set<String>, // used to gray out the selected item on the list
     isDeleteBarOn: Boolean,
     contentPadding: PaddingValues = PaddingValues(10.dp)
 ) {
@@ -473,7 +472,7 @@ fun ChatLazyColumn(
             val previousMessageDate = nextMessage?.timeStamp?.toLocalDate()
 
             val isNewGroup = nextMessage?.senderId != message.senderId
-            val isSelected = selectedMessageSet.value.contains(message.messageId)
+            val isSelected = selectedMessageSet.contains(message.messageId)
 
             val color =
                 if (isDeleteBarOn && isSelected) Color.Gray else Color.Transparent

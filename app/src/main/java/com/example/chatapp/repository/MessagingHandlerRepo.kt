@@ -272,30 +272,6 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
 
-    fun deleteFriend(friendId: String) {
-        val user = auth.currentUser
-
-        if (user != null) {
-
-            if (friendId != user.uid) {
-
-                // checking if give friendId is friend of the user or not
-                val userFriendRef =
-                    firestoreDb.collection(USERS_COLLECTION).document(user.uid).collection(
-                        FRIEND_COLLECTION
-                    ).document(friendId)
-
-                userFriendRef.get().addOnSuccessListener { friend ->
-                    if (friend.exists()) {
-
-                        userFriendRef.delete()
-                    }
-
-                }
-            }
-        }
-    }
-
     suspend fun sendMessageToSingleUser(
         messageText: String,
         otherUserId: String,
@@ -495,12 +471,25 @@ class MessagingHandlerRepo @Inject constructor(
 
     }
 
-    fun updateTimeStamp(timeStamp: Timestamp, chatId: String) {
-        val dbRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
+    fun deleteFriend(friendId: Set<String>) {
 
-        dbRef.update(
-            "lastMessageTimeStamp", timeStamp
+        val userId = auth.currentUser?.uid ?: return
+
+        val userRef = firestoreDb.collection(USERS_COLLECTION).document(userId).collection(
+            FRIEND_COLLECTION
         )
+
+        val chunks = friendId.chunked(500)
+        for (chunk in chunks) {
+
+            val batch = firestoreDb.batch()
+            for (id in chunk) {
+
+                val docRef = userRef.document(id)
+                batch.delete(docRef)
+            }
+            batch.commit()
+        }
     }
 
     // clear all active listeners

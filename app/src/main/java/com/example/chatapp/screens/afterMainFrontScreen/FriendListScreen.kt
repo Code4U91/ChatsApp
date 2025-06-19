@@ -1,5 +1,6 @@
 package com.example.chatapp.screens.afterMainFrontScreen
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -16,9 +17,11 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddComment
 import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -99,20 +102,33 @@ fun FriendListScreen(
         FriendScreenUiItem(icon = Icons.Default.Groups, itemDescription = "New group")
     )
 
+    var friendDeleteList by rememberSaveable {
+        mutableStateOf<Set<String>>(emptySet())
+    }
+
+    val isDeleteTopBarActive = friendDeleteList.isNotEmpty()
+
     // main ui container for this page
     Scaffold(
         modifier = Modifier.fillMaxWidth(),
         topBar = {
             TopAppBar(
                 title = {
-                    // show search bar or not
+
                     if (showSearchBar) {
 
                         TopAppBarTemplate(
                             searchQuery = searchQuery,
                             placeHolderText = "Search in friend list..",
                             onQueryChanged = { newQuery -> searchQuery = newQuery }
-                        ) { newState -> showSearchBar = newState }
+                        ) { newState ->
+                            showSearchBar = newState
+
+                            if (isDeleteTopBarActive) {
+                                friendDeleteList = emptySet()
+                            }
+                        }
+
 
                     } else {
                         Column(
@@ -137,7 +153,12 @@ fun FriendListScreen(
 
                         IconButton(onClick = {
 
-                            navController.popBackStack()
+                            if (isDeleteTopBarActive) {
+                                friendDeleteList = emptySet()
+                            } else {
+                                navController.popBackStack()
+                            }
+
 
                         }) {
                             Icon(
@@ -150,13 +171,28 @@ fun FriendListScreen(
                 },
                 actions = {
 
-                    if (!showSearchBar) {
+
+                    if (!showSearchBar && !isDeleteTopBarActive) {
                         IconButton(onClick = {
                             showSearchBar = true
                         }) {
                             Icon(
                                 imageVector = Icons.Filled.Search,
                                 contentDescription = "Localized description"
+                            )
+                        }
+                    } else if (isDeleteTopBarActive) {
+
+                        Log.i("DELETE_BT", "Active")
+                        IconButton(onClick = {
+                            // friend delete function
+                            globalMessageListenerViewModel.deleteFriend(friendDeleteList)
+                            friendDeleteList = emptySet()
+                        }) {
+
+                            Icon(
+                                imageVector = Icons.Default.Delete,
+                                contentDescription = "Delete button"
                             )
                         }
                     }
@@ -188,7 +224,8 @@ fun FriendListScreen(
                 contentPadding = PaddingValues(10.dp)
             ) {
 
-                // shows ui item
+
+                // hides Option item like add friend when search bar active
                 if (!showSearchBar) {
 
                     items(friendScreenUiItemList, key = { it.itemDescription }) { item ->
@@ -219,17 +256,38 @@ fun FriendListScreen(
 
                 // composes profile items of all fetch friends
                 items(filteredFriendList, key = { it.friendId })
-                { friendList ->
+                { friend ->
 
-                    ChatItemAndFriendListItem(
-                        chatItemWithMsg = false,
-                        friendId = friendList.friendId,
-                        globalMessageListenerViewModel = globalMessageListenerViewModel,
-                        navController = navController,
-                        chatId = globalMessageListenerViewModel.calculateChatId(friendList.friendId) ?:"",
-                        oldFriendName = friendList.friendName,
-                        whichList = "friendList"
-                    )
+                    val isSelected = friendDeleteList.contains(friend.friendId)
+                    val color =
+                        if (isDeleteTopBarActive && isSelected) Color.Gray else Color.Transparent
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp)
+                            .background(color, shape = RoundedCornerShape(10.dp))
+                    ) {
+                        ChatItemAndFriendListItem(
+                            chatItemWithMsg = false,
+                            friendId = friend.friendId,
+                            globalMessageListenerViewModel = globalMessageListenerViewModel,
+                            navController = navController,
+                            chatId = globalMessageListenerViewModel.calculateChatId(friend.friendId)
+                                ?: "",
+                            oldFriendName = friend.friendName,
+                            whichList = "friendList",
+                            isDeleteBarActive = isDeleteTopBarActive
+                        ) { selectedFriendId ->
+                            Log.i("FRIEND_DELETE", selectedFriendId)
+                            // selected id for deletion
+                            friendDeleteList = if (friendDeleteList.contains(selectedFriendId)) {
+                                friendDeleteList - selectedFriendId
+                            } else {
+                                friendDeleteList + selectedFriendId
+                            }
+                        }
+                    }
 
                 }
             }
