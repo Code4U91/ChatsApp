@@ -1,6 +1,7 @@
 package com.example.chatapp.screens.mainBottomBarScreens
 
 import android.annotation.SuppressLint
+import android.content.ClipData
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.Image
@@ -54,7 +55,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,6 +81,8 @@ fun ProfileSettingScreen(
     paddingValue: PaddingValues,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel
 ) {
+
+    // this screen needs a major update, looks messy right now
 
     val userData by globalMessageListenerViewModel.userData.collectAsState()
 
@@ -182,7 +186,7 @@ fun ProfileSettingScreen(
             item {
                 Spacer(modifier = Modifier.height(15.dp))
 
-                LogoutUi(viewmodel)
+                LogoutUi(globalMessageListenerViewModel)
             }
 
 
@@ -190,7 +194,7 @@ fun ProfileSettingScreen(
                 item {
                     PopUpBox(
                         valueDescription = "Image URL",
-                        profileValue = "",
+                        profileValue = userData?.photoUrl.orEmpty(),
                         viewmodel = viewmodel
                     ) {
                         expandEditImg = it
@@ -268,7 +272,9 @@ fun SectionTitle(title: String) {
 
 
 @Composable
-fun LogoutUi(viewmodel: ChatsViewModel) {
+fun LogoutUi(
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel
+) {
 
     var logOutPopBoxExpanded by rememberSaveable {
         mutableStateOf(false)
@@ -302,7 +308,7 @@ fun LogoutUi(viewmodel: ChatsViewModel) {
     }
 
     if (logOutPopBoxExpanded) {
-        LogOutPopUpBox(viewmodel = viewmodel) {
+        LogOutPopUpBox(globalMessageListenerViewModel) {
             logOutPopBoxExpanded = it
         }
     }
@@ -323,7 +329,7 @@ fun ProfileComponent(
     var expanded by rememberSaveable {
         mutableStateOf(false)
     }
-    val clipboardManager = LocalClipboardManager.current
+    val clipboardManager = LocalClipboard.current
 
     val coroutineScope = rememberCoroutineScope()
 
@@ -336,7 +342,10 @@ fun ProfileComponent(
                 when (itemDescription) {
                     "UserId" -> {
                         coroutineScope.launch {
-                            clipboardManager.setText(AnnotatedString(itemValue))
+                            val data = ClipData.newPlainText("id",
+                                AnnotatedString(itemValue))
+                            clipboardManager.setClipEntry(ClipEntry(data))
+
                         }
                     }
 
@@ -463,6 +472,7 @@ fun onSaveOrCancel(
         "Image URL" -> {
 
             if (profileValueNew.isNotEmpty()) {
+
                 val updatePpfData = mapOf(
                     "photoUrl" to profileValueNew
                 )

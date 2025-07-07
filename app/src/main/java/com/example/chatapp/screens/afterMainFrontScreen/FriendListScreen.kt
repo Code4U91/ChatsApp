@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -32,10 +33,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -50,6 +51,7 @@ import com.example.chatapp.FriendScreenUiItem
 import com.example.chatapp.dialogBox.AddFriendDialogBox
 import com.example.chatapp.screens.mainBottomBarScreens.ChatItemAndFriendListItem
 import com.example.chatapp.screens.mainBottomBarScreens.TopAppBarTemplate
+import com.example.chatapp.toEntity
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
 
@@ -73,27 +75,28 @@ fun FriendListScreen(
         mutableStateOf(false)
     }
 
-    // listens for the friendList and fetches them
-    // removes listener when the compose is not on view
-    val friendList by produceState(initialValue = emptyList()) {
+    val friendList by globalMessageListenerViewModel.friendList.collectAsState()
+
+
+    DisposableEffect(Unit) {
 
         val listener = globalMessageListenerViewModel.fetchFriendList { friendListData ->
-            value = friendListData.map { it }
+
+            friendListData.forEach {
+                globalMessageListenerViewModel.insertFriend(it.toEntity())
+            }
         }
 
-        awaitDispose {
 
+        onDispose {
             listener?.remove()
         }
     }
 
     // filters fetched friend list
-    val filteredFriendList =
-        friendList.filter { it.friendName.trim().contains(searchQuery.trim(), ignoreCase = true) }
-            .sortedBy { it.friendName.lowercase() }
-
-    // collects total number of friends
-    val totalFriends by globalMessageListenerViewModel.totalFriend.collectAsState()
+    val filteredFriendList = friendList.filter {
+        it.name.trim().contains(searchQuery.trim(), ignoreCase = true)
+    }.sortedBy { it.name.lowercase() }
 
 
     // list of ui component
@@ -140,7 +143,7 @@ fun FriendListScreen(
                                 fontSize = 18.sp,
                             )
                             Text(
-                                text = "$totalFriends contacts",
+                                text = "${friendList.size} contacts",
                                 fontSize = 12.sp
                             )
 
@@ -254,11 +257,13 @@ fun FriendListScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                 }
 
-                // composes profile items of all fetch friends
-                items(filteredFriendList, key = { it.friendId })
-                { friend ->
 
-                    val isSelected = friendDeleteList.contains(friend.friendId)
+                // composes profile items of all fetch friends
+                itemsIndexed(
+                    items = if (!showSearchBar) friendList else filteredFriendList,
+                    key = { _, friend -> friend.name }) { index, friend ->
+
+                    val isSelected = friendDeleteList.contains(friend.uid)
                     val color =
                         if (isDeleteTopBarActive && isSelected) Color.Gray else Color.Transparent
 
@@ -268,28 +273,31 @@ fun FriendListScreen(
                             .padding(8.dp)
                             .background(color, shape = RoundedCornerShape(10.dp))
                     ) {
+
                         ChatItemAndFriendListItem(
-                            chatItemWithMsg = false,
-                            friendId = friend.friendId,
                             globalMessageListenerViewModel = globalMessageListenerViewModel,
                             navController = navController,
-                            chatId = globalMessageListenerViewModel.calculateChatId(friend.friendId)
-                                ?: "",
-                            oldFriendName = friend.friendName,
-                            whichList = "friendList",
-                            isDeleteBarActive = isDeleteTopBarActive
-                        ) { selectedFriendId ->
-                            Log.i("FRIEND_DELETE", selectedFriendId)
-                            // selected id for deletion
-                            friendDeleteList = if (friendDeleteList.contains(selectedFriendId)) {
-                                friendDeleteList - selectedFriendId
-                            } else {
-                                friendDeleteList + selectedFriendId
-                            }
-                        }
-                    }
+                            chatId = globalMessageListenerViewModel.calculateChatId(friend.uid)
+                                .orEmpty(),
+                            isChatList = false,
+                            isDeleteBarActive = isDeleteTopBarActive,
+                            friendData = friend,
+                            friendId = friend.uid,
+                            selectedForDeletion = { selectedFriendId ->
 
+                                // selected id for deletion
+                                friendDeleteList =
+                                    if (friendDeleteList.contains(selectedFriendId)) {
+                                        friendDeleteList - selectedFriendId
+                                    } else {
+                                        friendDeleteList + selectedFriendId
+                                    }
+                            }
+
+                        )
+                    }
                 }
+
             }
 
             // when clicked on add friend, activated drop box

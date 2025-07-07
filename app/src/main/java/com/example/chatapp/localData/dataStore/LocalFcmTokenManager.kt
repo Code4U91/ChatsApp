@@ -1,4 +1,4 @@
-package com.example.chatapp.localData
+package com.example.chatapp.localData.dataStore
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit

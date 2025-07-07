@@ -4,13 +4,14 @@ import android.content.Context
 import android.util.Log
 import com.example.chatapp.CHATS_COLLECTION
 import com.example.chatapp.ChatItemData
+import com.example.chatapp.DEFAULT_PROFILE_PIC
 import com.example.chatapp.MESSAGE_COLLECTION
 import com.example.chatapp.Message
+import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.appInstance
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
@@ -68,77 +69,73 @@ class GlobalMessageListenerRepo @Inject constructor(
         chatList: List<ChatItemData>,
         onNewMessages: (String, List<Message>) -> Unit
     ) {
+         auth.currentUser?.uid?.let { currentUserId->
 
-        // iterate over every chat from the chatList
-        chatList.forEach { (chatId, _) ->
+             // iterate over every chat from the chatList
+             chatList.forEach { (chatId, _) ->
 
-            // checking for am existing listener, prevents setting up
-            // duplicate listeners
-            if (!activeListeners.containsKey(chatId)) {
+                 // checking for am existing listener, prevents setting up
+                 // duplicate listeners
+                 if (!activeListeners.containsKey(chatId)) {
 
-                // setting up listener
-                val listener = firestoreDb.collection(CHATS_COLLECTION)
-                    .document(chatId)
-                    .collection(MESSAGE_COLLECTION)
-                    .orderBy("timeStamp", Query.Direction.DESCENDING)
-                    .addSnapshotListener { snapshot, error ->
+                     // setting up listener
+                     val listener = firestoreDb.collection(USERS_COLLECTION).document(currentUserId)
+                         .collection(CHATS_COLLECTION)
+                         .document(chatId)
+                         .collection(MESSAGE_COLLECTION)
+                         .addSnapshotListener { snapshot, error ->
 
-                        if (error != null) {
+                             if (error != null) return@addSnapshotListener
 
-                            Log.e("ChatManager", "Message listener error: ${error.message}")
-                            return@addSnapshotListener
-                        }
+                             // Convert each document in the snapshot to a Message object.
+                             val newMessages = snapshot?.documents?.mapNotNull { doc ->
+                                 doc.toObject(Message::class.java)
+                             } ?: emptyList()
 
-                        // Convert each document in the snapshot to a Message object.
-                        val newMessages = snapshot?.documents?.mapNotNull { doc ->
-                            doc.toObject(Message::class.java)?.copy(
-                                messageId = doc.id
-                            )
-                        } ?: emptyList()
-
-                        // update message ui
-                        onNewMessages(chatId, newMessages)
+                             // update message ui
+                             onNewMessages(chatId, newMessages)
 
 
-                        // Loop Through Each Document for Status Updates
-                        val batch = firestoreDb.batch()
-                        snapshot?.documents?.forEach docLoop@{ doc ->
+                             // Loop Through Each Document for Status Updates
+                             val batch = firestoreDb.batch()
 
-                            val message = doc.toObject(Message::class.java) ?: return@docLoop
-                            val currentUserId = auth.currentUser?.uid ?: return@docLoop
-                            val appInstance = context.appInstance()
+                             snapshot?.documents?.forEach docLoop@{ doc ->
 
+                                 val message = doc.toObject(Message::class.java) ?: return@docLoop
+                                 val currentUserId = auth.currentUser?.uid ?: return@docLoop
+                                 val appInstance = context.appInstance()
 
-                            if (
-                                message.receiverId == currentUserId &&
-                                message.status !in listOf("delivered", "seen")
-                            ) {
+                                 message.senderId.let {
 
-                                val newStatus =
-                                    if (appInstance.isInForeground && isUserInChatScreen(chatId)) {
-                                        "seen"
-                                    } else {
-                                        "delivered"
-                                    }
+                                     val senderRef = firestoreDb.collection(USERS_COLLECTION).document(it)
+                                         .collection(CHATS_COLLECTION).document(chatId)
+                                         .collection(MESSAGE_COLLECTION).document(doc.id)
 
-                                batch.update(doc.reference, "status", newStatus)
+                                     if (
+                                         message.receiverId == currentUserId &&
+                                         message.status !in listOf("delivered", "seen")
+                                     ) {
 
-                                Log.d(
-                                    "ChatManager",
-                                    "Updated message status to $newStatus for chatId: $chatId"
-                                )
-                            }
-                        }
+                                         val newStatus = if (appInstance.isInForeground && isUserInChatScreen(chatId)) "seen" else "delivered"
 
-                        batch.commit()
+                                         batch.update(doc.reference, "status", newStatus)
+                                         batch.update(senderRef, "status", newStatus)
 
+                                     }
+                                 }
 
-                    }
+                             }
 
-                activeListeners[chatId] = listener  // adding or attaching listeners to the chatId
-                Log.d("ChatManager", "Added listener for chatId: $chatId")
-            }
-        }
+                             if(snapshot?.documents?.isNotEmpty() ?: return@addSnapshotListener){
+                                 batch.commit()
+                             }
+
+                         }
+
+                     activeListeners[chatId] = listener  // adding or attaching listeners to the chatId
+                 }
+             }
+         }
     }
 
     // provides chatId list sorted by the last message activity
@@ -146,12 +143,13 @@ class GlobalMessageListenerRepo @Inject constructor(
         onUpdatedChatList: (List<ChatItemData>) -> Unit
     ): ListenerRegistration? {
 
-        val user = auth.currentUser
-        if (user != null) {
-            val currentUserId = user.uid
+        auth.currentUser?.uid?.let { currentUserId ->
 
-            val chatRef = firestoreDb.collection(CHATS_COLLECTION)
+            val chatRef = firestoreDb.collection(USERS_COLLECTION)
+                .document(currentUserId).collection(CHATS_COLLECTION)
 
+            // unnecessary condition check , since we are storing chats on user collection for each user
+            // may remove it later
             return chatRef.whereArrayContains("participants", currentUserId)
                 .addSnapshotListener { snapshots, error ->
 
@@ -171,25 +169,31 @@ class GlobalMessageListenerRepo @Inject constructor(
                         val participantsName = doc.get("participantsName") as? Map<String, String>
 
                         val otherUserName = participantsName?.get(otherId)
-
-
-                        val lastMessage = doc.getString("lastMessage")
                         val lastMessageTimeStamp = doc.getTimestamp("lastMessageTimeStamp")
+
+                        @Suppress("UNCHECKED_CAST")
+                        val participantsPhotoUrl = doc.get("participantsPhotoUrl") as? Map<String, String>
+                        val otherUserPhotoUrl = participantsPhotoUrl?.get(otherId)
 
                         ChatItemData(
                             chatId = doc.id,
                             otherUserId = otherId,
-                            lastMessage = lastMessage,
                             lastMessageTimeStamp = lastMessageTimeStamp,
-                            otherUserName = otherUserName ?: ""
+                            otherUserName = otherUserName.orEmpty(),
+                            profileUrl = otherUserPhotoUrl ?: DEFAULT_PROFILE_PIC
                         )
 
                     } ?: emptyList()
 
                     onUpdatedChatList(chatList)
                 }
+
+
         }
         return null
+
+
+
     }
 
     private fun removeObsoleteChatListeners(chatList: List<ChatItemData>) {

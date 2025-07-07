@@ -19,11 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 
 @Composable
 fun LogOutPopUpBox(
-    viewmodel: ChatsViewModel,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     onDismiss: (expanded: Boolean) -> Unit
 ) {
 
@@ -62,7 +62,7 @@ fun LogOutPopUpBox(
                 Button(
                     onClick = {
 
-                        viewmodel.signOut()
+                        globalMessageListenerViewModel.signOut()
                         onDismiss(false)
                     },
                     colors = ButtonColors(

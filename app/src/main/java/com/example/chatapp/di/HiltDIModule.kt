@@ -1,7 +1,10 @@
 package com.example.chatapp.di
 
 import android.app.Application
+import android.content.Context
 import androidx.credentials.CredentialManager
+import androidx.room.Room
+import com.example.chatapp.localData.roomDbCache.LocalRoomDatabase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
@@ -9,6 +12,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.okhttp.OkHttp
@@ -61,5 +65,14 @@ object HiltDIModule {
                 json()
             }
         }
+    }
+
+    @Singleton
+    @Provides
+    fun providesDb(@ApplicationContext context : Context) : LocalRoomDatabase {
+
+        return  Room.databaseBuilder(context, LocalRoomDatabase::class.java, "chatDbTable")
+            .fallbackToDestructiveMigration(false)
+            .build()
     }
 }

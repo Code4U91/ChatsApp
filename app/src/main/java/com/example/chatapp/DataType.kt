@@ -7,11 +7,11 @@ import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 data class UserData(
-    val uid: String? = "",
-    val name: String? = "",
-    val photoUrl: String? = "",
-    val email: String? = "",
-    val about: String? = "",
+    val uid: String = "",
+    val name: String = "",
+    val photoUrl: String = "",
+    val email: String = "",
+    val about: String = "",
     val fcmTokens: List<String> = emptyList()
 )
 
@@ -30,26 +30,26 @@ data class FriendScreenUiItem(
 data class Message(
     val messageContent: String? = "",
     val messageId: String = "",
-    val receiverId: String? = "",
-    val senderId: String? = "",
-    val status: String? = "",  // sending -> sent -> delivered -> seen
+    val receiverId: String = "",
+    val senderId: String = "",
+    val status: String = "",  // sending -> sent -> delivered -> seen
     val timeStamp: Timestamp? = Timestamp.now(),
+    val chatId: String = ""
 )
 
 data class FriendData(
-    val name: String? = "",
-    val photoUrl: String? = "",
-    val about: String? = "",
-    val uid: String? = "",
-    val fcmTokens: List<String> = emptyList()
+    val name: String = "",
+    val photoUrl: String = "",
+    val about: String = "",
+    val uid: String = ""
 )
 
 data class ChatItemData(
     val chatId: String = "",
     val otherUserId: String? = "",
-    val lastMessage: String? = "",
     val lastMessageTimeStamp: Timestamp? = Timestamp.now(),
-    val otherUserName: String? = ""
+    val otherUserName: String = "",
+    val profileUrl : String = ""
 )
 
 data class FriendListData(

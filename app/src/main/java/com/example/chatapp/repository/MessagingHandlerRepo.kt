@@ -14,13 +14,14 @@ import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.UserData
 import com.example.chatapp.api.FcmNotificationSender
 import com.example.chatapp.checkEmailPattern
-import com.example.chatapp.localData.LocalFcmTokenManager
+import com.example.chatapp.localData.dataStore.LocalFcmTokenManager
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
@@ -69,25 +70,33 @@ class MessagingHandlerRepo @Inject constructor(
 
 
     // function to fetch friend user data
-    // fetchUserData and fetchFriendData could be merged into one but currently they put the data in seprate
+    // fetchUserData and fetchFriendData could be merged into one but currently they put the data in separate
     // data class of its own so not merged yet, might do in future
     fun fetchFriendData(
-        friendUserId: String, updatedFriendData: (FriendData?) -> Unit
-    ): ListenerRegistration {
-        val userRef = firestoreDb.collection(USERS_COLLECTION).document(friendUserId)
+        friendUserId: String,
+        updatedFriendData: (FriendData) -> Unit
+    ): ListenerRegistration? {
+
+        if (friendUserId.isNotEmpty()){
+            val userRef = firestoreDb.collection(USERS_COLLECTION).document(friendUserId)
 
 
-        return userRef.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                return@addSnapshotListener
-            }
-            if (snapshot != null && snapshot.exists()) {
-                val friendData = snapshot.toObject(FriendData::class.java)
-                updatedFriendData(friendData)
-            } else {
-                updatedFriendData(null)
+            return userRef.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    return@addSnapshotListener
+                }
+                if (snapshot != null && snapshot.exists()) {
+                    val friendData = snapshot.toObject(FriendData::class.java)
+
+                    friendData?.let {
+                        updatedFriendData(it)
+                    }
+
+                }
             }
         }
+
+        return null
 
     }
 
@@ -214,7 +223,10 @@ class MessagingHandlerRepo @Inject constructor(
                     return@addOnSuccessListener onFailure(Exception("Entered userId or email already exists as your friend."))
                 }
 
-                val friendData = mapOf("friendName" to friendName)
+                val friendData = mapOf(
+                    "friendName" to friendName,
+                    "friendId" to friendId
+                )
 
                 firestoreDb.collection(USERS_COLLECTION)
                     .document(userId)
@@ -229,12 +241,11 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
 
-    fun fetchFriendList(onFriendUpdated: (List<FriendListData>, Int) -> Unit): ListenerRegistration? { // added listener
+    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? { // added listener
 
-        val user = auth.currentUser
-        if (user != null) {
+          auth.currentUser?.uid?.let { userId ->
 
-            return firestoreDb.collection(USERS_COLLECTION).document(user.uid)
+            return firestoreDb.collection(USERS_COLLECTION).document(userId)
                 .collection(FRIEND_COLLECTION).addSnapshotListener { snapshot, error ->
 
                     if (error != null) {
@@ -250,25 +261,13 @@ class MessagingHandlerRepo @Inject constructor(
                             )
                         }
 
-                        onFriendUpdated(friendList, snapshot.size())
+                        onFriendUpdated(friendList)
                     }
                 }
-
         }
 
+
         return null
-    }
-
-    fun updateFriendNameOnFriendList(friendName: String, currentUserId: String, friendId: String) {
-        firestoreDb.collection(USERS_COLLECTION).document(currentUserId).collection(
-            FRIEND_COLLECTION
-        ).document(friendId).update("friendName", friendName)
-    }
-
-    fun updateFriendNameOnChatList(friendName: String, friendId: String, chatId: String) {
-        firestoreDb.collection(CHATS_COLLECTION).document(chatId)
-            .update("participantsName.$friendId", friendName) // updates only one key
-
     }
 
 
@@ -278,83 +277,119 @@ class MessagingHandlerRepo @Inject constructor(
         fetchedChatId: String,
         friendName: String?,
         currentUsername: String?,
+        chatId1: String,
     ) {
-        val currentUser = auth.currentUser
-        if (currentUser != null) {
-            val currentUserId = currentUser.uid
+        auth.currentUser?.uid?.let { currentUserId ->
 
-            val chatId = chatIdCreator(currentUserId, otherUserId, fetchedChatId)
+            val chatId = chatId1.ifEmpty { chatIdCreator(currentUserId, otherUserId, fetchedChatId) }
 
+            val currentTime = Timestamp.now()
 
-            val chatRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
+            val senderChatRef = firestoreDb.collection(USERS_COLLECTION)
+                .document(currentUserId)
+                .collection(CHATS_COLLECTION)
+                .document(chatId)
 
-            val chat = chatRef.get().await()
+            val receiverChatRef = firestoreDb.collection(USERS_COLLECTION)
+                .document(otherUserId)
+                .collection(CHATS_COLLECTION)
+                .document(chatId)
 
-            // if the chat doesn't already exists
-            if (!chat.exists()) {
+            val mapIdWithName = mapOf(
+                currentUserId to currentUsername.orEmpty(),
+                otherUserId to friendName.orEmpty()
+            )
 
-                val mapIdWithName = mapOf(
-                    currentUserId to currentUsername.orEmpty(),
-                    otherUserId to friendName.orEmpty()
-                )
-                val chatData = mapOf(
-                    "participants" to listOf(currentUser.uid, otherUserId),
-                    "lastMessageTimeStamp" to Timestamp.now(),
-                    "participantsName" to mapIdWithName
-                )
+            val chatData = mapOf(
+                "participants" to listOf(currentUserId, otherUserId),
+                "lastMessageTimeStamp" to currentTime,
+                "participantsName" to mapIdWithName
+            )
 
-                chatRef.set(chatData)
+            val messageRefId = senderChatRef.collection(MESSAGE_COLLECTION).document().id
+            val senderMessageRef = senderChatRef.collection(MESSAGE_COLLECTION)
+                .document(messageRefId)
 
-            } else {
+            val receiverMessageRef = receiverChatRef.collection(MESSAGE_COLLECTION)
+                .document(messageRefId)
 
-                chatRef.update(
-                    "lastMessageTimeStamp", Timestamp.now()
-                )
-
-            }
-
-            val messageRef = chatRef.collection(MESSAGE_COLLECTION).document()
-
-
-            val messageItem = mapOf(
+            val messageData = mapOf(
+                "messageId" to messageRefId,
                 "senderId" to currentUserId,
                 "receiverId" to otherUserId,
                 "messageContent" to messageText,
-                "timeStamp" to Timestamp.now(),
-                "status" to "sending"
+                "timeStamp" to currentTime,
+                "status" to "sending",
+                "chatId" to chatId
             )
 
             val request = MessageNotificationRequest(
                 senderId = currentUserId,
                 receiverId = otherUserId,
-                messageId = messageRef.id,
-                chatId = chatRef.id
+                messageId = messageRefId,
+                chatId = senderChatRef.id
             )
 
-            messageRef.set(messageItem).await()
-            messageRef.update("status", "sent").await()
+            firestoreDb.runBatch { batch ->
+
+                // create/update chat metadata
+                batch.set(senderChatRef, chatData, SetOptions.merge())
+                batch.set(receiverChatRef, chatData, SetOptions.merge())
+
+                // create message collection and put the message in there
+                batch.set(senderMessageRef, messageData)
+                batch.set(receiverMessageRef, messageData)
+            }.await()
+
+            val statusUpdate = mapOf("status" to "sent")
+
+            // update the message status when the message is sent successfully
+            firestoreDb.runBatch { batch ->
+                batch.update(senderMessageRef, statusUpdate)
+                batch.update(receiverMessageRef, statusUpdate)
+            }.await()
+
+            // send notification if sent successfully
             fcmNotificationSender.sendMessageNotification(request)
 
         }
-
     }
 
+    //1. this function and addMessageListenerForChat function at GlobalMessageListerRepo
+    // is somewhat similar, proposed to combine them.
 
-    fun markMessageAsSeen(chatId: String, currentUserId: String) {
+    // 2. also currently this marks  all the delivered message as seen
+    // proposed to only mark those message which are visible to the user
+    // in screen.
+    fun markMessageAsSeen(chatId: String, currentUserId: String, friendId: String) {
 
         if (chatId.isNotEmpty()) {
-            val chatRef = firestoreDb.collection(CHATS_COLLECTION).document(chatId)
 
-            chatRef.collection(MESSAGE_COLLECTION).whereEqualTo("receiverId", currentUserId)
+            val currentUserChatRef =
+                firestoreDb.collection(USERS_COLLECTION).document(currentUserId)
+                    .collection(CHATS_COLLECTION).document(chatId)
+
+            val newStatus = mapOf("status" to "seen")
+
+            val batch = firestoreDb.batch()
+
+
+            currentUserChatRef.collection(MESSAGE_COLLECTION)
+                .whereEqualTo("receiverId", currentUserId)
                 .whereEqualTo("status", "delivered").get().addOnSuccessListener { snapShot ->
-
-                    val batch = firestoreDb.batch()
-
                     snapShot.documents.forEach { doc ->
 
-                        batch.update(doc.reference, "status", "seen")
-                    }
+                        if (doc.exists()) {
+                            val friendChatRef =
+                                firestoreDb.collection(USERS_COLLECTION).document(friendId)
+                                    .collection(CHATS_COLLECTION).document(chatId)
+                                    .collection(MESSAGE_COLLECTION)
+                                    .document(doc.id)
 
+                            batch.update(friendChatRef, newStatus)
+                            batch.update(doc.reference, newStatus)
+                        }
+                    }
                     if (snapShot.documents.isNotEmpty()) {
                         batch.commit()
                     }
@@ -450,10 +485,15 @@ class MessagingHandlerRepo @Inject constructor(
 
     }
 
-    fun deleteMessage(chatId: String, messageId: Set<String>) {
+     // only deleting on the current user/user who applies for delete side only
+    fun deleteMessage(chatId: String, messageId: Set<String>, currentUserId: String) {
 
         val dbRef =
-            firestoreDb.collection(CHATS_COLLECTION).document(chatId).collection(MESSAGE_COLLECTION)
+            firestoreDb.collection(USERS_COLLECTION)
+                .document(currentUserId)
+                .collection(CHATS_COLLECTION)
+                .document(chatId)
+                .collection(MESSAGE_COLLECTION)
 
         val chunks = messageId.chunked(500)
         for (chunk in chunks) {

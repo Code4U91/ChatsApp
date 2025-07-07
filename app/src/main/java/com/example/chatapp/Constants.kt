@@ -32,3 +32,5 @@ const val MESSAGE_FCM_INTENT = "fcmMessageNotification"
 const val CALL_INTENT = "callInvitation"
 const val CALL_HISTORY_INTENT = "callHistory"
 
+const val DEFAULT_PROFILE_PIC = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
+

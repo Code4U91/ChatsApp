@@ -9,19 +9,27 @@ import com.example.chatapp.FriendData
 import com.example.chatapp.FriendListData
 import com.example.chatapp.Message
 import com.example.chatapp.UserData
+import com.example.chatapp.localData.roomDbCache.FriendEntity
+import com.example.chatapp.localData.roomDbCache.LocalDbRepo
+import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.GlobalMessageListenerRepo
 import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
+import com.example.chatapp.toEntity
+import com.example.chatapp.toUi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -31,26 +39,38 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val messagingHandlerRepo: MessagingHandlerRepo,
     private val globalMessageListenerRepo: GlobalMessageListenerRepo,
     private val onlineStatusRepo: OnlineStatusRepo,
+    private val localDbRepo: LocalDbRepo,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _activeChatList = MutableStateFlow<List<ChatItemData>>(emptyList())
-    val activeChatList = _activeChatList.asStateFlow()
 
     private val _currentOpenChatId = MutableStateFlow<String?>(null)
     val currentOpenChatId = _currentOpenChatId.asStateFlow()
 
-    private val _chatMessages = MutableStateFlow<Map<String, List<Message>>>(emptyMap())
-
-    val chatMessages = _chatMessages.asStateFlow()
-
-    private val _userData = MutableStateFlow<UserData?>(null)
-    val userData = _userData.asStateFlow()
-
-    private val _totalFriend = MutableStateFlow(0)
-    val totalFriend: StateFlow<Int> = _totalFriend
 
     private val _callHistoryData = MutableStateFlow<List<CallData>>(emptyList())
     val callHistoryData = _callHistoryData.asStateFlow()
+
+    val activeChats = localDbRepo.chats
+        .map { entityList -> entityList.map { it.toUi() } }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val userData = localDbRepo.userData
+        .map { userEntity -> userEntity?.toUi() }
+        .stateIn(viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
+
+    val friendList = localDbRepo.friendList
+        .map { friendEntities -> friendEntities.map { it.toUi() } }
+        .stateIn(viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList())
 
 
     init {
@@ -60,7 +80,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
         startGlobalListener()
         fetchUserData()
         setOnlineStatus() // -> marks true, online
-
 
         fetchCallHistory()
 
@@ -77,16 +96,17 @@ class GlobalMessageListenerViewModel @Inject constructor(
             isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId },
             onFetchAllActiveChat = { chatList ->
 
-                _activeChatList.value = chatList
+                insertChats(chatList)
 
             },
             onNewMessages = { chatId, messages ->
 
                 viewModelScope.launch {
-                    delay(200) // to reduce read spikes, may increase more or decreased
-                    _chatMessages.value = _chatMessages.value.toMutableMap().apply {
-                        put(chatId, messages)
+                    delay(200)
+                    messages.forEach {
+                        insertMessage(it)
                     }
+
                 }
 
             }
@@ -94,30 +114,69 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
+    // ROOM DB FUNCTIONS ---- START
+    fun insertChats(chats: List<ChatItemData>) = viewModelScope.launch {
+
+        chats.forEach {
+            localDbRepo.insertChats(it.toEntity())
+        }
+
+    }
+
+    fun getMessage(chatId: String): Flow<List<Message>> {
+        return localDbRepo.getMessages(chatId)
+            .map { it.map { entity -> entity.toUi() } }
+    }
+
+    fun getFriendData(friendId: String) : Flow<FriendData?>{
+
+        return localDbRepo.getFriendData(friendId)
+            .map { it?.toUi() }
+    }
+
+    suspend fun insertMessage(message: Message) {
+        localDbRepo.insertMessages(message.toEntity())
+    }
+
+
+    fun insertFriend(friendEntity: FriendEntity) = viewModelScope.launch {
+
+        localDbRepo.insertFriend(friendEntity)
+    }
+
+    fun insertUserData(userData: UserData) = viewModelScope.launch {
+        localDbRepo.insertUserData(userData.toEntity())
+    }
+
+    // ROOM DB FUNCTION -------- END
+
 
     private fun fetchUserData() {
-        val user = auth.currentUser
-        if (user != null) {
-            messagingHandlerRepo.fetchUserData(user)
+
+        auth.currentUser?.let {
+
+            messagingHandlerRepo.fetchUserData(it)
             { updatedUserData ->
 
-                _userData.value = updatedUserData
+                updatedUserData?.let { data ->
+                    insertUserData(data)
+                }
             }
         }
     }
 
     fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
 
-        return messagingHandlerRepo.fetchFriendList { friendDocument, updatedTotalFriend ->
-            onFriendUpdated(friendDocument)
-            _totalFriend.value = updatedTotalFriend
+        return messagingHandlerRepo.fetchFriendList { friendListData ->
+
+            onFriendUpdated(friendListData)
         }
     }
 
     fun fetchFriendData(
         friendUserId: String,
-        updatedFriendData: (FriendData?) -> Unit
-    ): ListenerRegistration {
+        updatedFriendData: (FriendData) -> Unit
+    ): ListenerRegistration? {
 
         return messagingHandlerRepo.fetchFriendData(friendUserId)
         {
@@ -150,23 +209,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
-    fun updateFriendName(friendName: String, friendId: String, whichList: String, chatId: String) {
-        val userID = auth.currentUser?.uid
-
-        if (whichList == "friendList") {
-            userID?.let { currentUserId ->
-                messagingHandlerRepo.updateFriendNameOnFriendList(
-                    friendName,
-                    currentUserId,
-                    friendId
-                )
-            }
-        } else {
-            messagingHandlerRepo.updateFriendNameOnChatList(friendName, friendId, chatId)
-        }
-
-    }
-
     fun calculateChatId(otherId: String): String? {
 
         val currentUserId = auth.currentUser?.uid
@@ -192,11 +234,11 @@ class GlobalMessageListenerViewModel @Inject constructor(
         messagingHandlerRepo.deleteFriend(friendId)
     }
 
-    fun markAllMessageAsSeen(chatId: String) {
-        val user = auth.currentUser
-        if (user != null) {
-            val currentUserId = user.uid
-            messagingHandlerRepo.markMessageAsSeen(chatId, currentUserId)
+    fun markAllMessageAsSeen(chatId: String, friendId: String) {
+
+        auth.currentUser?.uid?.let { currentUserId ->
+
+            messagingHandlerRepo.markMessageAsSeen(chatId, currentUserId, friendId)
         }
     }
 
@@ -218,7 +260,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
         friendId: String,
         fetchedChatId: String = "",
         friendName: String?,
-        currentUsername: String?
+        currentUsername: String?,
+        chatId: String
     ) {
         viewModelScope.launch {
             messagingHandlerRepo.sendMessageToSingleUser(
@@ -226,7 +269,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
                 friendId,
                 fetchedChatId,
                 friendName,
-                currentUsername
+                currentUsername,
+                chatId
             )
         }
 
@@ -243,8 +287,32 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
+
     fun deleteMessage(chatId: String, messageId: Set<String>) {
-        messagingHandlerRepo.deleteMessage(chatId, messageId)
+
+        auth.currentUser?.uid?.let{
+            messagingHandlerRepo.deleteMessage(chatId, messageId, it)
+        }
+
+    }
+
+
+    // signing out from this viewmodel instead of chatsViewModel because
+    // there's minute delay between the stopping of listener (userData) when using signOut() from
+    // chatsViewModel which then causes room to re-fill the user data just after logout is clicked
+    fun signOut() {
+
+        viewModelScope.launch {
+
+            globalMessageListenerRepo.clearAllGlobalListeners()
+            messagingHandlerRepo.clearMessageListeners()
+            authRepository.signOut()
+            delay(100)
+            localDbRepo.clearAllTables()
+
+
+        }
+
     }
 
 

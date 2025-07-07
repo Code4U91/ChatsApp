@@ -72,7 +72,6 @@ import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.example.chatapp.CALL_INTENT
 import com.example.chatapp.CallMetadata
-import com.example.chatapp.FriendData
 import com.example.chatapp.Message
 import com.example.chatapp.appInstance
 import com.example.chatapp.call.activity.CallActivity
@@ -81,6 +80,7 @@ import com.example.chatapp.getDateLabelForMessage
 import com.example.chatapp.getMessageIconColor
 import com.example.chatapp.getMessageStatusIcon
 import com.example.chatapp.getTimeOnly
+import com.example.chatapp.toEntity
 import com.example.chatapp.toLocalDate
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -100,7 +100,9 @@ fun MainChatScreen(
         mutableStateOf("")
     }
 
-    val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
+    val messageList by globalMessageListenerViewModel.getMessage(fetchedChatId).collectAsState(initial = emptyList())
+    val friendData by globalMessageListenerViewModel.getFriendData(otherId).collectAsState(initial = null)
+
 
     val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
 
@@ -111,16 +113,15 @@ fun MainChatScreen(
     val isDeleteBarOn = messageDeletionSet.isNotEmpty()
 
 
-    val friendData by produceState<FriendData?>(initialValue = null, key1 = otherId)
-    {
-        val listener = globalMessageListenerViewModel.fetchFriendData(otherId)
-        { data ->
-            value = data
+    DisposableEffect(otherId) {
+
+        val listener = globalMessageListenerViewModel.fetchFriendData(otherId){
+
+            globalMessageListenerViewModel.insertFriend(it.toEntity())
         }
+        onDispose {
 
-        awaitDispose {
-
-            listener.remove()
+            listener?.remove()
         }
     }
 
@@ -178,10 +179,10 @@ fun MainChatScreen(
                 globalMessageListenerViewModel.setActiveChat(chatId)
                 // checks if the message has unseen status message
                 if (globalMessageListenerViewModel.hasUnseenMessages(
-                        messageList[chatId] ?: emptyList()
+                    messageList
                     ) && currentChatId == chatId && appInstance.isInForeground
                 ) {
-                    globalMessageListenerViewModel.markAllMessageAsSeen(chatId)
+                    globalMessageListenerViewModel.markAllMessageAsSeen(chatId, otherId)
                 }
             }
         }
@@ -360,7 +361,7 @@ fun MainChatScreen(
             {
 
                 ChatLazyColumn(
-                    messageList = messageList[chatId] ?: emptyList(),
+                    messageList = messageList,
                     listState = listState,
                     isCurrentUser = { senderId ->
                         globalMessageListenerViewModel.isCurrentUserASender(
@@ -416,7 +417,8 @@ fun MainChatScreen(
                                 otherId,
                                 chatId,
                                 friendData?.name,
-                                currentUserData?.name
+                                currentUserData?.name,
+                                chatId
                             )
                             messageText = ""
                         }
@@ -485,7 +487,7 @@ fun ChatLazyColumn(
             ) {
                 ChatBubble(
                     message = message,
-                    isCurrentUser = isCurrentUser(message.senderId ?: ""),
+                    isCurrentUser = isCurrentUser(message.senderId),
                     isNewGroup = isNewGroup,
                     isDeleteBarOn = isDeleteBarOn
                 ) { msgId ->

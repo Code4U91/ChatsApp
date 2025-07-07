@@ -86,7 +86,7 @@ fun PopUpBox(
                 .imePadding()
                 .clickable {
                     onDismiss(false)
-                    profileValueNew = ""
+//                    profileValueNew = ""
                 },
             contentAlignment = if (isKeyboardVisible) Alignment.Center else Alignment.BottomCenter
         ) {
@@ -158,19 +158,22 @@ fun PopUpBox(
                             text = "Save",
                             modifier = Modifier.clickable {
 
-                                viewmodel.updateLoadingIndicator(true)
+                                if (profileValueNew.isNotEmpty()){
 
-                                onSaveOrCancel(
-                                    valueDescription,
-                                    profileValueNew,
-                                    viewmodel,
-                                    context,
-                                )
-                                profileValueNew = ""
+                                    viewmodel.updateLoadingIndicator(true)
+
+                                    onSaveOrCancel(
+                                        valueDescription,
+                                        profileValueNew,
+                                        viewmodel,
+                                        context,
+                                    )
+                                    profileValueNew = ""
+
+                                }
+
                                 keyboardController?.hide()
                                 onDismiss(false)
-
-
                             }
                         )
 

@@ -20,7 +20,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -33,11 +33,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -54,11 +54,13 @@ import coil3.compose.AsyncImage
 import com.example.chatapp.FriendData
 import com.example.chatapp.formatTimestamp
 import com.example.chatapp.shimmerEffect
+import com.example.chatapp.toEntity
 import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.google.firebase.Timestamp
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -71,8 +73,7 @@ fun AllChatScreen(
     requestPerm()
 
     // provides all the chat id's where the current user is an participate and also fetch id's of its members
-    // val activeChatList by viewmodel.activeChatList.collectAsState()
-    val activeChatList by globalMessageListenerViewModel.activeChatList.collectAsState()
+    val activeChatList by globalMessageListenerViewModel.activeChats.collectAsState()
 
 
     var searchQuery by rememberSaveable {
@@ -84,11 +85,19 @@ fun AllChatScreen(
     }
 
 
-    val filteredActiveChatList = activeChatList.filter {
-        it.otherUserName?.trim()?.contains(searchQuery.trim(), ignoreCase = true) == true
-    }.sortedByDescending { it.lastMessageTimeStamp?.toDate()?.time ?: 0L }
+    val filteredActiveChatList = remember(searchQuery, activeChatList) {
+        activeChatList.filter {
+            it.otherUserName.trim().contains(searchQuery.trim(), ignoreCase = true)
+        }
+    }
 
+    var showEmptyState by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        delay(1000)
+        showEmptyState = true
+
+    }
 
 
     Scaffold(
@@ -154,41 +163,52 @@ fun AllChatScreen(
             )
             {
 
-                if (filteredActiveChatList.isEmpty()) {
+                when {
+                    activeChatList.isNotEmpty() -> {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(10.dp)
 
-                    Text(
-                        text = "Chat is Empty. All active chats are shown here.",
-                        fontSize = 18.sp
-                    )
-                }
-
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(10.dp)
-
-                ) {
-
-                    items(filteredActiveChatList, key = { it.chatId }) { chatItemData ->
-
-                        ChatItemAndFriendListItem(
-                            chatItemWithMsg = true,
-                            friendId = chatItemData.otherUserId ?: "",
-                            globalMessageListenerViewModel = globalMessageListenerViewModel,
-                            navController = navController,
-                            chatId = chatItemData.chatId,
-                            lastMessageTimeStamp = chatItemData.lastMessageTimeStamp,
-                            oldFriendName = chatItemData.otherUserName,
-                            whichList = "chatList",
                         ) {
-                            // selected string id
+
+                            itemsIndexed(
+                                items = if (!showSearchBar) activeChatList else filteredActiveChatList,
+                                key = { _, chat -> chat.chatId }
+                            ) { index, chat ->
+
+                                val friendData by globalMessageListenerViewModel.getFriendData(chat.otherUserId.orEmpty())
+                                    .collectAsState(null)
+
+                                ChatItemAndFriendListItem(
+                                    friendId = chat.otherUserId.orEmpty(),
+                                    globalMessageListenerViewModel = globalMessageListenerViewModel,
+                                    navController = navController,
+                                    chatId = chat.chatId,
+                                    isChatList = true,
+                                    friendData = friendData,
+                                    selectedForDeletion = {}
+                                )
+                            }
+
+                            // adding space at the end of list so it doesn't get covered by bottom bar
+                            item {
+                                Spacer(modifier = Modifier.height(72.dp))
+                            }
                         }
+
                     }
 
-                    // adding space at the end of list so it doesn't get covered by bottom bar
-                    item {
-                        Spacer(modifier = Modifier.height(72.dp))
+                    showEmptyState -> {
+                        Text(
+                            text = "Chat is Empty. All active chats are shown here.",
+                            fontSize = 18.sp
+                        )
                     }
+
+                    else -> {}
                 }
+
+
             }
 
         }
@@ -201,74 +221,48 @@ fun AllChatScreen(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ChatItemAndFriendListItem(
-    chatItemWithMsg: Boolean,
     friendId: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     navController: NavHostController,
-    chatId: String = "",
-    lastMessageTimeStamp: Timestamp? = null,
-    oldFriendName: String? = null,
-    whichList: String,
+    chatId: String,
+    isChatList: Boolean,
     isDeleteBarActive: Boolean = false,
+    friendData: FriendData?,
     selectedForDeletion: (String) -> Unit,
+) {
 
-    ) {
+    val message by globalMessageListenerViewModel.getMessage(chatId)
+        .collectAsState(initial = emptyList())
 
-    val messageList by globalMessageListenerViewModel.chatMessages.collectAsState()
-    val message = messageList[chatId]
-    val lastMessage = if (message?.isNotEmpty() == true) message.sortedByDescending { it.timeStamp }
+    val lastMessage = if (message.isNotEmpty()) message.sortedByDescending { it.timeStamp }
         .first() else null
 
+    DisposableEffect(friendId) {
 
-    //  auto offs if ui goes out of view, may be similar to launched effect but used to observe state, snapshot etc
-    val friendData by produceState<FriendData?>(initialValue = null, key1 = friendId)
-    {
-        val listener = globalMessageListenerViewModel.fetchFriendData(friendId)
-        { data ->
-            value = data
+        val listener = globalMessageListenerViewModel.fetchFriendData(friendId) { data ->
+
+            globalMessageListenerViewModel.insertFriend(data.toEntity())
+
         }
 
-        awaitDispose {
-
-            listener.remove()
+        onDispose {
+            listener?.remove()
         }
     }
 
 
-    val dateAndTime by remember(lastMessageTimeStamp) {
-        mutableStateOf(formatTimestamp(lastMessageTimeStamp ?: Timestamp.now()))
+    val dateAndTime by remember(lastMessage?.timeStamp) {
+        mutableStateOf(formatTimestamp(lastMessage?.timeStamp ?: Timestamp.now()))
     }
 
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
 
-    LaunchedEffect(oldFriendName, friendData?.name, chatId) {
-
-        val updatedFriendName = friendData?.name
-
-        if (oldFriendName != null) {
-            updatedFriendName?.let {
-
-                if (oldFriendName != updatedFriendName) {
-                    // change friend name on the friend list data on the friendList document of the user
-                    globalMessageListenerViewModel.updateFriendName(
-                        friendName = updatedFriendName,
-                        friendId = friendData?.uid ?: "",
-                        whichList = whichList,
-                        chatId = chatId
-                    )
-                }
-            }
-        }
-
-    }
-
-    if (friendData == null) {
+    if (chatId.isEmpty()) {
 
         // Placeholder / Skeleton Loader
-
-        ChatItemPlaceholder(showLastMsgTime = chatItemWithMsg)
+        ChatItemPlaceholder(showLastMsgTime = isChatList)
 
     } else {
 
@@ -281,7 +275,7 @@ fun ChatItemAndFriendListItem(
                     onClick = {
 
                         if (isDeleteBarActive) {
-                            selectedForDeletion(friendId)
+                            selectedForDeletion(friendData?.uid.orEmpty())
                         } else {
                             navController.navigate(
                                 "MainChat/$friendId/$chatId"
@@ -294,8 +288,8 @@ fun ChatItemAndFriendListItem(
 
                         if (currentRoute == "FriendListScreen") {
 
-                            selectedForDeletion(friendId)
-                            // globalMessageListenerViewModel.deleteFriend(friendId)
+                            selectedForDeletion(friendData?.uid.orEmpty())
+
                         }
                     }
 
@@ -305,7 +299,7 @@ fun ChatItemAndFriendListItem(
 
             //Profile image
             AsyncImage(
-                model = friendData?.photoUrl ?: "",
+                model = friendData?.photoUrl,
                 contentDescription = "Profile picture",
                 modifier = Modifier
                     .size(50.dp)
@@ -321,7 +315,7 @@ fun ChatItemAndFriendListItem(
 
                 // Profile user name
                 Text(
-                    text = friendData?.name ?: "",
+                    text = friendData?.name.orEmpty(),
                     fontSize = 20.sp,
                     modifier = Modifier.padding(2.dp),
                     maxLines = 1,
@@ -332,7 +326,7 @@ fun ChatItemAndFriendListItem(
 
 
                 Text(
-                    text = if (chatItemWithMsg) lastMessage?.messageContent.orEmpty() else friendData?.about.orEmpty(),
+                    text = if (isChatList) lastMessage?.messageContent.orEmpty() else friendData?.about.orEmpty(),
                     fontSize = 16.sp,
                     color = Color.Gray,
                     maxLines = 1,
@@ -341,7 +335,7 @@ fun ChatItemAndFriendListItem(
 
             }
 
-            if (chatItemWithMsg) {
+            if (isChatList) {
                 // Last messaged date/time
 
                 Text(

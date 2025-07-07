@@ -6,8 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.repository.AuthRepository
-import com.example.chatapp.repository.GlobalMessageListenerRepo
-import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
@@ -26,9 +24,7 @@ class ChatsViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
-    private val messagingHandlerRepo: MessagingHandlerRepo,
-    private val globalMessageListenerRepo: GlobalMessageListenerRepo,
-    private val onlineStatusRepo: OnlineStatusRepo
+    private val onlineStatusRepo: OnlineStatusRepo,
 ) : ViewModel() {
 
 
@@ -287,20 +283,6 @@ class ChatsViewModel @Inject constructor(
                     onFailure = {}
                 )
             }
-
-        }
-
-    }
-
-
-    fun signOut() {
-
-        viewModelScope.launch {
-
-
-            globalMessageListenerRepo.clearAllGlobalListeners()
-            messagingHandlerRepo.clearMessageListeners()
-            authRepository.signOut()
 
         }
 

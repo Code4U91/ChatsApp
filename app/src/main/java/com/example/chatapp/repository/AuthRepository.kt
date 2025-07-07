@@ -6,10 +6,11 @@ import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
+import com.example.chatapp.DEFAULT_PROFILE_PIC
 import com.example.chatapp.R
 import com.example.chatapp.USERS_COLLECTION
 import com.example.chatapp.USERS_REF
-import com.example.chatapp.localData.LocalFcmTokenManager
+import com.example.chatapp.localData.dataStore.LocalFcmTokenManager
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
@@ -142,7 +143,7 @@ class AuthRepository @Inject constructor(
                 uploadUserDataInFireStore(
                     userName,
                     user,
-                    "https://gimgs2.nohat.cc/thumb/f/640/male-face-icon-default-profile-image--c3f2c592f9.jpg"
+                    DEFAULT_PROFILE_PIC
                 )
 
             }

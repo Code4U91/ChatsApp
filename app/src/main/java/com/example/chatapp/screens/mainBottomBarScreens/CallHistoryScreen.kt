@@ -237,13 +237,13 @@ fun CallLazyColumn(
 
                     val callMetaData = CallMetadata(
                         channelName = callData.channelId.orEmpty(),
-                        uid = currentUser.uid.orEmpty(),
+                        uid = currentUser.uid,
                         callType = callData.callType.orEmpty(),
-                        callerName = currentUser.name.orEmpty(),
-                        callReceiverId = it.uid.orEmpty(),
+                        callerName = currentUser.name,
+                        callReceiverId = it.uid,
                         isCaller = true,
-                        receiverPhoto = it.photoUrl.orEmpty(),
-                        receiverName = it.name.orEmpty(),
+                        receiverPhoto = it.photoUrl,
+                        receiverName = it.name,
                         callDocId = null
                     )
 
@@ -287,7 +287,7 @@ fun CallListItem(
 
         awaitDispose {
 
-            listener.remove()
+            listener?.remove()
         }
     }
 
