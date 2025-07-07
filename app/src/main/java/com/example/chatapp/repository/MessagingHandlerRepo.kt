@@ -469,8 +469,8 @@ class MessagingHandlerRepo @Inject constructor(
 
                         doc.toObject(CallData::class.java)?.copy(
                             callId = doc.id,
-                            otherUserName = otherUserName,
-                            otherUserId = otherUserId // other participant
+                            otherUserName = otherUserName.orEmpty(),
+                            otherUserId = otherUserId.orEmpty() // other participant
                         )
 
                     } ?: emptyList()

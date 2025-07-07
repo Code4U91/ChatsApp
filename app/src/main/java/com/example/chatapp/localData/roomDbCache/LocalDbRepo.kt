@@ -12,10 +12,9 @@ class LocalDbRepo @Inject constructor(
 ) {
 
     val chats = localDb.getDbDao().getChats()
-    val chatHistory = localDb.getDbDao().getCallHistory()
+    val callHistory = localDb.getDbDao().getCallHistory()
     val friendList = localDb.getDbDao().getFriendList()
     val userData = localDb.getDbDao().getUserData()
-    val allMessages = localDb.getDbDao().getAllMessages()
 
     suspend fun insertUserData(userData: UserEntity){
 

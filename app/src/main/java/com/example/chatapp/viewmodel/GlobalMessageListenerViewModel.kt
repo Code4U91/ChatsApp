@@ -47,10 +47,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val _currentOpenChatId = MutableStateFlow<String?>(null)
     val currentOpenChatId = _currentOpenChatId.asStateFlow()
 
-
-    private val _callHistoryData = MutableStateFlow<List<CallData>>(emptyList())
-    val callHistoryData = _callHistoryData.asStateFlow()
-
     val activeChats = localDbRepo.chats
         .map { entityList -> entityList.map { it.toUi() } }
         .stateIn(
@@ -71,6 +67,13 @@ class GlobalMessageListenerViewModel @Inject constructor(
         .stateIn(viewModelScope,
             SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList())
+
+    val callHistory = localDbRepo.callHistory
+        .map { callHistoryEntities -> callHistoryEntities.map { it.toUi() } }
+        .stateIn(viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList())
+
 
 
     init {
@@ -142,6 +145,11 @@ class GlobalMessageListenerViewModel @Inject constructor(
     fun insertFriend(friendEntity: FriendEntity) = viewModelScope.launch {
 
         localDbRepo.insertFriend(friendEntity)
+    }
+
+    fun insertCallHistory(callData: CallData) = viewModelScope.launch{
+
+        localDbRepo.insertCallHistory(callData.toEntity())
     }
 
     fun insertUserData(userData: UserData) = viewModelScope.launch {
@@ -281,7 +289,9 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         messagingHandlerRepo.fetchCallHistory { callList ->
 
-            _callHistoryData.value = callList
+            callList.forEach {
+                insertCallHistory(it)
+            }
 
         }
 

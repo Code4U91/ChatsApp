@@ -59,15 +59,15 @@ data class FriendListData(
 
 data class CallData(
     val callId: String = "", // call document id
-    val callerId: String? = "", // call initiate or caller/ sender id
-    val callReceiverId: String? = "", // call receiver
-    val callType: String? = "", // type of the call, video or voice
-    val channelId: String? = "", // channel name for agora join
-    val status: String? = "", // status of the call
+    val callerId: String = "", // call initiate or caller/ sender id
+    val callReceiverId: String = "", // call receiver
+    val callType: String = "", // type of the call, video or voice
+    val channelId: String = "", // channel name for agora join
+    val status: String = "", // status of the call
     val callStartTime: Timestamp? = Timestamp.now(), // call start time
     val callEndTime: Timestamp? =  Timestamp.now(), // call end time
-    val otherUserName: String? = "", // other participant user name
-    val otherUserId: String? = "" //other participant of the call
+    val otherUserName: String = "", // other participant user name
+    val otherUserId: String = "" //other participant of the call
 
 )
 

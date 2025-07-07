@@ -1,5 +1,6 @@
 package com.example.chatapp
 
+import com.example.chatapp.localData.roomDbCache.CallHistoryEntity
 import com.example.chatapp.localData.roomDbCache.ChatEntity
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.MessageEntity
@@ -94,6 +95,38 @@ fun UserEntity.toUi() : UserData{
         photoUrl = this.photoUrl,
         email = this.email,
         about = this.about
+    )
+}
+
+fun CallData.toEntity() : CallHistoryEntity{
+
+    return CallHistoryEntity(
+        callId = this.callId,
+        callerId = this.callerId,
+        callReceiverId = this.callReceiverId,
+        callType = this.callType,
+        channelId = this.channelId,
+        status = this.status,
+        callStartTime = this.callStartTime?.toDate()?.time ?: 0L,
+        callEndTime = this.callEndTime?.toDate()?.time ?: 0L,
+        otherUserName = this.otherUserName,
+        otherUserId = this.otherUserId
+    )
+}
+
+fun CallHistoryEntity.toUi() : CallData{
+
+    return CallData(
+        callId = this.callId,
+        callerId = this.callerId,
+        callReceiverId = this.callReceiverId,
+        callType = this.callType,
+        channelId = this.channelId,
+        status = this.status,
+        callStartTime = Timestamp(this.callStartTime / 1000, 0),
+        callEndTime = Timestamp(this.callEndTime / 1000, 0),
+        otherUserName = this.otherUserName,
+        otherUserId = this.otherUserId
     )
 }
 

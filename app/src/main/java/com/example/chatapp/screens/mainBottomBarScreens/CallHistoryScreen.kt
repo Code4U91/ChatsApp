@@ -100,12 +100,12 @@ fun CallHistoryScreen(
         mutableStateOf(false)
     }
 
-    val callList by globalMessageListenerViewModel.callHistoryData.collectAsState()
+    val callList by globalMessageListenerViewModel.callHistory.collectAsState()
 
 
     val filteredCallList = callList.filter {
-        it.otherUserName?.trim()?.contains(searchQuery.trim(), ignoreCase = true) == true
-    }.sortedByDescending { it.callEndTime?.toDate()?.time ?: 0L }
+        it.otherUserName.trim().contains(searchQuery.trim(), ignoreCase = true)
+    }
 
 
     Scaffold(
@@ -177,7 +177,7 @@ fun CallHistoryScreen(
                 }
 
                 CallLazyColumn(
-                    filteredCallList,
+                   if(!showSearchBar) callList else filteredCallList,
                     globalMessageListenerViewModel
                 )
 
@@ -188,7 +188,7 @@ fun CallHistoryScreen(
 
 @Composable
 fun CallLazyColumn(
-    filteredCallList: List<CallData>,
+    callListData: List<CallData>,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     listState: LazyListState = rememberLazyListState()
 ) {
@@ -196,9 +196,9 @@ fun CallLazyColumn(
     val context = LocalContext.current
     val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
 
-    LaunchedEffect(filteredCallList.firstOrNull()?.callId) {
+    LaunchedEffect(callListData.firstOrNull()?.callId) {
 
-        if (filteredCallList.isNotEmpty() && listState.firstVisibleItemIndex <= 2) {
+        if (callListData.isNotEmpty() && listState.firstVisibleItemIndex <= 2) {
             listState.animateScrollToItem(0)
         }
     }
@@ -210,10 +210,10 @@ fun CallLazyColumn(
     ) {
 
 
-        itemsIndexed(filteredCallList, key = { _, item -> item.callId })
+        itemsIndexed(callListData, key = { _, item -> item.callId })
         { index, callData ->
 
-            val nextCallItem = filteredCallList.getOrNull(index - 1)
+            val nextCallItem = callListData.getOrNull(index - 1)
             val currentCallDate = callData.callEndTime?.toLocalDate()
             val previousCallDate = nextCallItem?.callEndTime?.toLocalDate()
 
@@ -224,21 +224,21 @@ fun CallLazyColumn(
             }
 
             CallListItem(
-                otherUserId = callData.otherUserId ?: "",
+                otherUserId = callData.otherUserId,
                 globalMessageListenerViewModel = globalMessageListenerViewModel,
                 callData.callStartTime,
                 callData.callEndTime,
-                callType = callData.callType ?: "",
+                callType = callData.callType,
                 isCaller = callData.callReceiverId == callData.otherUserId, // checking if other user is caller, otherUserId is other participantId
-                callStatus = callData.status ?: ""
+                callStatus = callData.status
             ) {
 
                 currentUserData?.let { currentUser ->
 
                     val callMetaData = CallMetadata(
-                        channelName = callData.channelId.orEmpty(),
+                        channelName = callData.channelId,
                         uid = currentUser.uid,
-                        callType = callData.callType.orEmpty(),
+                        callType = callData.callType,
                         callerName = currentUser.name,
                         callReceiverId = it.uid,
                         isCaller = true,
