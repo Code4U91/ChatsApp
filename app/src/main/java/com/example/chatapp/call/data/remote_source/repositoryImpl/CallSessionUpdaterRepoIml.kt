@@ -1,6 +1,7 @@
-package com.example.chatapp.call.repository
+package com.example.chatapp.call.data.remote_source.repositoryImpl
 
-import com.example.chatapp.CALL_HISTORY
+import com.example.chatapp.call.domain.repository.CallSessionUploaderRepo
+import com.example.chatapp.core.CALL_HISTORY
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -11,12 +12,12 @@ import javax.inject.Singleton
 // class used for creating a session/call document which maintains the call data and later
 // is used as a record in a call history
 @Singleton
-class CallSessionUpdaterRepo @Inject constructor(
+class CallSessionUpdaterRepoIml @Inject constructor(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore
-) {
+) : CallSessionUploaderRepo {
 
-    fun uploadCallData(
+    override fun uploadCallData(
         callReceiverId: String,
         callType: String,
         channelId: String,
@@ -41,7 +42,7 @@ class CallSessionUpdaterRepo @Inject constructor(
             "callType" to callType,
             "channelId" to channelId,
             "status" to callStatus,
-            "callStartTime" to Timestamp.now(),
+            "callStartTime" to Timestamp.Companion.now(),
             "participants" to listOf(userId, callReceiverId),
             "participantsName" to mapIdWithName
         )
@@ -52,7 +53,7 @@ class CallSessionUpdaterRepo @Inject constructor(
 
     }
 
-    fun updateCallStatus(status: String, callId: String) {
+    override fun updateCallStatus(status: String, callId: String) {
 
         val callDocRef = firestoreDb.collection(CALL_HISTORY).document(callId)
 
@@ -68,7 +69,7 @@ class CallSessionUpdaterRepo @Inject constructor(
                 {
                     val newStatus = mapOf(
                         "status" to status,
-                        "callEndTime" to Timestamp.now()
+                        "callEndTime" to Timestamp.Companion.now()
                     )
 
                     callDocRef.update(newStatus)
@@ -82,7 +83,7 @@ class CallSessionUpdaterRepo @Inject constructor(
 
     }
 
-    fun uploadOnCallEnd(
+    override fun uploadOnCallEnd(
         status: String,
         callId: String
     ) {
@@ -94,7 +95,7 @@ class CallSessionUpdaterRepo @Inject constructor(
 
 
             val callEndTimeData = mapOf(
-                "callEndTime" to Timestamp.now(),
+                "callEndTime" to Timestamp.Companion.now(),
                 "status" to status
             )
             callDocRef.update(callEndTimeData)
@@ -102,7 +103,7 @@ class CallSessionUpdaterRepo @Inject constructor(
     }
 
 
-    fun checkAndUpdateCurrentCall(
+    override fun checkAndUpdateCurrentCall(
         callId: String,
         onCallDeclined: () -> Unit
     ): ListenerRegistration {
@@ -138,6 +139,3 @@ class CallSessionUpdaterRepo @Inject constructor(
 
 
 }
-
-
-

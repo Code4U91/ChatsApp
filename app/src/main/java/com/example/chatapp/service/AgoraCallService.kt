@@ -1,4 +1,4 @@
-package com.example.chatapp.call.service
+package com.example.chatapp.service
 
 import android.annotation.SuppressLint
 import android.app.Notification
@@ -9,22 +9,23 @@ import android.content.pm.ServiceInfo
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.example.chatapp.AGORA_ID
-import com.example.chatapp.CALL_CHANNEL_NOTIFICATION_NAME_ID
-import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
-import com.example.chatapp.call.activity.CallActivity
-import com.example.chatapp.CallMetadata
-import com.example.chatapp.CallNotificationRequest
-import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.R
 import com.example.chatapp.api.FcmNotificationSender
-import com.example.chatapp.call.repository.AgoraSetUpRepo
-import com.example.chatapp.call.repository.CallRingtoneManager
-import com.example.chatapp.call.repository.CallSessionUpdaterRepo
+import com.example.chatapp.call.data.remote_source.repositoryImpl.CallRingtoneManagerIml
+import com.example.chatapp.call.data.remote_source.repositoryImpl.CallSessionUpdaterRepoIml
+import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.core.AGORA_ID
+import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
+import com.example.chatapp.core.CallNotificationRequest
+import com.example.chatapp.core.INCOMING_CALL_FCM_NOTIFICATION_ID
+import com.example.chatapp.core.model.CallMetadata
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -41,13 +42,14 @@ class AgoraCallService : LifecycleService() {
     lateinit var agoraRepo: AgoraSetUpRepo
 
     @Inject
-    lateinit var callSessionUpdaterRepo: CallSessionUpdaterRepo
+    lateinit var callSessionUpdaterRepoIml: CallSessionUpdaterRepoIml
 
     @Inject
-    lateinit var callRingtoneManager: CallRingtoneManager
+    lateinit var callRingtoneManagerIml: CallRingtoneManagerIml
 
     @Inject
     lateinit var fcmNotificationSender: FcmNotificationSender
+
 
     private lateinit var callMetadata: CallMetadata
 
@@ -68,11 +70,12 @@ class AgoraCallService : LifecycleService() {
 
     private var callTimerJob: Job? = null
 
+    //private val callEvent = agoraRepo.callEvent
+
     override fun onCreate() {
         super.onCreate()
 
         agoraRepo.initializeAgora(AGORA_ID)
-
 
     }
 
@@ -128,7 +131,7 @@ class AgoraCallService : LifecycleService() {
                 if (it.isCaller) // directly join the call if the user is a caller
                 {
                     val speaker = it.callType == "video"
-                    callRingtoneManager.playOutGoingRingtone(speaker)
+                    callRingtoneManagerIml.playOutGoingRingtone(speaker)
                 }
                 lifecycleScope.launch {
                     agoraRepo.joinChannel(null, it.channelName, it.callType, it.uid)
@@ -153,7 +156,7 @@ class AgoraCallService : LifecycleService() {
     private fun startFlowCollectors(callDocId: String?, callNotification: Int) {
 
         serviceJob = lifecycleScope.launch {
-            repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
 
                 // responsible for collecting join status, here join refers to the user joining the channel
                 launch {
@@ -173,7 +176,7 @@ class AgoraCallService : LifecycleService() {
                             // upload data if the user have joined the channel and the user is an caller
                             if (callMetadata.isCaller) {
 
-                                callId = callSessionUpdaterRepo.uploadCallData(
+                                callId = callSessionUpdaterRepoIml.uploadCallData(
                                     callReceiverId = callMetadata.callReceiverId,
                                     callType = callMetadata.callType,
                                     channelId = callMetadata.channelName,
@@ -199,10 +202,10 @@ class AgoraCallService : LifecycleService() {
 
                                     // when the receiver declines the call, may be show a notification saying call declined later
                                     val listenerForCallDecline =
-                                        callSessionUpdaterRepo.checkAndUpdateCurrentCall(callId = it)
+                                        callSessionUpdaterRepoIml.checkAndUpdateCurrentCall(callId = it)
                                         {
                                             isCallDeclined = true
-                                            agoraRepo.declineIncomingCall(true)
+                                            agoraRepo.declineIncomingCall(true) // declined by receiver
                                             stopSelf() //  if the auto re- calling issue occurs after ending the call them check for this stopSelf
 
                                         }
@@ -212,28 +215,29 @@ class AgoraCallService : LifecycleService() {
                             }
 
 
-                        } else {
-
-                            // check if the call gets canceled before the receiver picks it
-                            // happens if the user calls and before receiver picks the call caller cuts it
-                            // in that case close call screen on receiver side
-                            // receiver can't join if call isn't picked so join is false
-                            // checked by the receiver, i.e isCaller false
-
-                            callDocId?.let {
-                                val listenerForDeclineByCaller =
-                                    callSessionUpdaterRepo.checkAndUpdateCurrentCall(callId = it)
-                                    {
-
-                                        agoraRepo.declineIncomingCall(true) // helper flag to update the ui, listened by callViewmodel
-
-                                    }
-
-                                listenerRegistration.add(listenerForDeclineByCaller)
-                            }
-
-
                         }
+                        //else {
+//
+//                            // check if the call gets canceled before the receiver picks it
+//                            // happens if the user calls and before receiver picks the call caller cuts it
+//                            // in that case close call screen on receiver side
+//                            // receiver can't join if call isn't picked so join is false
+//                            // checked by the receiver, i.e isCaller false
+//
+//                            callDocId?.let {
+//                                val listenerForDeclineByCaller =
+//                                    callSessionUpdaterRepoIml.checkAndUpdateCurrentCall(callId = it)
+//                                    {
+//
+//                                        agoraRepo.declineIncomingCall(true) // helper flag to update the ui, listened by callViewmodel
+//
+//                                    }
+//
+//                                listenerRegistration.add(listenerForDeclineByCaller)
+//                            }
+//
+//
+//                        }
 
 
                     }
@@ -246,7 +250,7 @@ class AgoraCallService : LifecycleService() {
                         Log.i("AGORA_CALL_SERVICE", "RemoteUserJoined: ${remoteUser.toString()}")
                         if (remoteUser != null) {
 
-                            callRingtoneManager.stopAllSounds()
+                            callRingtoneManagerIml.stopAllSounds()
                             startCallTimer()
                             isRemoteUserJoined = remoteUser
 
@@ -265,7 +269,7 @@ class AgoraCallService : LifecycleService() {
 
 
                             callId?.let { callDocId ->
-                                callSessionUpdaterRepo.updateCallStatus("ongoing", callDocId)
+                                callSessionUpdaterRepoIml.updateCallStatus("ongoing", callDocId)
                             }
 
                         }
@@ -300,7 +304,7 @@ class AgoraCallService : LifecycleService() {
     override fun onDestroy() {
         super.onDestroy()
 
-        callRingtoneManager.stopAllSounds()
+        callRingtoneManagerIml.stopAllSounds()
         clearListeners()
         serviceJob?.cancel()
 
@@ -312,7 +316,7 @@ class AgoraCallService : LifecycleService() {
 
                 val status = if (isRemoteUserJoined != null) "ended" else "missed"
 
-                callSessionUpdaterRepo.uploadOnCallEnd(status, callDocId)
+                callSessionUpdaterRepoIml.uploadOnCallEnd(status, callDocId)
 
             }
         }
@@ -334,8 +338,8 @@ class AgoraCallService : LifecycleService() {
 
         val intent = Intent(this, CallActivity::class.java).apply {
 
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
-            action = CALL_INTENT
+            this.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+            this.action = CALL_INTENT
             putExtra("call_metadata", callMetadata)
         }
 

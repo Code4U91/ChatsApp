@@ -1,4 +1,4 @@
-package com.example.chatapp.call.repository
+package com.example.chatapp.call.data.remote_source.repositoryImpl
 
 import android.content.Context
 import android.media.AudioAttributes
@@ -7,8 +7,9 @@ import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.Ringtone
 import android.media.RingtoneManager
-import android.net.Uri
 import android.os.Build
+import androidx.core.net.toUri
+import com.example.chatapp.call.domain.repository.CallRingtoneRepo
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
 import javax.inject.Inject
@@ -16,15 +17,15 @@ import javax.inject.Singleton
 
 // manage incoming and outgoing ringtones
 @Singleton
-class CallRingtoneManager @Inject constructor(
+class CallRingtoneManagerIml @Inject constructor(
     @ApplicationContext private val context: Context
-) {
+) : CallRingtoneRepo {
 
     private var incomingRingTonePlayer: Ringtone? = null
     private var outgoingRingTonePlayer: MediaPlayer? = null
 
 
-     fun playIncomingRingtone() {
+     override fun playIncomingRingtone() {
 
 
         stopAllSounds()
@@ -48,12 +49,12 @@ class CallRingtoneManager @Inject constructor(
         }
     }
 
-     fun playOutGoingRingtone(
-        useSpeaker: Boolean = false
-    ) {
+     override fun playOutGoingRingtone(
+        useSpeaker: Boolean
+     ) {
         stopAllSounds()
 
-        val uri = Uri.parse("android.resource://${context.packageName}/raw/ringback")
+        val uri = "android.resource://${context.packageName}/raw/ringback".toUri()
         outgoingRingTonePlayer = MediaPlayer().apply {
             try {
 
@@ -74,10 +75,10 @@ class CallRingtoneManager @Inject constructor(
         }
     }
 
-    private fun configureAudioRouting(
+    override fun configureAudioRouting(
         context: Context,
         player: MediaPlayer,
-        useSpeaker: Boolean = true
+        useSpeaker: Boolean
     ) {
 
         val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -99,7 +100,7 @@ class CallRingtoneManager @Inject constructor(
             }
 
             if (targetDevice != null) {
-                player.setPreferredDevice(targetDevice)
+                player.preferredDevice = targetDevice
             }
         } else {
 
@@ -109,7 +110,7 @@ class CallRingtoneManager @Inject constructor(
         }
     }
 
-    fun stopAllSounds() {
+    override fun stopAllSounds() {
 
         incomingRingTonePlayer?.stop()
         incomingRingTonePlayer = null

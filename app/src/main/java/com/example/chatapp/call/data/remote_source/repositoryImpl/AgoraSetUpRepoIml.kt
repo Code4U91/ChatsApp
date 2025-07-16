@@ -1,9 +1,10 @@
-package com.example.chatapp.call.repository
+package com.example.chatapp.call.data.remote_source.repositoryImpl
 
 import android.content.Context
 import android.util.Log
 import android.view.SurfaceView
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call.presentation.call_screen.state.CallEvent
 import io.agora.rtc2.ChannelMediaOptions
 import io.agora.rtc2.Constants
 import io.agora.rtc2.IRtcEngineEventHandler
@@ -12,38 +13,39 @@ import io.agora.rtc2.video.VideoCanvas
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
-import javax.inject.Singleton
 
 // Contains all function needed to make and receive call
 // used by AgoraCallService class for running it in the service class
-@Singleton
-class AgoraSetUpRepo @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class AgoraSetUpRepoIml (
+    private val context: Context
+) : AgoraSetUpRepo {
 
     private var rtcEngine: RtcEngine? = null
 
     private val _isJoined = MutableStateFlow(false)
-    val isJoined = _isJoined.asStateFlow()
+    override val isJoined = _isJoined.asStateFlow()
 
     private val _remoteUserJoined = MutableStateFlow<Int?>(null)
-    val remoteUserJoined = _remoteUserJoined.asStateFlow()
+    override val remoteUserJoined = _remoteUserJoined.asStateFlow()
 
     private val _remoteUserLeft = MutableStateFlow(false)
-    val remoteUserLeft = _remoteUserLeft.asStateFlow()
+    override val remoteUserLeft = _remoteUserLeft.asStateFlow()
 
     private val _declineTheCall = MutableStateFlow(false)
-    val declineTheCall = _declineTheCall.asStateFlow()
+    override val declineTheCall = _declineTheCall.asStateFlow()
 
     private val _callDuration = MutableStateFlow(0L)
-    val callDuration = _callDuration.asStateFlow()
+    override val callDuration = _callDuration.asStateFlow()
+
+    private val _callEvent = MutableStateFlow<CallEvent>(CallEvent.JoiningChannel)
+    override val callEvent = _callEvent.asStateFlow()
 
 
     private var localUid: Int = 0
 
-    fun initializeAgora(appId: String) {
+    override fun initializeAgora(appId: String) {
 
         if (rtcEngine != null) return
 
@@ -55,16 +57,23 @@ class AgoraSetUpRepo @Inject constructor(
 
                     localUid = uid
                     _isJoined.value = true
+
+                    updateCallEvent(CallEvent.Ringing)
+
                 }
 
                 override fun onLeaveChannel(stats: RtcStats?) {
                     super.onLeaveChannel(stats)
                     _isJoined.value = false
+
+                    updateCallEvent(CallEvent.Ended)
                 }
 
                 override fun onUserJoined(uid: Int, elapsed: Int) {
                     Log.d("AgoraDebug", "Remote user joined: $uid")
                     _remoteUserJoined.value = uid
+
+                    updateCallEvent(CallEvent.Ongoing)
 
                 }
 
@@ -77,7 +86,10 @@ class AgoraSetUpRepo @Inject constructor(
 
                 override fun onUserOffline(uid: Int, reason: Int) {
                     Log.d("AgoraDebug", "Remote user left: $uid")
+
                     _remoteUserLeft.value = true
+
+                    updateCallEvent(CallEvent.Ended)
                 }
             })
         } catch (e: Exception) {
@@ -86,7 +98,7 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
 
-    fun enableVideo() {
+    override fun enableVideo() {
         rtcEngine?.apply {
             enableVideo()
             startPreview() //  preview to run before call join
@@ -94,18 +106,18 @@ class AgoraSetUpRepo @Inject constructor(
         }
     }
 
-    private fun enableAudioOnly() {
+    override fun enableAudioOnly() {
         rtcEngine?.apply {
             disableVideo()
             setEnableSpeakerphone(false)
         }
     }
 
-    fun toggleSpeakerphone(isEnabled: Boolean) {
+    override fun toggleSpeakerphone(isEnabled: Boolean) {
         rtcEngine?.setEnableSpeakerphone(isEnabled)
     }
 
-    suspend fun joinChannel(token: String?, channelName: String, callType: String, uid: String) {
+    override suspend fun joinChannel(token: String?, channelName: String, callType: String, uid: String) {
 
 
         withContext(Dispatchers.IO)
@@ -130,7 +142,7 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
 
-    fun setupLocalVideo(surfaceView: SurfaceView) {
+    override fun setupLocalVideo(surfaceView: SurfaceView) {
 
         rtcEngine?.apply {
             enableVideo()
@@ -147,38 +159,46 @@ class AgoraSetUpRepo @Inject constructor(
     }
 
 
-    fun setupRemoteVideo(surfaceView: SurfaceView, uid: Int) {
+    override fun setupRemoteVideo(surfaceView: SurfaceView, uid: Int) {
         rtcEngine?.setupRemoteVideo(VideoCanvas(surfaceView, VideoCanvas.RENDER_MODE_HIDDEN, uid))
     }
 
-    fun switchCamera() {
+    override fun switchCamera() {
         rtcEngine?.switchCamera()
     }
 
-    fun muteLocalAudio(mute: Boolean) {
+    override fun muteLocalAudio(mute: Boolean) {
         rtcEngine?.muteLocalAudioStream(mute)
     }
 
-    fun muteRemoteAudio(enabled: Boolean) {
+    override fun muteRemoteAudio(enabled: Boolean) {
 
         rtcEngine?.muteAllRemoteAudioStreams(enabled)
 
     }
 
-    fun declineIncomingCall(decline: Boolean) {
+    override fun declineIncomingCall(decline: Boolean) {
+
         _declineTheCall.value = decline
     }
 
-    fun updateDuration(duration: Long) {
+    override fun updateDuration(duration: Long) {
         _callDuration.value = duration
     }
 
-    private fun resetCallDuration() {
+    override fun resetCallDuration() {
         _callDuration.value = 0L
     }
 
+    override fun updateCallEvent(event: CallEvent) {
 
-    fun destroy() {
+        if(_callEvent.value != event){
+            _callEvent.update { event }
+        }
+    }
+
+
+    override fun destroy() {
 
         rtcEngine?.apply {
             leaveChannel()
@@ -194,7 +214,11 @@ class AgoraSetUpRepo @Inject constructor(
         _remoteUserLeft.value = false
         _remoteUserJoined.value = null
         _declineTheCall.value = false
+
+
          resetCallDuration()
+
+
 
         RtcEngine.destroy()
         rtcEngine = null

@@ -7,6 +7,9 @@ import android.app.NotificationManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
+import com.example.chatapp.core.MESSAGE_FCM_CHANNEL_STRING
 import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
 import dagger.hilt.android.HiltAndroidApp
@@ -29,7 +32,7 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
 
         createNotificationChannel()
 
-        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+        ProcessLifecycleOwner.Companion.get().lifecycle.addObserver(this)
     }
 
     // setting online status state when user minimizes the app

@@ -1,22 +1,24 @@
-package com.example.chatapp.viewmodel
+package com.example.chatapp.common.presentation
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.CallData
-import com.example.chatapp.ChatItemData
-import com.example.chatapp.FriendData
-import com.example.chatapp.FriendListData
-import com.example.chatapp.Message
-import com.example.chatapp.UserData
+import com.example.chatapp.call.domain.model.Call
+import com.example.chatapp.call.domain.usecase.call_history_case.CallHistoryUseCase
+import com.example.chatapp.call.presentation.mapper.toUi
+import com.example.chatapp.core.ChatItemData
+import com.example.chatapp.core.FriendData
+import com.example.chatapp.core.FriendListData
+import com.example.chatapp.core.Message
+import com.example.chatapp.core.UserData
+import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.core.local_database.toUi
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.LocalDbRepo
 import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.GlobalMessageListenerRepo
 import com.example.chatapp.repository.MessagingHandlerRepo
 import com.example.chatapp.repository.OnlineStatusRepo
-import com.example.chatapp.toEntity
-import com.example.chatapp.toUi
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
@@ -27,6 +29,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -40,7 +43,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val globalMessageListenerRepo: GlobalMessageListenerRepo,
     private val onlineStatusRepo: OnlineStatusRepo,
     private val localDbRepo: LocalDbRepo,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val callHistoryUseCase: CallHistoryUseCase
 ) : ViewModel() {
 
 
@@ -51,27 +55,27 @@ class GlobalMessageListenerViewModel @Inject constructor(
         .map { entityList -> entityList.map { it.toUi() } }
         .stateIn(
             viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
+            SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
     val userData = localDbRepo.userData
         .map { userEntity -> userEntity?.toUi() }
         .stateIn(viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
+            SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = null
         )
 
     val friendList = localDbRepo.friendList
         .map { friendEntities -> friendEntities.map { it.toUi() } }
         .stateIn(viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
+            SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = emptyList())
 
-    val callHistory = localDbRepo.callHistory
-        .map { callHistoryEntities -> callHistoryEntities.map { it.toUi() } }
+    val callHistory =  callHistoryUseCase.getCallHistoryUseCase(true)
+        .map { call -> call.map { it.toUi() } }
         .stateIn(viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
+            SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = emptyList())
 
 
@@ -84,7 +88,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
         fetchUserData()
         setOnlineStatus() // -> marks true, online
 
-        fetchCallHistory()
+       // fetchCallHistory()
+         listenToRemoteCallHistory()
 
         viewModelScope.launch {
             userData.filterNotNull().collect { user ->
@@ -117,6 +122,19 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
+    fun  listenToRemoteCallHistory () {
+        viewModelScope.launch {
+            callHistoryUseCase.getCallHistoryUseCase(local = false)
+                .distinctUntilChanged()
+                .collect { callList ->
+                    insertCallHistory(callList)
+                }
+        }
+    }
+
+
+
+
     // ROOM DB FUNCTIONS ---- START
     fun insertChats(chats: List<ChatItemData>) = viewModelScope.launch {
 
@@ -131,7 +149,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
             .map { it.map { entity -> entity.toUi() } }
     }
 
-    fun getFriendData(friendId: String) : Flow<FriendData?>{
+    fun getFriendData(friendId: String) : Flow<FriendData?> {
 
         return localDbRepo.getFriendData(friendId)
             .map { it?.toUi() }
@@ -141,16 +159,17 @@ class GlobalMessageListenerViewModel @Inject constructor(
         localDbRepo.insertMessages(message.toEntity())
     }
 
+    private suspend fun insertCallHistory(callList : List<Call>){
+
+        callHistoryUseCase.insertCallHistoryCase(callList)
+    }
+
 
     fun insertFriend(friendEntity: FriendEntity) = viewModelScope.launch {
 
         localDbRepo.insertFriend(friendEntity)
     }
 
-    fun insertCallHistory(callData: CallData) = viewModelScope.launch{
-
-        localDbRepo.insertCallHistory(callData.toEntity())
-    }
 
     fun insertUserData(userData: UserData) = viewModelScope.launch {
         localDbRepo.insertUserData(userData.toEntity())
@@ -280,19 +299,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
                 currentUsername,
                 chatId
             )
-        }
-
-    }
-
-
-    private fun fetchCallHistory() {
-
-        messagingHandlerRepo.fetchCallHistory { callList ->
-
-            callList.forEach {
-                insertCallHistory(it)
-            }
-
         }
 
     }

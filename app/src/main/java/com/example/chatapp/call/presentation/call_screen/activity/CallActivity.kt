@@ -1,22 +1,20 @@
-package com.example.chatapp.call.activity
+package com.example.chatapp.call.presentation.call_screen.activity
 
 import android.app.KeyguardManager
-import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallMetadata
-import com.example.chatapp.call.screen.CallScreen
-import com.example.chatapp.call.viewmodel.CallViewModel
+import com.example.chatapp.call.presentation.call_screen.screen.CallScreen
+import com.example.chatapp.call.presentation.call_screen.viewmodel.CallViewModel
+import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.ui.theme.ChatsAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -33,21 +31,16 @@ class CallActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
-            val callScreenData by callViewModel.callScreenData.collectAsState()
             val activityContext = LocalActivity.current
 
             ChatsAppTheme(themeString = "system") {
 
-                callScreenData?.let {
-
                     CallScreen(
-                        channelName = it.channelName,
                         callViewModel = callViewModel,
-                        callScreenData = it
                     ) {
+                        Log.i("CHECK_ACTIVITY", "triggered onCallEnd")
                         activityContext?.finishAndRemoveTask()
                     }
-                }
             }
 
 
@@ -68,7 +61,7 @@ class CallActivity : ComponentActivity() {
                 setShowWhenLocked(true)
                 setTurnScreenOn(true)
 
-                val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+                val keyguardManager = getSystemService(KEYGUARD_SERVICE) as KeyguardManager
                 keyguardManager.requestDismissKeyguard(this, null)
             } else {
                 @Suppress("DEPRECATION")
@@ -84,6 +77,8 @@ class CallActivity : ComponentActivity() {
                 @Suppress("DEPRECATION")   // Fallback for older version
                 intent.getParcelableExtra("call_metadata")
             }
+
+            Log.i("CHECK_ACTIVITY", metaData.toString())
 
             callViewModel.setCallScreenData(metaData)
         }
