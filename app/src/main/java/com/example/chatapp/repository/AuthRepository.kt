@@ -6,10 +6,10 @@ import android.util.Log
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
-import com.example.chatapp.DEFAULT_PROFILE_PIC
+import com.example.chatapp.core.DEFAULT_PROFILE_PIC
 import com.example.chatapp.R
-import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.USERS_REF
+import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.USERS_REF
 import com.example.chatapp.localData.dataStore.LocalFcmTokenManager
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential

@@ -3,8 +3,8 @@ package com.example.chatapp.viewmodel
 import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.MessageFcmMetadata
-import com.example.chatapp.USERS_COLLECTION
+import com.example.chatapp.core.MessageFcmMetadata
+import com.example.chatapp.core.USERS_COLLECTION
 import com.example.chatapp.repository.AuthRepository
 import com.example.chatapp.repository.OnlineStatusRepo
 import com.google.firebase.auth.FirebaseAuth
@@ -28,6 +28,7 @@ class ChatsViewModel @Inject constructor(
 ) : ViewModel() {
 
 
+    // use shared flow
     private var _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
     val authState: StateFlow<AuthState> = _authState
 

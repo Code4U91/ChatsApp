@@ -21,8 +21,6 @@ interface Dao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertFriend(friendEntity: FriendEntity)
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCallHistory(callHistoryEntity: CallHistoryEntity)
 
     // Room handles threading for Flow-returning queries, so no need to specifically make it suspend
     @Query ("SELECT * FROM user LIMIT 1")
@@ -37,8 +35,6 @@ interface Dao {
     @Query("SELECT * FROM messages")
     fun getAllMessages() : Flow<List<MessageEntity>>
 
-    @Query("SELECT * FROM callHistory ORDER BY callEndTime DESC")
-    fun getCallHistory() : Flow<List<CallHistoryEntity>>
 
     @Query("SELECT * FROM friends ORDER BY LOWER(friendName) ASC")
     fun getFriendList() : Flow<List<FriendEntity>>

@@ -1,4 +1,4 @@
-package com.example.chatapp.screens.mainBottomBarScreens
+package com.example.chatapp.call.presentation.call_history_screen
 
 import android.content.Intent
 import androidx.compose.foundation.border
@@ -59,21 +59,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.call.activity.CallActivity
-import com.example.chatapp.CallData
-import com.example.chatapp.CallMetadata
-import com.example.chatapp.FriendData
-import com.example.chatapp.formatDurationText
-import com.example.chatapp.formatTimestampToDateTime
-import com.example.chatapp.getDateLabelForMessage
+import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.call.presentation.model.CallUiData
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.CallMetadata
+import com.example.chatapp.core.FriendData
+import com.example.chatapp.core.formatDurationText
+import com.example.chatapp.core.formatTimestampToDateTime
+import com.example.chatapp.core.getDateLabelForMessage
 import com.example.chatapp.screens.afterMainFrontScreen.DateChip
 import com.example.chatapp.screens.afterMainFrontScreen.VideoCallButton
 import com.example.chatapp.screens.afterMainFrontScreen.VoiceCallButton
-import com.example.chatapp.toLocalDate
 import com.example.chatapp.viewmodel.ChatsViewModel
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
-import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,6 +80,7 @@ fun CallHistoryScreen(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     chatsViewModel: ChatsViewModel
 ) {
+
 
     DisposableEffect(Unit) {
 
@@ -177,7 +176,7 @@ fun CallHistoryScreen(
                 }
 
                 CallLazyColumn(
-                   if(!showSearchBar) callList else filteredCallList,
+                    if (!showSearchBar) callList else filteredCallList,
                     globalMessageListenerViewModel
                 )
 
@@ -188,7 +187,7 @@ fun CallHistoryScreen(
 
 @Composable
 fun CallLazyColumn(
-    callListData: List<CallData>,
+    callListData: List<CallUiData>,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     listState: LazyListState = rememberLazyListState()
 ) {
@@ -214,13 +213,11 @@ fun CallLazyColumn(
         { index, callData ->
 
             val nextCallItem = callListData.getOrNull(index - 1)
-            val currentCallDate = callData.callEndTime?.toLocalDate()
-            val previousCallDate = nextCallItem?.callEndTime?.toLocalDate()
+            val currentCallDate = callData.callEndTime
+            val previousCallDate = nextCallItem?.callEndTime
 
             if (currentCallDate != previousCallDate) {
-                currentCallDate?.let { date ->
-                    DateChip(dateLabel = getDateLabelForMessage(date))
-                }
+                DateChip(dateLabel = getDateLabelForMessage(currentCallDate))
             }
 
             CallListItem(
@@ -248,7 +245,8 @@ fun CallLazyColumn(
                     )
 
                     val intent = Intent(context, CallActivity::class.java).apply {
-                        action = CALL_INTENT
+
+                        this.action = CALL_INTENT
                         putExtra("call_metadata", callMetaData)
                     }
 
@@ -270,8 +268,8 @@ fun CallLazyColumn(
 fun CallListItem(
     otherUserId: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    callStartTime: Timestamp?,
-    callEndTime: Timestamp?,
+    callStartTime: Long,
+    callEndTime: Long,
     callType: String,
     isCaller: Boolean,
     callStatus: String,
@@ -292,17 +290,12 @@ fun CallListItem(
     }
 
 
-
     val time by remember {
-        mutableStateOf(formatTimestampToDateTime(callStartTime ?: Timestamp.now()))
+        mutableStateOf(formatTimestampToDateTime(callStartTime))
     }
 
     val duration = remember(callStartTime, callEndTime) {
-        if (callStartTime != null && callEndTime != null) {
-            formatDurationText(callEndTime.toDate().time - callStartTime.toDate().time)
-        } else {
-            ""
-        }
+        formatDurationText(callEndTime - callStartTime)
     }
 
     val timeText = when (callStatus) {
@@ -315,7 +308,9 @@ fun CallListItem(
             "missed call at $time"
         }
 
-        "declined" -> {"call declined at $time"}
+        "declined" -> {
+            "call declined at $time"
+        }
 
         else -> {
             ""
@@ -347,7 +342,9 @@ fun CallListItem(
             Color.Green
         }
 
-        "declined" -> {Color.Red}
+        "declined" -> {
+            Color.Red
+        }
 
         else -> {
             Color.Unspecified

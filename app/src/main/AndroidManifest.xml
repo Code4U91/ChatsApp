@@ -33,7 +33,7 @@
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
         <activity
-            android:name=".call.activity.CallActivity"
+            android:name=".call.presentation.call_screen.activity.CallActivity"
             android:exported="false"
             android:showOnLockScreen="true"
             android:turnScreenOn="true"
@@ -42,7 +42,7 @@
             android:theme="@style/Theme.ChatApp" />
 
         <service
-            android:name=".call.service.AgoraCallService"
+            android:name=".service.AgoraCallService"
             android:exported="false"
             android:foregroundServiceType="camera|microphone" />
         <service
@@ -54,7 +54,7 @@
         </service>
 
         <activity
-            android:name=".MainActivity"
+            android:name=".common.presentation.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:launchMode="singleTop"

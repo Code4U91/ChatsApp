@@ -13,23 +13,23 @@ import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
 import androidx.core.graphics.drawable.IconCompat
-import com.example.chatapp.CALL_FCM_NOTIFICATION_CHANNEL_STRING
-import com.example.chatapp.CALL_HISTORY
-import com.example.chatapp.CALL_HISTORY_INTENT
-import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallMetadata
-import com.example.chatapp.INCOMING_CALL_FCM_NOTIFICATION_ID
-import com.example.chatapp.MESSAGE_FCM_CHANNEL_STRING
-import com.example.chatapp.MESSAGE_FCM_INTENT
-import com.example.chatapp.MESSAGE_FCM_NOTIFICATION_ID
-import com.example.chatapp.MISSED_CALL_FCM_NOTIFICATION
-import com.example.chatapp.MainActivity
-import com.example.chatapp.MessageFcmMetadata
 import com.example.chatapp.R
-import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.call.activity.CallActivity
-import com.example.chatapp.call.repository.AgoraSetUpRepo
-import com.example.chatapp.call.repository.CallRingtoneManager
+import com.example.chatapp.call.data.remote_source.repositoryImpl.CallRingtoneManagerIml
+import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.common.presentation.MainActivity
+import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
+import com.example.chatapp.core.CALL_HISTORY
+import com.example.chatapp.core.CALL_HISTORY_INTENT
+import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.INCOMING_CALL_FCM_NOTIFICATION_ID
+import com.example.chatapp.core.MESSAGE_FCM_CHANNEL_STRING
+import com.example.chatapp.core.MESSAGE_FCM_INTENT
+import com.example.chatapp.core.MESSAGE_FCM_NOTIFICATION_ID
+import com.example.chatapp.core.MISSED_CALL_FCM_NOTIFICATION
+import com.example.chatapp.core.MessageFcmMetadata
+import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.model.CallMetadata
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -43,6 +43,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import javax.inject.Inject
+import androidx.core.graphics.createBitmap
+import com.example.chatapp.call.presentation.call_screen.state.CallEvent
 
 
 @AndroidEntryPoint
@@ -55,7 +57,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
     lateinit var firebaseDb: FirebaseFirestore
 
     @Inject
-    lateinit var callRingtoneManager: CallRingtoneManager
+    lateinit var callRingtoneManagerIml: CallRingtoneManagerIml
 
     @Inject
     lateinit var agoraRepo: AgoraSetUpRepo
@@ -124,11 +126,12 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 // If the call ends before use picks or call has already timed out
                 listenToCallStatus(callId, notificationId = callNotificationId, onCallMissed = {
 
-                    agoraRepo.declineIncomingCall(true) // for closing the call screen ui when missed
+                    agoraRepo.declineIncomingCall(true) // may not need
+                    // for closing the call screen ui when missed
                     showMissedCallNotification(senderName, callType, callNotificationId)
 
                 }, onIncomingCall = {
-                    callRingtoneManager.playIncomingRingtone()
+                    callRingtoneManagerIml.playIncomingRingtone()
 
 
                     // if the call comes while the app is alive but in background and screen is locked then app crashes
@@ -325,7 +328,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                 when (status) {
                     "missed" -> {
-                        callRingtoneManager.stopAllSounds()
+                        callRingtoneManagerIml.stopAllSounds()
+                        agoraRepo.updateCallEvent(CallEvent.Ended)
                         onCallMissed()
                         callStatusListener?.remove()
                         callStatusListener = null
@@ -337,7 +341,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
 
                     else -> {
-                        callRingtoneManager.stopAllSounds()
+                        callRingtoneManagerIml.stopAllSounds()
                         notificationManager.cancel(notificationId + INCOMING_CALL_FCM_NOTIFICATION_ID)
                         callStatusListener?.remove()
                         callStatusListener = null
@@ -359,7 +363,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
     private fun getCircularBitmap(bitmap: Bitmap): Bitmap {
         val size = minOf(bitmap.width, bitmap.height)
-        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val output = createBitmap(size, size)
 
         val canvas = android.graphics.Canvas(output)
         val paint = android.graphics.Paint().apply {

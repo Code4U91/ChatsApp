@@ -1,5 +1,6 @@
 package com.example.chatapp.localData.roomDbCache
 
+import com.example.chatapp.core.local_database.LocalRoomDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -12,7 +13,6 @@ class LocalDbRepo @Inject constructor(
 ) {
 
     val chats = localDb.getDbDao().getChats()
-    val callHistory = localDb.getDbDao().getCallHistory()
     val friendList = localDb.getDbDao().getFriendList()
     val userData = localDb.getDbDao().getUserData()
 
@@ -23,10 +23,6 @@ class LocalDbRepo @Inject constructor(
 
     suspend fun insertChats(chats: ChatEntity){
         localDb.getDbDao().insertChats(chats)
-    }
-
-    suspend  fun insertCallHistory(callHistory: CallHistoryEntity){
-        localDb.getDbDao().insertCallHistory(callHistory)
     }
 
     suspend fun insertMessages(messages : MessageEntity){

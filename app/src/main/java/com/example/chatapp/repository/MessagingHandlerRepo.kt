@@ -2,18 +2,16 @@ package com.example.chatapp.repository
 
 import android.content.Context
 import android.util.Log
-import com.example.chatapp.CALL_HISTORY
-import com.example.chatapp.CHATS_COLLECTION
-import com.example.chatapp.CallData
-import com.example.chatapp.FRIEND_COLLECTION
-import com.example.chatapp.FriendData
-import com.example.chatapp.FriendListData
-import com.example.chatapp.MESSAGE_COLLECTION
-import com.example.chatapp.MessageNotificationRequest
-import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.UserData
 import com.example.chatapp.api.FcmNotificationSender
-import com.example.chatapp.checkEmailPattern
+import com.example.chatapp.core.CHATS_COLLECTION
+import com.example.chatapp.core.FRIEND_COLLECTION
+import com.example.chatapp.core.FriendData
+import com.example.chatapp.core.FriendListData
+import com.example.chatapp.core.MESSAGE_COLLECTION
+import com.example.chatapp.core.MessageNotificationRequest
+import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.UserData
+import com.example.chatapp.core.checkEmailPattern
 import com.example.chatapp.localData.dataStore.LocalFcmTokenManager
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -436,54 +434,54 @@ class MessagingHandlerRepo @Inject constructor(
 
 
     // fetches call history from the firestore database
-    fun fetchCallHistory(callHistory: (List<CallData>) -> Unit) {
-
-        auth.currentUser?.let { user ->
-            val currentUserId = user.uid
-
-            val callRef = firestoreDb.collection(CALL_HISTORY)
-                .whereArrayContains("participants", currentUserId)
-                .addSnapshotListener { querySnapshot, error ->
-
-                    if (error != null) {
-                        Log.e("Firestore", "Error fetching messages", error)
-                        return@addSnapshotListener
-                    }
-                    val callList = querySnapshot?.documents?.mapNotNull { doc ->
-
-                        // multiple .where is causing issue so filtering the rest of data here
-                        val status = doc.getString("status") ?: return@mapNotNull null
-                        if (status == "ringing" || status == "ongoing") return@mapNotNull null
-
-                        @Suppress("UNCHECKED_CAST")
-                        val participants =
-                            doc.get("participants") as? List<String> ?: return@mapNotNull null
-
-                        val otherUserId =
-                            participants.firstOrNull { it != currentUserId } // pulling other participant
-
-                        @Suppress("UNCHECKED_CAST")
-                        val participantsName = doc.get("participantsName") as? Map<String, String>
-
-                        val otherUserName = participantsName?.get(otherUserId)
-
-                        doc.toObject(CallData::class.java)?.copy(
-                            callId = doc.id,
-                            otherUserName = otherUserName.orEmpty(),
-                            otherUserId = otherUserId.orEmpty() // other participant
-                        )
-
-                    } ?: emptyList()
-
-                    callHistory(callList)
-
-                }
-
-            listenerRegistration.add(callRef)
-        }
-
-
-    }
+//    fun fetchCallHistory(callHistory: (List<CallData>) -> Unit) {
+//
+//        auth.currentUser?.let { user ->
+//            val currentUserId = user.uid
+//
+//            val callRef = firestoreDb.collection(CALL_HISTORY)
+//                .whereArrayContains("participants", currentUserId)
+//                .addSnapshotListener { querySnapshot, error ->
+//
+//                    if (error != null) {
+//                        Log.e("Firestore", "Error fetching messages", error)
+//                        return@addSnapshotListener
+//                    }
+//                    val callList = querySnapshot?.documents?.mapNotNull { doc ->
+//
+//                        // multiple .where is causing issue so filtering the rest of data here
+//                        val status = doc.getString("status") ?: return@mapNotNull null
+//                        if (status == "ringing" || status == "ongoing") return@mapNotNull null
+//
+//                        @Suppress("UNCHECKED_CAST")
+//                        val participants =
+//                            doc.get("participants") as? List<String> ?: return@mapNotNull null
+//
+//                        val otherUserId =
+//                            participants.firstOrNull { it != currentUserId } // pulling other participant
+//
+//                        @Suppress("UNCHECKED_CAST")
+//                        val participantsName = doc.get("participantsName") as? Map<String, String>
+//
+//                        val otherUserName = participantsName?.get(otherUserId)
+//
+//                        doc.toObject(CallData::class.java)?.copy(
+//                            callId = doc.id,
+//                            otherUserName = otherUserName.orEmpty(),
+//                            otherUserId = otherUserId.orEmpty() // other participant
+//                        )
+//
+//                    } ?: emptyList()
+//
+//                    callHistory(callList)
+//
+//                }
+//
+//            listenerRegistration.add(callRef)
+//        }
+//
+//
+//    }
 
      // only deleting on the current user/user who applies for delete side only
     fun deleteMessage(chatId: String, messageId: Set<String>, currentUserId: String) {

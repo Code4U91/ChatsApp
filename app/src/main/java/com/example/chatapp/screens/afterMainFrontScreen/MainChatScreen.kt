@@ -70,19 +70,19 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
-import com.example.chatapp.CALL_INTENT
-import com.example.chatapp.CallMetadata
-import com.example.chatapp.Message
-import com.example.chatapp.appInstance
-import com.example.chatapp.call.activity.CallActivity
-import com.example.chatapp.formatOnlineStatusTime
-import com.example.chatapp.getDateLabelForMessage
-import com.example.chatapp.getMessageIconColor
-import com.example.chatapp.getMessageStatusIcon
-import com.example.chatapp.getTimeOnly
-import com.example.chatapp.toEntity
-import com.example.chatapp.toLocalDate
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.Message
+import com.example.chatapp.core.appInstance
+import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.core.formatOnlineStatusTime
+import com.example.chatapp.core.getDateLabelForMessage
+import com.example.chatapp.core.getMessageIconColor
+import com.example.chatapp.core.getMessageStatusIcon
+import com.example.chatapp.core.getTimeOnly
+import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.core.toLocalDate
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.core.model.CallMetadata
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import java.time.LocalDate
@@ -368,7 +368,7 @@ fun MainChatScreen(
                             senderId
                         )
                     },
-                    getDateLabel = { date -> getDateLabelForMessage(date) },
+                    getDateLabel = { date -> getDateLabelForMessage(date.toEpochDay()) },
                     updateSelectedMessages = { id ->
 
                         messageDeletionSet = if (messageDeletionSet.contains(id)) {

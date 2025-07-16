@@ -64,12 +64,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.ProfileItem
-import com.example.chatapp.UserData
+import com.example.chatapp.core.ProfileItem
+import com.example.chatapp.core.UserData
 import com.example.chatapp.dialogBox.LogOutPopUpBox
 import com.example.chatapp.dialogBox.PopUpBox
 import com.example.chatapp.viewmodel.ChatsViewModel
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import kotlinx.coroutines.launch
 
 

@@ -2,13 +2,13 @@ package com.example.chatapp.repository
 
 import android.content.Context
 import android.util.Log
-import com.example.chatapp.CHATS_COLLECTION
-import com.example.chatapp.ChatItemData
-import com.example.chatapp.DEFAULT_PROFILE_PIC
-import com.example.chatapp.MESSAGE_COLLECTION
-import com.example.chatapp.Message
-import com.example.chatapp.USERS_COLLECTION
-import com.example.chatapp.appInstance
+import com.example.chatapp.core.CHATS_COLLECTION
+import com.example.chatapp.core.ChatItemData
+import com.example.chatapp.core.DEFAULT_PROFILE_PIC
+import com.example.chatapp.core.MESSAGE_COLLECTION
+import com.example.chatapp.core.Message
+import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.appInstance
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration

@@ -1,4 +1,4 @@
-package com.example.chatapp.navigation
+package com.example.chatapp.common.presentation.navigation
 
 import android.annotation.SuppressLint
 import android.util.Log
@@ -38,8 +38,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.AUTH_GRAPH_ROUTE
-import com.example.chatapp.MAIN_GRAPH_ROUTE
+import com.example.chatapp.core.AUTH_GRAPH_ROUTE
+import com.example.chatapp.core.MAIN_GRAPH_ROUTE
 import com.example.chatapp.screens.afterMainFrontScreen.ChangeEmailAddressScreen
 import com.example.chatapp.screens.afterMainFrontScreen.FriendListScreen
 import com.example.chatapp.screens.afterMainFrontScreen.MainChatScreen
@@ -47,10 +47,10 @@ import com.example.chatapp.screens.logInSignUp.ForgotPasswordScreen
 import com.example.chatapp.screens.logInSignUp.SignInScreenUI
 import com.example.chatapp.screens.logInSignUp.SignUpScreenUI
 import com.example.chatapp.screens.mainBottomBarScreens.AllChatScreen
-import com.example.chatapp.screens.mainBottomBarScreens.CallHistoryScreen
+import com.example.chatapp.call.presentation.call_history_screen.CallHistoryScreen
 import com.example.chatapp.screens.mainBottomBarScreens.ProfileSettingScreen
 import com.example.chatapp.viewmodel.ChatsViewModel
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 
 
 // Authentication screen navigation

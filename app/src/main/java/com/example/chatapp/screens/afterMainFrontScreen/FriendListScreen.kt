@@ -47,12 +47,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.chatapp.FriendScreenUiItem
+import com.example.chatapp.core.FriendScreenUiItem
 import com.example.chatapp.dialogBox.AddFriendDialogBox
 import com.example.chatapp.screens.mainBottomBarScreens.ChatItemAndFriendListItem
-import com.example.chatapp.screens.mainBottomBarScreens.TopAppBarTemplate
-import com.example.chatapp.toEntity
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.call.presentation.call_history_screen.TopAppBarTemplate
+import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 
 
 @OptIn(ExperimentalMaterial3Api::class)

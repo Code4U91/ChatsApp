@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.chatapp.screens.mainBottomBarScreens.isKeyboardVisible
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
 @Composable

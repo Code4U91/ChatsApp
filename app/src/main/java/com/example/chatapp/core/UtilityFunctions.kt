@@ -1,4 +1,4 @@
-package com.example.chatapp
+package com.example.chatapp.core
 
 import android.content.Context
 import androidx.compose.animation.core.LinearEasing
@@ -19,6 +19,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.example.chatapp.ChatsApplication
 import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -26,6 +27,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 
@@ -111,9 +113,9 @@ fun formatTimestamp(timestamp: Timestamp): String {
     }
 }
 
-fun formatTimestampToDateTime(timestamp: Timestamp): String {
+fun formatTimestampToDateTime(timeMills: Long): String {
     val sdf = SimpleDateFormat("hh:mm a", Locale.getDefault())
-    val date = timestamp.toDate()
+    val date = Date(timeMills)
     return sdf.format(date)
 }
 
@@ -154,15 +156,21 @@ fun getTimeOnly(timestamp: Timestamp): String {
 
 }
 
-fun getDateLabelForMessage(date: LocalDate): String {
+fun getDateLabelForMessage(dateMillis: Long): String {
+
+    val messageDate = Instant.ofEpochSecond(dateMillis)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+
     val today = LocalDate.now()
+
     return when {
-        date.isEqual(today) -> "Today"
-        date.isEqual(today.minusDays(1)) -> "Yesterday"
-        date.isAfter(today.minusDays(4)) -> date.dayOfWeek.name.lowercase()
+        messageDate.isEqual(today) -> "Today"
+        messageDate.isEqual(today.minusDays(1)) -> "Yesterday"
+        messageDate.isAfter(today.minusDays(4)) -> messageDate.dayOfWeek.name.lowercase()
             .replaceFirstChar { it.uppercase() }
 
-        else -> date.format(DateTimeFormatter.ofPattern("MMMM d, yyyy"))
+        else -> messageDate.format(DateTimeFormatter.ofPattern("MMM,d, yyyy"))
     }
 }
 

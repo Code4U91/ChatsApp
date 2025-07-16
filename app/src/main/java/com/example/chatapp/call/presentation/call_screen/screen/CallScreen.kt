@@ -1,4 +1,4 @@
-package com.example.chatapp.call.screen
+package com.example.chatapp.call.presentation.call_screen.screen
 
 import android.util.Log
 import android.view.SurfaceView
@@ -49,77 +49,92 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.CallMetadata
-import com.example.chatapp.formatCallDuration
+import com.example.chatapp.call.presentation.call_screen.state.CallEvent
+import com.example.chatapp.call.presentation.call_screen.state.CallUIState
+import com.example.chatapp.call.presentation.call_screen.viewmodel.CallViewModel
+import com.example.chatapp.core.formatCallDuration
+import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.screens.mainBottomBarScreens.requestPerm
-import com.example.chatapp.call.viewmodel.CallViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
-import kotlinx.coroutines.delay
 
 // Active call screen
 
 @Composable
 fun CallScreen(
-    channelName: String,
     callViewModel: CallViewModel,
-    callScreenData: CallMetadata,
     onCallEnd: () -> Unit
 ) {
 
-    Log.i("TestChannelName", channelName) // using firebase uid user1_User2
+    // make call cut faster
+    // test functionality after removing agora.decline()
+    // smoothen the ui
 
-    val context = LocalContext.current
 
-
-    val callEnded by callViewModel.callEnded.collectAsState()  // called when clicked on call end button
-    val remoteUserLeft by callViewModel.remoteUserLeft.collectAsState()  // when other user leaves call
-    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // contains numeric agora id of other joined user
-    val isJoined by callViewModel.isJoined.collectAsState()
+    val callState by callViewModel.uiState.collectAsState()
+    val callEvent by callViewModel.callEvent.collectAsState()
 
 
 
-    LaunchedEffect(remoteUserLeft, callEnded) {
-        if (callEnded || remoteUserLeft) {
+    LaunchedEffect(callEvent) {
+        Log.i("CHECK_EVENT", callEvent.toString())
 
-            Log.i("ON_END_CALLED", "callEnd: $callEnded remoteUser : $remoteUserLeft ")
-
-            callViewModel.stopCallService(context)
-            callViewModel.resetCallServiceFlag()
+        if(callEvent is CallEvent.Ended){
             onCallEnd()
         }
-
-    }
-
-    // auto leave channel or call end if call not connected within 48seconds
-    LaunchedEffect(remoteUserJoined) {
-
-        if (isJoined) {
-            // Wait for 45sec for the remote user to join
-
-            delay(45000)
-
-            if (remoteUserJoined == null) {
-                // If still null after 45sec, end call
-                callViewModel.leaveChannel()
-            }
-        }
-
     }
 
     // switch compose based on the call type passes as parameter to callScreen compose
-    if (callScreenData.callType == "video") {
-        StartVideoCall(
-            callViewModel = callViewModel,
-            callScreenData = callScreenData
-        )
-    } else {
+    callState.callMetadata?.let { callMetadata ->
 
-        StartVoiceCall(
-            callViewModel = callViewModel,
-            callScreenData = callScreenData
-        )
+        if (callMetadata.callType == "video") {
+            StartVideoCall(
+                callViewModel = callViewModel,
+                callScreenData =   callMetadata,
+                callUIState = callState,
+                callEvent = callEvent
+            )
+        } else {
 
+            StartVoiceCall(
+                callViewModel = callViewModel,
+                callScreenData =  callMetadata,
+                callUIState = callState,
+                callEvent = callEvent
+            )
+
+        }
     }
+
+
+//
+//    LaunchedEffect(remoteUserLeft, callState.callEnded) {
+//        if (callState.callEnded || remoteUserLeft) {
+//
+//            Log.i("ON_END_CALLED", "callEnd: ${callState.callEnded} remoteUser : $remoteUserLeft ")
+//
+//            callViewModel.stopCallService(context)
+//            callViewModel.resetCallServiceFlag()
+//            onCallEnd()
+//        }
+//
+//    }
+//
+//     //auto leave channel or call end if call not connected within 48seconds
+//    LaunchedEffect(remoteUserJoined) {
+//
+//        if (isJoined) {
+//            // Wait for 45sec for the remote user to join
+//
+//            delay(45000)
+//
+//            if (remoteUserJoined == null) {
+//                // If still null after 45sec, end call
+//                callViewModel.stopCallService(context)
+//            }
+//        }
+//
+//    }
+
 
 }
 
@@ -127,37 +142,30 @@ fun CallScreen(
 @Composable
 fun StartVoiceCall(
     callViewModel: CallViewModel,
-    callScreenData: CallMetadata
+    callScreenData: CallMetadata,
+    callUIState: CallUIState,
+    callEvent: CallEvent
 ) {
 
     val isJoined by callViewModel.isJoined.collectAsState()
-    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+    //val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
     val callDuration by callViewModel.callDuration.collectAsState()
-    val callEnded by callViewModel.callEnded.collectAsState() // may be replace with remoteUserLeft
 
-    val hasStartedCallService by callViewModel.hasStartedCallService.collectAsState()
     val context = LocalContext.current
 
     val permissionState = requestPerm()
 
 
-    LaunchedEffect(isJoined, callEnded, permissionState) {
+    LaunchedEffect(isJoined, callUIState.callEnded, permissionState) {
 
         if (permissionState.allPermissionsGranted) {
-            if (!hasStartedCallService) {
+            if (!callUIState.hasStartedService) {
 
-                if (!isJoined && !callEnded && callScreenData.isCaller) {
+                if (!isJoined && !callUIState.callEnded && callScreenData.isCaller) {
 
                     callViewModel.startCallService(
                         context = context,
-                        channelName = callScreenData.channelName,
-                        callType = "voice",
-                        callerName = callScreenData.callerName,
-                        receiverName = callScreenData.receiverName,
-                        isCaller = true,
-                        callReceiverId = callScreenData.callReceiverId,
-                        callDocId = callScreenData.callDocId,
-                        photo = callScreenData.receiverPhoto
+                         callMetadata = callScreenData
                     )
 
                     callViewModel.markCallServiceStarted()
@@ -206,35 +214,67 @@ fun StartVoiceCall(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                when(callEvent){
 
-                if (remoteUserJoined != null) {  // remote/other user joined the call
+                    is CallEvent.Ongoing -> {
 
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = "Call active: ",
+                                color = Color.Green,
+                                fontSize = 18.sp
+                            )
 
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "Call active: ",
-                            color = Color.Green,
-                            fontSize = 18.sp
-                        )
-
-                        Text(
-                            text = formatCallDuration(callDuration),
-                            fontSize = 18.sp
-                        )
+                            Text(
+                                text = formatCallDuration(callDuration),
+                                fontSize = 18.sp
+                            )
+                        }
                     }
 
-                } else {
+                    is CallEvent.Ringing -> {
 
+                        Text(
+                            text = if (callScreenData.isCaller) "waiting for other user to join the call" else "Incoming voice call",
+                            fontSize = 18.sp
 
-                    Text(
-                        text = if (callScreenData.isCaller) "waiting for other user to join the call" else "Incoming voice call",
-                        fontSize = 18.sp
-
-                    )
+                        )
+                    }
+                     else -> {}
                 }
+
+
+//                if (remoteUserJoined != null) {  // remote/other user joined the call
+//
+//
+//                    Row(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        horizontalArrangement = Arrangement.Center
+//                    ) {
+//                        Text(
+//                            text = "Call active: ",
+//                            color = Color.Green,
+//                            fontSize = 18.sp
+//                        )
+//
+//                        Text(
+//                            text = formatCallDuration(callDuration),
+//                            fontSize = 18.sp
+//                        )
+//                    }
+//
+//                } else {
+//
+//
+//                    Text(
+//                        text = if (callScreenData.isCaller) "waiting for other user to join the call" else "Incoming voice call",
+//                        fontSize = 18.sp
+//
+//                    )
+//                }
 
             }
 
@@ -251,26 +291,21 @@ fun StartVoiceCall(
                     callType = "voice",
                     callViewModel,
                     callScreenData.isCaller,
-                    callScreenData.callDocId
+                    callUIState = callUIState,
+                    callDocId = callScreenData.callDocId,
+                    callEvent
                 )
                 {
 
                     if (permissionState.allPermissionsGranted) {
 
-                        if (!hasStartedCallService) {
+                        if (!callUIState.hasStartedService) {
 
-                            if (!isJoined && !callEnded && !callScreenData.isCaller) {
+                            if (!isJoined && !callUIState.callEnded && !callScreenData.isCaller) {
 
                                 callViewModel.startCallService(
                                     context = context,
-                                    channelName = callScreenData.channelName,
-                                    callType = "voice",
-                                    callerName = callScreenData.callerName,
-                                    receiverName = callScreenData.receiverName,
-                                    isCaller = false,
-                                    callReceiverId = callScreenData.callReceiverId,
-                                    callDocId = callScreenData.callDocId,
-                                    photo = callScreenData.receiverPhoto
+                                   callMetadata = callScreenData
                                 )
 
                                 callViewModel.markCallServiceStarted()
@@ -297,21 +332,23 @@ fun StartVoiceCall(
 @Composable
 fun StartVideoCall(
     callViewModel: CallViewModel,
-    callScreenData: CallMetadata
+    callScreenData: CallMetadata,
+    callUIState: CallUIState,
+    callEvent: CallEvent
 ) {
 
-
-    // val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
     val context = LocalContext.current
     val isJoined by callViewModel.isJoined.collectAsState()
     val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // remote user numeric id
     val callDuration by callViewModel.callDuration.collectAsState()
-    val callEnded by callViewModel.callEnded.collectAsState()
+
+
 
     // Create SurfaceViews for Local and Remote video
     val localView by rememberUpdatedState(SurfaceView(context))
     val remoteView by rememberUpdatedState(SurfaceView(context))
-    val hasStartedCallService by callViewModel.hasStartedCallService.collectAsState()
+
+
     val permissionState = requestPerm()
 
 
@@ -320,22 +357,15 @@ fun StartVideoCall(
     LaunchedEffect(isJoined, permissionState) {
 
         if (permissionState.allPermissionsGranted) {
-            if (!hasStartedCallService) {
+            if (!callUIState.hasStartedService) {
 
-                if (!isJoined && !callEnded && callScreenData.isCaller) {
+                if (!isJoined && !callUIState.callEnded && callScreenData.isCaller) {
 
                     callViewModel.enableVideoPreview()
 
                     callViewModel.startCallService(
                         context = context,
-                        channelName = callScreenData.channelName,
-                        callType = "video",
-                        callerName = callScreenData.callerName,
-                        receiverName = callScreenData.receiverName,
-                        isCaller = true,
-                        callReceiverId = callScreenData.callReceiverId,
-                        callDocId = callScreenData.callDocId,
-                        photo = callScreenData.receiverPhoto
+                        callMetadata = callScreenData
                     )
 
                     callViewModel.markCallServiceStarted()
@@ -379,6 +409,7 @@ fun StartVideoCall(
                 .fillMaxSize()
                 .padding(it)
         ) {
+
 
             if (isJoined) {
 
@@ -490,28 +521,23 @@ fun StartVideoCall(
                         callType = "video",
                         callViewModel = callViewModel,
                         isCaller = callScreenData.isCaller,
-                        callScreenData.callDocId
+                        callUIState = callUIState,
+                        callDocId = callScreenData.callDocId,
+                        callEvent = callEvent
                     ) {
                         // when the call receiver accepts the call
 
                         if (permissionState.allPermissionsGranted) {
 
-                            if (!hasStartedCallService) {
+                            if (!callUIState.hasStartedService) {
 
-                                if (!isJoined && !callEnded && !callScreenData.isCaller) {
+                                if (!isJoined && !callUIState.callEnded && !callScreenData.isCaller) {
 
                                     callViewModel.enableVideoPreview()
 
                                     callViewModel.startCallService(
                                         context = context,
-                                        channelName = callScreenData.channelName,
-                                        callType = "video",
-                                        callerName = callScreenData.callerName,
-                                        receiverName = callScreenData.receiverName,
-                                        isCaller = false,
-                                        callReceiverId = callScreenData.callReceiverId,
-                                        callDocId = callScreenData.callDocId,
-                                        photo = callScreenData.receiverPhoto
+                                        callMetadata = callScreenData
                                     )
 
                                     callViewModel.markCallServiceStarted()
@@ -539,17 +565,68 @@ fun ControlButtons(
     callType: String,
     callViewModel: CallViewModel,
     isCaller: Boolean,
+    callUIState: CallUIState,
     callDocId: String?,
+    callEvent: CallEvent,
     onJoinCall: () -> Unit
 ) {
 
-    val isMuted by callViewModel.isMuted.collectAsState()
-    val isRemoteAudioDeafen by callViewModel.isRemoteAudioDeafen.collectAsState()
-    val isSpeakerPhoneEnabled by callViewModel.isSpeakerPhoneEnabled.collectAsState()
-    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+   // val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
+    //val callEvent by callViewModel.callEvent.collectAsState()
+   // val callEvent by callViewModel.callEvent.collectAsState(initial = CallEvent.JoiningChannel)
+
+    val context = LocalContext.current
+
+    if (callEvent is CallEvent.Ongoing){
+
+        //common
+        IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
+            Icon(
+                imageVector = if (callUIState.isLocalAudioMuted) Icons.Default.MicOff else Icons.Default.Mic,
+                contentDescription = "Mute",
+            )
+        }
+
+        // video/call/common
+        IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
+            Icon(
+                imageVector = if (callUIState.isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                contentDescription = "audio turn on/off",
+
+                )
+        }
+
+        // common
+        IconButton(onClick = {
+            callViewModel.stopCallService(context)
+        }) {
+            Icon(
+                imageVector = Icons.Default.CallEnd,
+                contentDescription = "End Call",
+                tint = Color.Red
+            )
+        }
 
 
-    if (remoteUserJoined == null) {
+        if (callType == "voice") {
+            // only voice call
+            IconButton(onClick = { callViewModel.toggleSpeaker() }) {
+                Icon(
+                    imageVector = if (callUIState.isSpeakerEnabled) Icons.Default.Hearing else Icons.Default.HearingDisabled,
+                    contentDescription = "voice mode : speaker or earpiece"
+
+                )
+            }
+        } else {
+            // only video
+            IconButton(onClick = { callViewModel.switchCamera() }) {
+                Icon(
+                    imageVector = Icons.Default.FlipCameraAndroid,
+                    contentDescription = "Switch Camera"
+                )
+            }
+        }
+    } else {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -567,11 +644,11 @@ fun ControlButtons(
                     // current user is a caller, only show call cut button till the remote user joins
 
                     IconButton(onClick = {
-                        callViewModel.leaveChannel()
+                        callViewModel.stopCallService(context = context )
                     }) {
                         Icon(
                             imageVector = Icons.Default.CallEnd,
-                            contentDescription = "End Call",
+                            contentDescription = "decline the call",
                             tint = Color.Red,
                             modifier = Modifier
                                 .size(250.dp)
@@ -617,56 +694,6 @@ fun ControlButtons(
                 }
             }
 
-        }
-
-
-    } else {
-        //common
-        IconButton(onClick = { callViewModel.muteOutgoingAudio() }) {
-            Icon(
-                imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                contentDescription = "Mute",
-            )
-        }
-
-        // video/call/common
-        IconButton(onClick = { callViewModel.muteYourSpeaker() }) {
-            Icon(
-                imageVector = if (isRemoteAudioDeafen) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
-                contentDescription = "audio turn on/off",
-
-                )
-        }
-
-        // common
-        IconButton(onClick = {
-            callViewModel.leaveChannel()
-        }) {
-            Icon(
-                imageVector = Icons.Default.CallEnd,
-                contentDescription = "End Call",
-                tint = Color.Red
-            )
-        }
-
-
-        if (callType == "voice") {
-            // only voice call
-            IconButton(onClick = { callViewModel.toggleSpeaker() }) {
-                Icon(
-                    imageVector = if (isSpeakerPhoneEnabled) Icons.Default.Hearing else Icons.Default.HearingDisabled,
-                    contentDescription = "voice mode : speaker or earpiece"
-
-                )
-            }
-        } else {
-            // only video
-            IconButton(onClick = { callViewModel.switchCamera() }) {
-                Icon(
-                    imageVector = Icons.Default.FlipCameraAndroid,
-                    contentDescription = "Switch Camera"
-                )
-            }
         }
     }
 

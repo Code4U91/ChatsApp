@@ -1,4 +1,6 @@
-package com.example.chatapp
+package com.example.chatapp.core
+
+import com.example.chatapp.BuildConfig
 
 const val USERS_COLLECTION = "users"
 

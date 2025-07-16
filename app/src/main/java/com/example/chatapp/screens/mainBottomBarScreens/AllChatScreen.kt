@@ -51,11 +51,12 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
-import com.example.chatapp.FriendData
-import com.example.chatapp.formatTimestamp
-import com.example.chatapp.shimmerEffect
-import com.example.chatapp.toEntity
-import com.example.chatapp.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.call.presentation.call_history_screen.TopAppBarTemplate
+import com.example.chatapp.core.FriendData
+import com.example.chatapp.core.formatTimestamp
+import com.example.chatapp.core.shimmerEffect
+import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState

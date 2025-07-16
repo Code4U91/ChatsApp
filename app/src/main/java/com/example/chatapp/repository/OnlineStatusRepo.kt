@@ -1,6 +1,6 @@
 package com.example.chatapp.repository
 
-import com.example.chatapp.USERS_REF
+import com.example.chatapp.core.USERS_REF
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError

@@ -1,8 +1,8 @@
 package com.example.chatapp.api
 
 import android.util.Log
-import com.example.chatapp.CallNotificationRequest
-import com.example.chatapp.MessageNotificationRequest
+import com.example.chatapp.core.CallNotificationRequest
+import com.example.chatapp.core.MessageNotificationRequest
 import com.google.firebase.auth.FirebaseAuth
 import io.ktor.client.HttpClient
 import io.ktor.client.request.headers

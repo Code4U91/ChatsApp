@@ -1,6 +1,12 @@
-package com.example.chatapp
+package com.example.chatapp.core.local_database
 
-import com.example.chatapp.localData.roomDbCache.CallHistoryEntity
+import com.example.chatapp.call.data.local_source.entity.CallHistoryEntity
+import com.example.chatapp.call.data.remote_source.model.CallData
+import com.example.chatapp.core.ChatItemData
+import com.example.chatapp.core.FriendData
+import com.example.chatapp.core.FriendListData
+import com.example.chatapp.core.Message
+import com.example.chatapp.core.UserData
 import com.example.chatapp.localData.roomDbCache.ChatEntity
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.MessageEntity
@@ -88,7 +94,7 @@ fun UserData.toEntity(): UserEntity {
     )
 }
 
-fun UserEntity.toUi() : UserData{
+fun UserEntity.toUi() : UserData {
     return UserData(
         uid = this.uid,
         name = this.name,
@@ -98,7 +104,7 @@ fun UserEntity.toUi() : UserData{
     )
 }
 
-fun CallData.toEntity() : CallHistoryEntity{
+fun CallData.toEntity() : CallHistoryEntity {
 
     return CallHistoryEntity(
         callId = this.callId,
@@ -114,7 +120,7 @@ fun CallData.toEntity() : CallHistoryEntity{
     )
 }
 
-fun CallHistoryEntity.toUi() : CallData{
+fun CallHistoryEntity.toUi() : CallData {
 
     return CallData(
         callId = this.callId,
