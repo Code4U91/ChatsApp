@@ -6,13 +6,11 @@ import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import javax.inject.Inject
-import javax.inject.Singleton
 
 // class used for creating a session/call document which maintains the call data and later
 // is used as a record in a call history
-@Singleton
-class CallSessionUpdaterRepoIml @Inject constructor(
+
+class CallSessionUpdaterRepoIml (
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore
 ) : CallSessionUploaderRepo {

@@ -13,7 +13,7 @@ import com.example.chatapp.localData.roomDbCache.UserEntity
 @Database(
     entities = [UserEntity::class, ChatEntity::class, MessageEntity::class,
         FriendEntity::class, CallHistoryEntity::class],
-    version = 4,
+    version = 6,
     exportSchema = false
 )
 abstract class LocalRoomDatabase : RoomDatabase() {

@@ -144,6 +144,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
+
+
     fun getMessage(chatId: String): Flow<List<Message>> {
         return localDbRepo.getMessages(chatId)
             .map { it.map { entity -> entity.toUi() } }
@@ -207,10 +209,10 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         return messagingHandlerRepo.fetchFriendData(friendUserId)
         {
+
             updatedFriendData(it) // used where multiple new friend data is required at once
 
         }
-
     }
 
     fun addNewFriend(
@@ -288,7 +290,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
         fetchedChatId: String = "",
         friendName: String?,
         currentUsername: String?,
-        chatId: String
     ) {
         viewModelScope.launch {
             messagingHandlerRepo.sendMessageToSingleUser(
@@ -297,7 +298,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
                 fetchedChatId,
                 friendName,
                 currentUsername,
-                chatId
             )
         }
 

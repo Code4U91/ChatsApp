@@ -9,4 +9,6 @@ interface CallRepository {
     suspend fun insertCallHistory(call : Call)
 
     fun getCallHistory() : Flow<List<Call>>
+
+
 }

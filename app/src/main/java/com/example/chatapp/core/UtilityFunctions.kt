@@ -37,6 +37,12 @@ fun Context.appInstance(): ChatsApplication {
     return applicationContext as ChatsApplication
 }
 
+fun Long.toLocalDate() : LocalDate {
+    return Instant.ofEpochMilli(this)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+}
+
 fun Modifier.shimmerEffect(): Modifier = composed {
     val transition = rememberInfiniteTransition(label = "")
     val translateAnim by transition.animateFloat(
@@ -156,11 +162,7 @@ fun getTimeOnly(timestamp: Timestamp): String {
 
 }
 
-fun getDateLabelForMessage(dateMillis: Long): String {
-
-    val messageDate = Instant.ofEpochSecond(dateMillis)
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
+fun getDateLabelForMessage(messageDate: LocalDate): String {
 
     val today = LocalDate.now()
 

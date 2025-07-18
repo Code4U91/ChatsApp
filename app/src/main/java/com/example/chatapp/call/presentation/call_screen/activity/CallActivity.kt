@@ -11,7 +11,11 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import com.example.chatapp.call.presentation.call_screen.screen.CallScreen
+import com.example.chatapp.call.presentation.call_screen.state.CallEvent
 import com.example.chatapp.call.presentation.call_screen.viewmodel.CallViewModel
 import com.example.chatapp.core.CALL_INTENT
 import com.example.chatapp.core.model.CallMetadata
@@ -26,6 +30,9 @@ class CallActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        window.setBackgroundDrawable(null)
+        window.setWindowAnimations(0)
+
         handleCallIntent(intent)
 
         enableEdgeToEdge()
@@ -33,14 +40,25 @@ class CallActivity : ComponentActivity() {
 
             val activityContext = LocalActivity.current
 
+            val callEvent by callViewModel.callEvent.collectAsState()
+
+            LaunchedEffect(callEvent) {
+                if(callEvent is CallEvent.Ended){
+                    activityContext?.apply {
+                        finishAndRemoveTask()
+                        overridePendingTransition(0,0)
+
+                    }
+                }
+            }
+
+
             ChatsAppTheme(themeString = "system") {
 
                     CallScreen(
                         callViewModel = callViewModel,
-                    ) {
-                        Log.i("CHECK_ACTIVITY", "triggered onCallEnd")
-                        activityContext?.finishAndRemoveTask()
-                    }
+                    )
+
             }
 
 

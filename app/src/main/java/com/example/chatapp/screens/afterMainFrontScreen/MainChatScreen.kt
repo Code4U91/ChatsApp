@@ -368,7 +368,7 @@ fun MainChatScreen(
                             senderId
                         )
                     },
-                    getDateLabel = { date -> getDateLabelForMessage(date.toEpochDay()) },
+                    getDateLabel = { date -> getDateLabelForMessage(date) },
                     updateSelectedMessages = { id ->
 
                         messageDeletionSet = if (messageDeletionSet.contains(id)) {
@@ -417,8 +417,7 @@ fun MainChatScreen(
                                 otherId,
                                 chatId,
                                 friendData?.name,
-                                currentUserData?.name,
-                                chatId
+                                currentUserData?.name
                             )
                             messageText = ""
                         }

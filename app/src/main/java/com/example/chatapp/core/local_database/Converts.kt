@@ -1,7 +1,5 @@
 package com.example.chatapp.core.local_database
 
-import com.example.chatapp.call.data.local_source.entity.CallHistoryEntity
-import com.example.chatapp.call.data.remote_source.model.CallData
 import com.example.chatapp.core.ChatItemData
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
@@ -104,35 +102,6 @@ fun UserEntity.toUi() : UserData {
     )
 }
 
-fun CallData.toEntity() : CallHistoryEntity {
 
-    return CallHistoryEntity(
-        callId = this.callId,
-        callerId = this.callerId,
-        callReceiverId = this.callReceiverId,
-        callType = this.callType,
-        channelId = this.channelId,
-        status = this.status,
-        callStartTime = this.callStartTime?.toDate()?.time ?: 0L,
-        callEndTime = this.callEndTime?.toDate()?.time ?: 0L,
-        otherUserName = this.otherUserName,
-        otherUserId = this.otherUserId
-    )
-}
 
-fun CallHistoryEntity.toUi() : CallData {
-
-    return CallData(
-        callId = this.callId,
-        callerId = this.callerId,
-        callReceiverId = this.callReceiverId,
-        callType = this.callType,
-        channelId = this.channelId,
-        status = this.status,
-        callStartTime = Timestamp(this.callStartTime / 1000, 0),
-        callEndTime = Timestamp(this.callEndTime / 1000, 0),
-        otherUserName = this.otherUserName,
-        otherUserId = this.otherUserId
-    )
-}
 

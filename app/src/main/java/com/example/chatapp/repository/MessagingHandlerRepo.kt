@@ -8,6 +8,7 @@ import com.example.chatapp.core.FRIEND_COLLECTION
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
 import com.example.chatapp.core.MESSAGE_COLLECTION
+import com.example.chatapp.core.Message
 import com.example.chatapp.core.MessageNotificationRequest
 import com.example.chatapp.core.USERS_COLLECTION
 import com.example.chatapp.core.UserData
@@ -75,7 +76,7 @@ class MessagingHandlerRepo @Inject constructor(
         updatedFriendData: (FriendData) -> Unit
     ): ListenerRegistration? {
 
-        if (friendUserId.isNotEmpty()){
+        if (friendUserId.isNotEmpty()) {
             val userRef = firestoreDb.collection(USERS_COLLECTION).document(friendUserId)
 
 
@@ -241,7 +242,7 @@ class MessagingHandlerRepo @Inject constructor(
 
     fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? { // added listener
 
-          auth.currentUser?.uid?.let { userId ->
+        auth.currentUser?.uid?.let { userId ->
 
             return firestoreDb.collection(USERS_COLLECTION).document(userId)
                 .collection(FRIEND_COLLECTION).addSnapshotListener { snapshot, error ->
@@ -274,12 +275,12 @@ class MessagingHandlerRepo @Inject constructor(
         otherUserId: String,
         fetchedChatId: String,
         friendName: String?,
-        currentUsername: String?,
-        chatId1: String,
+        currentUsername: String?
     ) {
         auth.currentUser?.uid?.let { currentUserId ->
 
-            val chatId = chatId1.ifEmpty { chatIdCreator(currentUserId, otherUserId, fetchedChatId) }
+            val chatId =
+                fetchedChatId.ifEmpty { chatIdCreator(currentUserId, otherUserId, fetchedChatId) }
 
             val currentTime = Timestamp.now()
 
@@ -305,6 +306,7 @@ class MessagingHandlerRepo @Inject constructor(
             )
 
             val messageRefId = senderChatRef.collection(MESSAGE_COLLECTION).document().id
+
             val senderMessageRef = senderChatRef.collection(MESSAGE_COLLECTION)
                 .document(messageRefId)
 
@@ -349,6 +351,7 @@ class MessagingHandlerRepo @Inject constructor(
 
             // send notification if sent successfully
             fcmNotificationSender.sendMessageNotification(request)
+
 
         }
     }
@@ -483,7 +486,7 @@ class MessagingHandlerRepo @Inject constructor(
 //
 //    }
 
-     // only deleting on the current user/user who applies for delete side only
+    // only deleting on the current user/user who applies for delete side only
     fun deleteMessage(chatId: String, messageId: Set<String>, currentUserId: String) {
 
         val dbRef =

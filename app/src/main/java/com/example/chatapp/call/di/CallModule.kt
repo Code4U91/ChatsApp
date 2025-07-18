@@ -3,10 +3,12 @@ package com.example.chatapp.call.di
 import android.content.Context
 import com.example.chatapp.call.data.remote_source.repositoryImpl.AgoraSetUpRepoIml
 import com.example.chatapp.call.data.remote_source.repositoryImpl.CallRepositoryImpl
+import com.example.chatapp.call.data.remote_source.repositoryImpl.CallRingtoneManagerIml
 import com.example.chatapp.call.data.remote_source.repositoryImpl.CallSessionUpdaterRepoIml
 import com.example.chatapp.call.data.remote_source.repositoryImpl.RemoteCallRepoIml
 import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
 import com.example.chatapp.call.domain.repository.CallRepository
+import com.example.chatapp.call.domain.repository.CallRingtoneRepo
 import com.example.chatapp.call.domain.repository.CallSessionUploaderRepo
 import com.example.chatapp.call.domain.repository.RemoteCallRepo
 import com.example.chatapp.call.domain.usecase.audio_case.CallAudioCase
@@ -25,6 +27,15 @@ import com.example.chatapp.call.domain.usecase.call_video_case.EnableVideoPrevie
 import com.example.chatapp.call.domain.usecase.call_video_case.SetUpLocalVideoUseCase
 import com.example.chatapp.call.domain.usecase.call_video_case.SetUpRemoteVideoUseCase
 import com.example.chatapp.call.domain.usecase.call_video_case.SwitchCameraUseCase
+import com.example.chatapp.call.domain.usecase.ringtone_case.PlayIncomingRingtone
+import com.example.chatapp.call.domain.usecase.ringtone_case.PlayOutgoingRingtone
+import com.example.chatapp.call.domain.usecase.ringtone_case.RingtoneUseCase
+import com.example.chatapp.call.domain.usecase.ringtone_case.StopAllRingtone
+import com.example.chatapp.call.domain.usecase.session_case.CallSessionUploadCase
+import com.example.chatapp.call.domain.usecase.session_case.CheckCurrentCallStatus
+import com.example.chatapp.call.domain.usecase.session_case.UpdateCallStatus
+import com.example.chatapp.call.domain.usecase.session_case.UploadCallData
+import com.example.chatapp.call.domain.usecase.session_case.UploadDataOnCallEnd
 import com.example.chatapp.core.local_database.LocalRoomDatabase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -66,6 +77,16 @@ object CallModule {
 
         return RemoteCallRepoIml(auth, remoteDb)
     }
+
+    @Provides
+    @Singleton
+    fun providesCallRingtoneRepo(@ApplicationContext context: Context) : CallRingtoneRepo {
+        return CallRingtoneManagerIml(context)
+    }
+
+
+
+    // ----- USE CASE ------
 
     @Provides
     @Singleton
@@ -118,7 +139,37 @@ object CallModule {
 
         return CallHistoryUseCase(
             getCallHistoryUseCase = GetCallHistoryUseCase(callRepository,remoteCallRepo),
-            insertCallHistoryCase = InsertCallHistoryCase(callRepository)
+            insertCallHistoryCase = InsertCallHistoryCase(callRepository),
+        )
+
+    }
+
+    @Provides
+    @Singleton
+    fun providesRingtoneUseCase(
+        callRingtoneRepo: CallRingtoneRepo
+    ) : RingtoneUseCase {
+
+        return RingtoneUseCase(
+
+            playIncomingRingtone = PlayIncomingRingtone(callRingtoneRepo),
+            playOutgoingRingtone = PlayOutgoingRingtone(callRingtoneRepo),
+            stopAllRingtone = StopAllRingtone(callRingtoneRepo)
+        )
+
+    }
+
+    @Provides
+    @Singleton
+    fun providesCallSessionUploadUseCase(
+        callSessionUploaderRepo: CallSessionUploaderRepo
+    ) : CallSessionUploadCase{
+
+        return CallSessionUploadCase(
+            uploadCallData = UploadCallData(callSessionUploaderRepo),
+            updateCallStatus = UpdateCallStatus(callSessionUploaderRepo),
+            checkCurrentCallStatus = CheckCurrentCallStatus(callSessionUploaderRepo),
+            uploadDataOnCallEnd = UploadDataOnCallEnd(callSessionUploaderRepo)
         )
 
     }

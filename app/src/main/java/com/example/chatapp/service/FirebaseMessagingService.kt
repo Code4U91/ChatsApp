@@ -12,11 +12,13 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.Person
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.IconCompat
 import com.example.chatapp.R
-import com.example.chatapp.call.data.remote_source.repositoryImpl.CallRingtoneManagerIml
 import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call.domain.usecase.ringtone_case.RingtoneUseCase
 import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.call.presentation.call_screen.state.CallEvent
 import com.example.chatapp.common.presentation.MainActivity
 import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.core.CALL_HISTORY
@@ -43,8 +45,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 import javax.inject.Inject
-import androidx.core.graphics.createBitmap
-import com.example.chatapp.call.presentation.call_screen.state.CallEvent
 
 
 @AndroidEntryPoint
@@ -57,7 +57,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
     lateinit var firebaseDb: FirebaseFirestore
 
     @Inject
-    lateinit var callRingtoneManagerIml: CallRingtoneManagerIml
+    lateinit var ringtoneUseCase: RingtoneUseCase
 
     @Inject
     lateinit var agoraRepo: AgoraSetUpRepo
@@ -131,7 +131,8 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                     showMissedCallNotification(senderName, callType, callNotificationId)
 
                 }, onIncomingCall = {
-                    callRingtoneManagerIml.playIncomingRingtone()
+
+                    ringtoneUseCase.playIncomingRingtone()
 
 
                     // if the call comes while the app is alive but in background and screen is locked then app crashes
@@ -227,7 +228,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
     ) {
 
         val notificationManager =
-            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         val notificationId = chatId.hashCode()
 
@@ -328,7 +329,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
                 when (status) {
                     "missed" -> {
-                        callRingtoneManagerIml.stopAllSounds()
+                        ringtoneUseCase.stopAllRingtone()
                         agoraRepo.updateCallEvent(CallEvent.Ended)
                         onCallMissed()
                         callStatusListener?.remove()
@@ -341,7 +342,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
 
                     else -> {
-                        callRingtoneManagerIml.stopAllSounds()
+                        ringtoneUseCase.stopAllRingtone()
                         notificationManager.cancel(notificationId + INCOMING_CALL_FCM_NOTIFICATION_ID)
                         callStatusListener?.remove()
                         callStatusListener = null
@@ -356,7 +357,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
         return try {
             val url = URL(imageUrl)
             BitmapFactory.decodeStream(url.openConnection().getInputStream())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }
@@ -385,7 +386,7 @@ class FirebaseMessagingService : FirebaseMessagingService() {
 
 
     private fun isAppInForeground(): Boolean {
-        val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val activityManager = getSystemService(ACTIVITY_SERVICE) as ActivityManager
         val appProcesses = activityManager.runningAppProcesses ?: return false
         val packageName = packageName
         return appProcesses.any { it.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND && it.processName == packageName }

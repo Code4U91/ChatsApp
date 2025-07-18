@@ -1,10 +1,6 @@
 package com.example.chatapp.call.presentation.call_screen.state
 
-import com.example.chatapp.core.Message
-
 sealed class CallEvent {
-
-    data class ShowError(val message: Message) : CallEvent()
 
     object InActive : CallEvent()
     object JoiningChannel : CallEvent() // when isJoined false

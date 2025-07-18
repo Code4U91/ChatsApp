@@ -7,7 +7,7 @@ interface CallRingtoneRepo {
 
     fun playIncomingRingtone()
 
-    fun playOutGoingRingtone(
+    fun playOutgoingRingtone(
         useSpeaker: Boolean = false
     )
 

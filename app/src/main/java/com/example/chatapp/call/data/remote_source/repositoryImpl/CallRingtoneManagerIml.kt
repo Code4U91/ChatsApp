@@ -10,15 +10,11 @@ import android.media.RingtoneManager
 import android.os.Build
 import androidx.core.net.toUri
 import com.example.chatapp.call.domain.repository.CallRingtoneRepo
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
-import javax.inject.Inject
-import javax.inject.Singleton
 
 // manage incoming and outgoing ringtones
-@Singleton
-class CallRingtoneManagerIml @Inject constructor(
-    @ApplicationContext private val context: Context
+class CallRingtoneManagerIml (
+     private val context: Context
 ) : CallRingtoneRepo {
 
     private var incomingRingTonePlayer: Ringtone? = null
@@ -49,7 +45,7 @@ class CallRingtoneManagerIml @Inject constructor(
         }
     }
 
-     override fun playOutGoingRingtone(
+     override fun playOutgoingRingtone(
         useSpeaker: Boolean
      ) {
         stopAllSounds()

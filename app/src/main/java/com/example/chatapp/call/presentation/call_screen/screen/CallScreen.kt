@@ -1,6 +1,5 @@
 package com.example.chatapp.call.presentation.call_screen.screen
 
-import android.util.Log
 import android.view.SurfaceView
 import android.view.WindowManager
 import android.widget.Toast
@@ -61,27 +60,12 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 @Composable
 fun CallScreen(
-    callViewModel: CallViewModel,
-    onCallEnd: () -> Unit
+    callViewModel: CallViewModel
 ) {
-
-    // make call cut faster
-    // test functionality after removing agora.decline()
-    // smoothen the ui
-
 
     val callState by callViewModel.uiState.collectAsState()
     val callEvent by callViewModel.callEvent.collectAsState()
 
-
-
-    LaunchedEffect(callEvent) {
-        Log.i("CHECK_EVENT", callEvent.toString())
-
-        if(callEvent is CallEvent.Ended){
-            onCallEnd()
-        }
-    }
 
     // switch compose based on the call type passes as parameter to callScreen compose
     callState.callMetadata?.let { callMetadata ->
@@ -104,38 +88,6 @@ fun CallScreen(
 
         }
     }
-
-
-//
-//    LaunchedEffect(remoteUserLeft, callState.callEnded) {
-//        if (callState.callEnded || remoteUserLeft) {
-//
-//            Log.i("ON_END_CALLED", "callEnd: ${callState.callEnded} remoteUser : $remoteUserLeft ")
-//
-//            callViewModel.stopCallService(context)
-//            callViewModel.resetCallServiceFlag()
-//            onCallEnd()
-//        }
-//
-//    }
-//
-//     //auto leave channel or call end if call not connected within 48seconds
-//    LaunchedEffect(remoteUserJoined) {
-//
-//        if (isJoined) {
-//            // Wait for 45sec for the remote user to join
-//
-//            delay(45000)
-//
-//            if (remoteUserJoined == null) {
-//                // If still null after 45sec, end call
-//                callViewModel.stopCallService(context)
-//            }
-//        }
-//
-//    }
-
-
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
@@ -148,7 +100,6 @@ fun StartVoiceCall(
 ) {
 
     val isJoined by callViewModel.isJoined.collectAsState()
-    //val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
     val callDuration by callViewModel.callDuration.collectAsState()
 
     val context = LocalContext.current
@@ -196,21 +147,25 @@ fun StartVoiceCall(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                Image(
-                    painter = rememberAsyncImagePainter(model = callScreenData.receiverPhoto),
-                    contentDescription = "profile picture",
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .size(150.dp)
-                        .border(1.dp, Color.Gray, shape = CircleShape),
-                )
+                if(callEvent !is CallEvent.Ended){
+                    Image(
+                        painter = rememberAsyncImagePainter(model = callScreenData.receiverPhoto),
+                        contentDescription = "profile picture",
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .size(150.dp)
+                            .border(1.dp, Color.Gray, shape = CircleShape),
+                    )
 
-                Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                Text(
-                    text = callScreenData.receiverName,
-                    fontSize = 20.sp
-                )
+                    Text(
+                        text = callScreenData.receiverName,
+                        fontSize = 20.sp
+                    )
+                }
+
+
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -245,36 +200,6 @@ fun StartVoiceCall(
                     }
                      else -> {}
                 }
-
-
-//                if (remoteUserJoined != null) {  // remote/other user joined the call
-//
-//
-//                    Row(
-//                        modifier = Modifier.fillMaxWidth(),
-//                        horizontalArrangement = Arrangement.Center
-//                    ) {
-//                        Text(
-//                            text = "Call active: ",
-//                            color = Color.Green,
-//                            fontSize = 18.sp
-//                        )
-//
-//                        Text(
-//                            text = formatCallDuration(callDuration),
-//                            fontSize = 18.sp
-//                        )
-//                    }
-//
-//                } else {
-//
-//
-//                    Text(
-//                        text = if (callScreenData.isCaller) "waiting for other user to join the call" else "Incoming voice call",
-//                        fontSize = 18.sp
-//
-//                    )
-//                }
 
             }
 
@@ -571,6 +496,7 @@ fun ControlButtons(
     onJoinCall: () -> Unit
 ) {
 
+    // call cut button  showing for split second issue is fixed seems
    // val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState()
     //val callEvent by callViewModel.callEvent.collectAsState()
    // val callEvent by callViewModel.callEvent.collectAsState(initial = CallEvent.JoiningChannel)
@@ -626,7 +552,10 @@ fun ControlButtons(
                 )
             }
         }
-    } else {
+    }
+
+    if(callEvent is CallEvent.JoiningChannel || callEvent is CallEvent.Ringing
+        || callEvent is CallEvent.InActive){
         Box(
             modifier = Modifier
                 .fillMaxSize()

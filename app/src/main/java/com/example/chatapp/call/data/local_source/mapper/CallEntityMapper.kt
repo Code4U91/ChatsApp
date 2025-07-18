@@ -5,19 +5,19 @@ import com.example.chatapp.call.domain.model.Call
 
 
 fun CallHistoryEntity.toDomain(): Call = Call(
-        callId = callId,
-        callerId = callerId,
-        callReceiverId = callReceiverId,
-        callType = callType,
-        channelId = channelId,
-        status = status,
-        callStartTime = callStartTime,
-        callEndTime = callEndTime,
-        otherUserName = otherUserName,
-        otherUserId = otherUserId
-    )
+    callId = callId,
+    callerId = callerId,
+    callReceiverId = callReceiverId,
+    callType = callType,
+    channelId = channelId,
+    status = status,
+    callStartTime = callStartTime,
+    callEndTime = callEndTime,
+    otherUserName = otherUserName,
+    otherUserId = otherUserId
+)
 
-fun Call.toEntity() : CallHistoryEntity = CallHistoryEntity(
+fun Call.toEntity(): CallHistoryEntity = CallHistoryEntity(
     callId = callId,
     callerId = callerId,
     callReceiverId = callReceiverId,

@@ -42,7 +42,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -63,11 +62,12 @@ import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
 import com.example.chatapp.call.presentation.model.CallUiData
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.example.chatapp.core.CALL_INTENT
-import com.example.chatapp.core.CallMetadata
-import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.formatDurationText
 import com.example.chatapp.core.formatTimestampToDateTime
 import com.example.chatapp.core.getDateLabelForMessage
+import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.core.model.CallMetadata
+import com.example.chatapp.core.toLocalDate
 import com.example.chatapp.screens.afterMainFrontScreen.DateChip
 import com.example.chatapp.screens.afterMainFrontScreen.VideoCallButton
 import com.example.chatapp.screens.afterMainFrontScreen.VoiceCallButton
@@ -106,6 +106,14 @@ fun CallHistoryScreen(
         it.otherUserName.trim().contains(searchQuery.trim(), ignoreCase = true)
     }
 
+    var showEmptyState by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        delay(1000)
+        showEmptyState = true
+
+    }
+
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -123,7 +131,7 @@ fun CallHistoryScreen(
                             showSearchBar = newState
                         }
                     } else {
-                        // if search bar isn't opened
+
                         Text(
                             text = "Calls",
                             fontSize = 25.sp
@@ -168,17 +176,23 @@ fun CallHistoryScreen(
             )
             {
 
-                if (callList.isEmpty()) {
-                    Text(
-                        text = "Nothing in call history yet",
-                        fontSize = 25.sp
-                    )
-                }
+                when {
 
-                CallLazyColumn(
-                    if (!showSearchBar) callList else filteredCallList,
-                    globalMessageListenerViewModel
-                )
+                    callList.isNotEmpty() -> {
+                        CallLazyColumn(
+                            if (!showSearchBar) callList else filteredCallList,
+                            globalMessageListenerViewModel
+                        )
+                    }
+
+                    showEmptyState -> {
+                        Text(
+                            text = "Nothing in call history yet",
+                            fontSize = 25.sp
+                        )
+                    }
+
+                }
 
             }
         }
@@ -212,47 +226,44 @@ fun CallLazyColumn(
         itemsIndexed(callListData, key = { _, item -> item.callId })
         { index, callData ->
 
+
             val nextCallItem = callListData.getOrNull(index - 1)
-            val currentCallDate = callData.callEndTime
-            val previousCallDate = nextCallItem?.callEndTime
+            val currentCallDate = callData.callEndTime.toLocalDate()
+            val previousCallDate = nextCallItem?.callEndTime?.toLocalDate()
 
             if (currentCallDate != previousCallDate) {
                 DateChip(dateLabel = getDateLabelForMessage(currentCallDate))
             }
 
             CallListItem(
-                otherUserId = callData.otherUserId,
+                callData = callData,
                 globalMessageListenerViewModel = globalMessageListenerViewModel,
-                callData.callStartTime,
-                callData.callEndTime,
-                callType = callData.callType,
                 isCaller = callData.callReceiverId == callData.otherUserId, // checking if other user is caller, otherUserId is other participantId
-                callStatus = callData.status
-            ) {
+                startCall = {receiverPhotoUrl ->
 
-                currentUserData?.let { currentUser ->
+                    currentUserData?.let { currentUser ->
 
-                    val callMetaData = CallMetadata(
-                        channelName = callData.channelId,
-                        uid = currentUser.uid,
-                        callType = callData.callType,
-                        callerName = currentUser.name,
-                        callReceiverId = it.uid,
-                        isCaller = true,
-                        receiverPhoto = it.photoUrl,
-                        receiverName = it.name,
-                        callDocId = null
-                    )
+                        val callMetaData = CallMetadata(
+                            channelName = callData.channelId,
+                            uid = currentUser.uid,
+                            callType = callData.callType,
+                            callerName = currentUser.name,
+                            callReceiverId = callData.otherUserId,
+                            isCaller = true,
+                            receiverPhoto = receiverPhotoUrl,
+                            receiverName = callData.otherUserName,
+                            callDocId = null
+                        )
 
-                    val intent = Intent(context, CallActivity::class.java).apply {
+                        val intent = Intent(context, CallActivity::class.java).apply {
 
-                        this.action = CALL_INTENT
-                        putExtra("call_metadata", callMetaData)
+                            this.action = CALL_INTENT
+                            putExtra("call_metadata", callMetaData)
+                        }
+
+                        context.startActivity(intent)
                     }
-
-                    context.startActivity(intent)
-                }
-            }
+                })
 
         }
 
@@ -266,39 +277,37 @@ fun CallLazyColumn(
 
 @Composable
 fun CallListItem(
-    otherUserId: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    callStartTime: Long,
-    callEndTime: Long,
-    callType: String,
     isCaller: Boolean,
-    callStatus: String,
-    startCall: (FriendData) -> Unit
+    callData: CallUiData,
+    startCall: (photoUrl : String) -> Unit
 ) {
 
-    val friendData by produceState<FriendData?>(initialValue = null, key1 = otherUserId)
-    {
-        val listener = globalMessageListenerViewModel.fetchFriendData(otherUserId)
-        { data ->
-            value = data
+    val friendData by globalMessageListenerViewModel.getFriendData(callData.otherUserId)
+        .collectAsState(null)
+
+    DisposableEffect(callData.otherUserId) {
+
+        val listener = globalMessageListenerViewModel.fetchFriendData(callData.otherUserId) { data ->
+
+            globalMessageListenerViewModel.insertFriend(data.toEntity())
+
         }
 
-        awaitDispose {
-
+        onDispose {
             listener?.remove()
         }
     }
 
-
     val time by remember {
-        mutableStateOf(formatTimestampToDateTime(callStartTime))
+        mutableStateOf(formatTimestampToDateTime(callData.callStartTime))
     }
 
-    val duration = remember(callStartTime, callEndTime) {
-        formatDurationText(callEndTime - callStartTime)
+    val duration = remember(callData.callStartTime, callData.callEndTime) {
+        formatDurationText(callData.callEndTime - callData.callStartTime)
     }
 
-    val timeText = when (callStatus) {
+    val timeText = when (callData.status) {
 
         "ended" -> {
             "call lasted $duration at $time"
@@ -329,7 +338,7 @@ fun CallListItem(
     }
 
 
-    val iconTint = when (callStatus) {
+    val iconTint = when (callData.status) {
         "ended" -> {
             Color.Green
         }
@@ -363,7 +372,7 @@ fun CallListItem(
 
         //Profile image
         AsyncImage(
-            model = friendData?.photoUrl ?: "",
+            model =  friendData?.photoUrl,
             contentDescription = "Profile picture",
             modifier = Modifier
                 .size(40.dp)
@@ -375,11 +384,11 @@ fun CallListItem(
         Column(modifier = Modifier.wrapContentWidth()) {
 
             Text(
-                text = friendData?.name ?: "",
+                text = friendData?.name.orEmpty(),
                 fontSize = 20.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = if (callStatus == "missed" || callStatus == "declined") Color.Red else Color.Unspecified
+                color = if (callData.status == "missed" || callData.status == "declined") Color.Red else Color.Unspecified
             )
 
             Row(modifier = Modifier.wrapContentHeight()) {
@@ -406,19 +415,23 @@ fun CallListItem(
             horizontalArrangement = Arrangement.End
         ) {
 
-            when (callType) {
+            when (callData.callType) {
                 "voice" -> VoiceCallButton {
+
                     friendData?.let {
-                        startCall(it)
+                        startCall(it.photoUrl)
                     }
+
+
 
                 }
 
                 "video" -> VideoCallButton {
 
                     friendData?.let {
-                        startCall(it)
+                        startCall(it.photoUrl)
                     }
+
                 }
 
                 else -> {}
