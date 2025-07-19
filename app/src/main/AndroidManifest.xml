@@ -33,7 +33,7 @@
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
         <activity
-            android:name=".call.presentation.call_screen.activity.CallActivity"
+            android:name=".call_feature.presentation.call_screen.activity.CallActivity"
             android:exported="false"
             android:showOnLockScreen="true"
             android:turnScreenOn="true"

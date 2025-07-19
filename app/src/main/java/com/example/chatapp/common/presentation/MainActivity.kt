@@ -26,8 +26,8 @@ import com.example.chatapp.common.presentation.navigation.AuthNavigationHost
 import com.example.chatapp.common.presentation.navigation.MainNavigationHost
 import com.example.chatapp.common.presentation.navigation.Screen
 import com.example.chatapp.ui.theme.ChatsAppTheme
-import com.example.chatapp.viewmodel.AuthState
-import com.example.chatapp.viewmodel.ChatsViewModel
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
+import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject

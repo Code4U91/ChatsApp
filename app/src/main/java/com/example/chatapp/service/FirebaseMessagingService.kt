@@ -15,10 +15,10 @@ import androidx.core.app.Person
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.drawable.IconCompat
 import com.example.chatapp.R
-import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
-import com.example.chatapp.call.domain.usecase.ringtone_case.RingtoneUseCase
-import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
-import com.example.chatapp.call.presentation.call_screen.state.CallEvent
+import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call_feature.domain.usecase.ringtone_case.RingtoneUseCase
+import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.call_feature.presentation.call_screen.state.CallEvent
 import com.example.chatapp.common.presentation.MainActivity
 import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.core.CALL_HISTORY

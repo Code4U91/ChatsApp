@@ -15,10 +15,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.R
 import com.example.chatapp.api.FcmNotificationSender
-import com.example.chatapp.call.domain.repository.AgoraSetUpRepo
-import com.example.chatapp.call.domain.usecase.ringtone_case.RingtoneUseCase
-import com.example.chatapp.call.domain.usecase.session_case.CallSessionUploadCase
-import com.example.chatapp.call.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call_feature.domain.usecase.ringtone_case.RingtoneUseCase
+import com.example.chatapp.call_feature.domain.usecase.session_case.CallSessionUploadCase
+import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
 import com.example.chatapp.core.AGORA_ID
 import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
 import com.example.chatapp.core.CALL_INTENT

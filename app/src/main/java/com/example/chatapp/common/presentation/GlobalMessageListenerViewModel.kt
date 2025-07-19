@@ -3,9 +3,9 @@ package com.example.chatapp.common.presentation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.call.domain.model.Call
-import com.example.chatapp.call.domain.usecase.call_history_case.CallHistoryUseCase
-import com.example.chatapp.call.presentation.mapper.toUi
+import com.example.chatapp.call_feature.domain.model.Call
+import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
+import com.example.chatapp.call_feature.presentation.mapper.toUi
 import com.example.chatapp.core.ChatItemData
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
@@ -15,10 +15,10 @@ import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.core.local_database.toUi
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.LocalDbRepo
-import com.example.chatapp.repository.AuthRepository
-import com.example.chatapp.repository.GlobalMessageListenerRepo
-import com.example.chatapp.repository.MessagingHandlerRepo
-import com.example.chatapp.repository.OnlineStatusRepo
+import com.example.chatapp.auth_feature.data.repository.AuthRepository
+import com.example.chatapp.common.GlobalMessageListenerRepo
+import com.example.chatapp.chat_feature.MessagingHandlerRepo
+import com.example.chatapp.auth_feature.data.repository.OnlineStatusRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
