@@ -1,5 +1,6 @@
-package com.example.chatapp.auth_feature.data.repository
+package com.example.chatapp.auth_feature.data.repositoryIml
 
+import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
 import com.example.chatapp.core.USERS_REF
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -10,13 +11,12 @@ import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
 import javax.inject.Inject
 
-class OnlineStatusRepo @Inject constructor(
+class OnlineStatusRepoIml @Inject constructor(
     private val auth: FirebaseAuth,
     private val realTimeDb: FirebaseDatabase
-) {
+) : OnlineStatusRepo {
 
-    fun activeChatUpdate(chatId: String)
-    {
+    override fun activeChatUpdate(chatId: String) {
         val userId = auth.currentUser?.uid ?: return
 
         val realTimeDb = realTimeDb.getReference(USERS_REF).child(userId)
@@ -27,7 +27,7 @@ class OnlineStatusRepo @Inject constructor(
         realTimeDb.updateChildren(activeChatId)
     }
 
-    fun setOnlineStatusWithDisconnect(status: Boolean, chatId: String = "") {
+    override fun setOnlineStatusWithDisconnect(status: Boolean, chatId: String) {
         val user = auth.currentUser
         if (user != null) {
             val realTimeDbRef =
@@ -53,7 +53,10 @@ class OnlineStatusRepo @Inject constructor(
         }
     }
 
-    fun listenForOnlineStatus(userId: String, onStatusChanged: (Long) -> Unit): Pair<DatabaseReference, ValueEventListener> {
+    override fun listenForOnlineStatus(
+        userId: String,
+        onStatusChanged: (Long) -> Unit
+    ): Pair<DatabaseReference, ValueEventListener> {
         val realTimeDbRef = realTimeDb.getReference(USERS_REF).child(userId)
 
 

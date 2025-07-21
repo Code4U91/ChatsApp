@@ -11,7 +11,7 @@ import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
 import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.core.MESSAGE_FCM_CHANNEL_STRING
 import com.example.chatapp.chat_feature.MessagingHandlerRepo
-import com.example.chatapp.auth_feature.data.repository.OnlineStatusRepo
+import com.example.chatapp.auth_feature.data.repositoryIml.OnlineStatusRepoIml
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -19,7 +19,7 @@ import javax.inject.Inject
 class ChatsApplication : Application(), DefaultLifecycleObserver {
 
     @Inject
-    lateinit var onlineStatusRepo: OnlineStatusRepo
+    lateinit var onlineStatusRepoIml: OnlineStatusRepoIml
 
     @Inject
     lateinit var messagingHandlerRepo: MessagingHandlerRepo
@@ -40,14 +40,14 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
         super.onStart(owner) // can remove contains empty default implementation
 
         isInForeground = true
-        onlineStatusRepo.setOnlineStatusWithDisconnect(true)
+        onlineStatusRepoIml.setOnlineStatusWithDisconnect(true)
     }
 
     override fun onStop(owner: LifecycleOwner) {
         super.onStop(owner)
 
         isInForeground = false
-        onlineStatusRepo.setOnlineStatusWithDisconnect(false)
+        onlineStatusRepoIml.setOnlineStatusWithDisconnect(false)
     }
 
     private fun createNotificationChannel() {

@@ -280,7 +280,7 @@ fun MainChatScreen(
                                     )
 
                                     val intent = Intent(context, CallActivity::class.java).apply {
-                                        Intent.setAction = CALL_INTENT
+                                        this.action = CALL_INTENT
                                         putExtra("call_metadata", callMetaData)
                                     }
 
@@ -303,7 +303,7 @@ fun MainChatScreen(
                                     )
 
                                     val intent = Intent(context, CallActivity::class.java).apply {
-                                        Intent.setAction = CALL_INTENT
+                                         this.setAction(CALL_INTENT)
                                         putExtra("call_metadata", callMetaData)
                                     }
 

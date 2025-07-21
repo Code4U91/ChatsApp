@@ -15,10 +15,10 @@ import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.core.local_database.toUi
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.LocalDbRepo
-import com.example.chatapp.auth_feature.data.repository.AuthRepository
+import com.example.chatapp.auth_feature.data.repositoryIml.AuthRepositoryIml
 import com.example.chatapp.common.GlobalMessageListenerRepo
 import com.example.chatapp.chat_feature.MessagingHandlerRepo
-import com.example.chatapp.auth_feature.data.repository.OnlineStatusRepo
+import com.example.chatapp.auth_feature.data.repositoryIml.OnlineStatusRepoIml
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
@@ -41,9 +41,9 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val auth: FirebaseAuth,
     private val messagingHandlerRepo: MessagingHandlerRepo,
     private val globalMessageListenerRepo: GlobalMessageListenerRepo,
-    private val onlineStatusRepo: OnlineStatusRepo,
+    private val onlineStatusRepoIml: OnlineStatusRepoIml,
     private val localDbRepo: LocalDbRepo,
-    private val authRepository: AuthRepository,
+    private val authRepositoryIml: AuthRepositoryIml,
     private val callHistoryUseCase: CallHistoryUseCase
 ) : ViewModel() {
 
@@ -228,7 +228,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
     }
 
     private fun setOnlineStatus(status: Boolean = true) {
-        onlineStatusRepo.setOnlineStatusWithDisconnect(status)
+        onlineStatusRepoIml.setOnlineStatusWithDisconnect(status)
     }
 
     fun setCurrentOpenChatId(chatId: String?) {
@@ -250,13 +250,13 @@ class GlobalMessageListenerViewModel @Inject constructor(
         userId: String,
         onStatusChanged: (Long) -> Unit
     ): Pair<DatabaseReference, ValueEventListener> {
-        return onlineStatusRepo.listenForOnlineStatus(userId) { onlineStatus ->
+        return onlineStatusRepoIml.listenForOnlineStatus(userId) { onlineStatus ->
             onStatusChanged(onlineStatus)
         }
     }
 
     fun setActiveChat(chatId: String) {
-        onlineStatusRepo.activeChatUpdate(chatId)
+        onlineStatusRepoIml.activeChatUpdate(chatId)
     }
 
     fun deleteFriend(friendId: Set<String>) {
@@ -322,7 +322,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
             globalMessageListenerRepo.clearAllGlobalListeners()
             messagingHandlerRepo.clearMessageListeners()
-            authRepository.signOut()
+            authRepositoryIml.signOut()
             delay(100)
             localDbRepo.clearAllTables()
 

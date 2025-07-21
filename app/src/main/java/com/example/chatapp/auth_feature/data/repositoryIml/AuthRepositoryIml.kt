@@ -1,4 +1,4 @@
-package com.example.chatapp.auth_feature.data.repository
+package com.example.chatapp.auth_feature.data.repositoryIml
 
 import android.app.Activity
 import android.content.Context
@@ -7,6 +7,7 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import com.example.chatapp.R
+import com.example.chatapp.auth_feature.domain.repository.AuthRepository
 import com.example.chatapp.core.DEFAULT_PROFILE_PIC
 import com.example.chatapp.core.USERS_COLLECTION
 import com.example.chatapp.core.USERS_REF
@@ -25,16 +26,16 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
-class AuthRepository @Inject constructor(
+class AuthRepositoryIml @Inject constructor(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
     private val firestoreDb: FirebaseFirestore,
     private val realTimeDb: FirebaseDatabase,
     private val firebaseMessaging: FirebaseMessaging,
     @ApplicationContext private val context: Context,
-) {
+) : AuthRepository {
 
-    suspend fun signInWithGoogle(activity: Activity): GoogleIdTokenCredential? {
+    override suspend fun signInWithGoogle(activity: Activity): GoogleIdTokenCredential? {
 
         var idToken: GoogleIdTokenCredential? = null
 
@@ -78,11 +79,12 @@ class AuthRepository @Inject constructor(
     }
 
 
-    suspend fun fireBaseAuthWithGoogle(
-        idToken: String,
+    override suspend fun fireBaseAuthWithGoogle(
+        idToken: String?,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
+        if(idToken == null) onFailure(Exception("Invalid token"))
 
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         try {
@@ -106,7 +108,7 @@ class AuthRepository @Inject constructor(
         }
     }
 
-    suspend fun signInUsingEmailAndPwd(
+    override suspend fun signInUsingEmailAndPwd(
         email: String,
         password: String,
         onSuccess: () -> Unit,
@@ -123,7 +125,7 @@ class AuthRepository @Inject constructor(
 
     }
 
-    suspend fun signUpUsingEmailAndPwd(
+    override suspend fun signUpUsingEmailAndPwd(
         email: String,
         password: String,
         userName: String,
@@ -153,7 +155,7 @@ class AuthRepository @Inject constructor(
     }
 
 
-    private fun uploadUserDataInFireStore(userName: String, user: FirebaseUser, photoUrl: String) {
+    override fun uploadUserDataInFireStore(userName: String, user: FirebaseUser, photoUrl: String) {
 
         val userRef = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 
@@ -180,7 +182,7 @@ class AuthRepository @Inject constructor(
 
     }
 
-    fun resetPassword(email: String): String {
+    override fun resetPassword(email: String): String {
         return try {
             auth.sendPasswordResetEmail(email)
             "0"
@@ -190,13 +192,29 @@ class AuthRepository @Inject constructor(
 
     }
 
-    private fun removeFcmTokenFromUser(userId: String, token: String) {
+    override fun removeFcmTokenFromUser(userId: String, token: String) {
         val userDoc = firestoreDb.collection(USERS_COLLECTION).document(userId)
 
         userDoc.update("fcmTokens", FieldValue.arrayRemove(token))
     }
 
-    suspend fun signOut() {
+    override fun updateUserEmail(
+        newEmail: String,
+        onFailure: (String?) -> Unit,
+        onSuccess: () -> Unit
+    ) {
+        auth.currentUser?.verifyBeforeUpdateEmail(newEmail)?.addOnCompleteListener { task ->
+
+            if(task.isSuccessful){
+                onSuccess
+            } else {
+               onFailure(task.exception?.message)
+            }
+
+        }
+    }
+
+    override suspend fun signOut() {
 
         val user = auth.currentUser
         if (user != null) {

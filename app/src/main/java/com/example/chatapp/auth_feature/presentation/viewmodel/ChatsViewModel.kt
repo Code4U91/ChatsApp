@@ -5,8 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.core.MessageFcmMetadata
 import com.example.chatapp.core.USERS_COLLECTION
-import com.example.chatapp.auth_feature.data.repository.AuthRepository
-import com.example.chatapp.auth_feature.data.repository.OnlineStatusRepo
+import com.example.chatapp.auth_feature.data.repositoryIml.AuthRepositoryIml
+import com.example.chatapp.auth_feature.data.repositoryIml.OnlineStatusRepoIml
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
@@ -17,13 +17,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import androidx.core.net.toUri
 
 @HiltViewModel
 class ChatsViewModel @Inject constructor(
-    private val authRepository: AuthRepository,
+    private val authRepositoryIml: AuthRepositoryIml,
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
-    private val onlineStatusRepo: OnlineStatusRepo,
+    private val onlineStatusRepoIml: OnlineStatusRepoIml,
 ) : ViewModel() {
 
 
@@ -83,13 +84,13 @@ class ChatsViewModel @Inject constructor(
         if (activity != null) {
             viewModelScope.launch {
 
-                val idToken = authRepository.signInWithGoogle(activity)
+                val idToken = authRepositoryIml.signInWithGoogle(activity)
 
                 if (idToken != null) {
 
                     updateAuthState(AuthState.Loading)
 
-                    authRepository.fireBaseAuthWithGoogle(
+                    authRepositoryIml.fireBaseAuthWithGoogle(
                         idToken.idToken,
                         onSuccess = {
 
@@ -113,7 +114,7 @@ class ChatsViewModel @Inject constructor(
 
 
             updateAuthState(AuthState.Loading)
-            authRepository.signInUsingEmailAndPwd(
+            authRepositoryIml.signInUsingEmailAndPwd(
                 email,
                 password,
                 onSuccess = {
@@ -130,7 +131,7 @@ class ChatsViewModel @Inject constructor(
         viewModelScope.launch {
 
             updateAuthState(AuthState.Loading)
-            authRepository.signUpUsingEmailAndPwd(
+            authRepositoryIml.signUpUsingEmailAndPwd(
                 email,
                 password,
                 userName,
@@ -145,7 +146,7 @@ class ChatsViewModel @Inject constructor(
 
     // Send password reset email to the email
     fun resetPasswordUsingEmail(email: String, onClick: (response: String) -> Unit) {
-        val response = authRepository.resetPassword(email)
+        val response = authRepositoryIml.resetPassword(email)
         onClick(response)
     }
 
@@ -179,7 +180,7 @@ class ChatsViewModel @Inject constructor(
             if (photoUrl != null) {
 
                 val profileUpdates = userProfileChangeRequest {
-                     photoUri = android.net.Uri.parse(photoUrl)
+                     photoUri = photoUrl.toUri()
                 }
 
                 updateProfile(
@@ -302,7 +303,7 @@ class ChatsViewModel @Inject constructor(
 
 
     private fun setOnlineStatus(status: Boolean = true) {
-        onlineStatusRepo.setOnlineStatusWithDisconnect(status)
+        onlineStatusRepoIml.setOnlineStatusWithDisconnect(status)
     }
 
 }
