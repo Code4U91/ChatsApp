@@ -1,13 +1,13 @@
 package com.example.chatapp.auth_feature.presentation.viewmodel
 
 import android.app.Activity
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
+import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.core.MessageFcmMetadata
 import com.example.chatapp.core.USERS_COLLECTION
-import com.example.chatapp.auth_feature.data.repositoryIml.AuthRepositoryIml
-import com.example.chatapp.auth_feature.data.repositoryIml.OnlineStatusRepoIml
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.userProfileChangeRequest
@@ -17,20 +17,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.core.net.toUri
 
 @HiltViewModel
 class ChatsViewModel @Inject constructor(
-    private val authRepositoryIml: AuthRepositoryIml,
-    private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
-    private val onlineStatusRepoIml: OnlineStatusRepoIml,
+    private val onlineStatusRepoIml: OnlineStatusRepo,
+    private val authUseCase: AuthUseCase
 ) : ViewModel() {
 
 
     // use shared flow
     private var _authState = MutableStateFlow<AuthState>(AuthState.Unauthenticated)
-    val authState  = _authState.asStateFlow()
+    val authState = _authState.asStateFlow()
 
     private var _loadingIndicator = MutableStateFlow(false)
     val loadingIndicator = _loadingIndicator.asStateFlow()
@@ -60,7 +58,7 @@ class ChatsViewModel @Inject constructor(
     }
 
 
-    fun checkAuthStatus(user: FirebaseUser? = auth.currentUser) {
+    fun checkAuthStatus(user: FirebaseUser? = authUseCase.getCurrentUser()) {
 
         if (user != null) {
 
@@ -84,25 +82,39 @@ class ChatsViewModel @Inject constructor(
         if (activity != null) {
             viewModelScope.launch {
 
-                val idToken = authRepositoryIml.signInWithGoogle(activity)
+                authUseCase.signInUseCase(
+                    activity = activity,
+                    withEmailAndPwd = true,
+                    email = "",
+                    password = "",
+                    onSuccess = {
+                        updateAuthState(AuthState.Authenticated)
+                        setOnlineStatus()
+                    },
+                    onFailure = { exception ->
+                        AuthState.Error(exception.message.toString())
+                    },
+                )
 
-                if (idToken != null) {
-
-                    updateAuthState(AuthState.Loading)
-
-                    authRepositoryIml.fireBaseAuthWithGoogle(
-                        idToken.idToken,
-                        onSuccess = {
-
-                            updateAuthState(AuthState.Authenticated)
-                            setOnlineStatus()
-
-                        }, onFailure = { exception ->
-                            AuthState.Error(exception.message.toString())
-                        })
-
-
-                }
+//                val idToken = authRepositoryIml.signInWithGoogle(activity)
+//
+//                if (idToken != null) {
+//
+//                    updateAuthState(AuthState.Loading)
+//
+//                    authRepositoryIml.fireBaseAuthWithGoogle(
+//                        idToken.idToken,
+//                        onSuccess = {
+//
+//                            updateAuthState(AuthState.Authenticated)
+//                            setOnlineStatus()
+//
+//                        }, onFailure = { exception ->
+//                            AuthState.Error(exception.message.toString())
+//                        })
+//
+//
+//                }
             }
         }
 
@@ -114,15 +126,29 @@ class ChatsViewModel @Inject constructor(
 
 
             updateAuthState(AuthState.Loading)
-            authRepositoryIml.signInUsingEmailAndPwd(
-                email,
-                password,
+
+            authUseCase.signInUseCase(
+                activity = null,
+                withEmailAndPwd = false,
+                email = email,
+                password = password,
                 onSuccess = {
                     updateAuthState(AuthState.Authenticated)
                     setOnlineStatus()
                 },
-                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
+                onFailure = { exception ->
+                    updateAuthState(AuthState.Error(exception.message.toString()))
+                }
             )
+//            authRepositoryIml.signInUsingEmailAndPwd(
+//                email,
+//                password,
+//                onSuccess = {
+//                    updateAuthState(AuthState.Authenticated)
+//                    setOnlineStatus()
+//                },
+//                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
+//            )
         }
     }
 
@@ -131,22 +157,36 @@ class ChatsViewModel @Inject constructor(
         viewModelScope.launch {
 
             updateAuthState(AuthState.Loading)
-            authRepositoryIml.signUpUsingEmailAndPwd(
-                email,
-                password,
-                userName,
+
+            authUseCase.signUpUseCase(
+                email = email,
+                password = password,
+                userName = userName,
                 onSuccess = {
                     updateAuthState(AuthState.Authenticated)
                     setOnlineStatus()
                 },
-                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
+                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString()))
+                }
             )
+//            authRepositoryIml.signUpUsingEmailAndPwd(
+//                email,
+//                password,
+//                userName,
+//                onSuccess = {
+//                    updateAuthState(AuthState.Authenticated)
+//                    setOnlineStatus()
+//                },
+//                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
+//            )
         }
     }
 
     // Send password reset email to the email
     fun resetPasswordUsingEmail(email: String, onClick: (response: String) -> Unit) {
-        val response = authRepositoryIml.resetPassword(email)
+
+        val response =  authUseCase.resetPasswordUseCase(email)
+            //authRepositoryIml.resetPassword(email)
         onClick(response)
     }
 
@@ -157,19 +197,19 @@ class ChatsViewModel @Inject constructor(
         onFailure: (Exception) -> Unit
     ) {
 
-        val user = auth.currentUser
+        val user = authUseCase.getCurrentUser()
         val name = newData["name"] as? String
         val photoUrl = newData["photoUrl"] as? String
         val about = newData["about"] as? String
 
-        if (user != null) {
+        user?.let {
 
             if (name != null) {
                 val profileUpdates = userProfileChangeRequest {
                     displayName = name
                 }
                 updateProfile(
-                    user,
+                    it,
                     profileUpdates,
                     newData,
                     onSuccess = { onSuccess() },
@@ -180,11 +220,11 @@ class ChatsViewModel @Inject constructor(
             if (photoUrl != null) {
 
                 val profileUpdates = userProfileChangeRequest {
-                     photoUri = photoUrl.toUri()
+                    photoUri = photoUrl.toUri()
                 }
 
                 updateProfile(
-                    user,
+                    it,
                     profileUpdates,
                     newData,
                     onSuccess = { onSuccess() },
@@ -195,7 +235,7 @@ class ChatsViewModel @Inject constructor(
             if (about != null) {
                 uploadInDb(
                     mapOf("about" to about),
-                    user = user,
+                    user = it,
                     onSuccess = { onSuccess() },
                     onFailure = { exception -> onFailure(exception) }
                 )
@@ -249,7 +289,7 @@ class ChatsViewModel @Inject constructor(
         onFailure: (msg: String?) -> Unit,
         onSuccess: () -> Unit
     ) {
-        val user = auth.currentUser
+        val user =  authUseCase.getCurrentUser()
         val userId = user?.uid
 
         if (user != null && userId != null) {
@@ -268,7 +308,7 @@ class ChatsViewModel @Inject constructor(
     fun checkAndUpdateEmailOnFireStore(
         currentEmailInDb: String,
     ) {
-        val user = auth.currentUser ?: return
+        val user =  authUseCase.getCurrentUser() ?: return
 
         user.let { currentUser ->
 

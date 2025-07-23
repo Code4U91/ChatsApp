@@ -22,17 +22,15 @@ import com.google.firebase.database.ServerValue
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
 
-class AuthRepositoryIml @Inject constructor(
+class AuthRepositoryIml (
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
     private val firestoreDb: FirebaseFirestore,
     private val realTimeDb: FirebaseDatabase,
     private val firebaseMessaging: FirebaseMessaging,
-    @ApplicationContext private val context: Context,
+    private val context: Context,
 ) : AuthRepository {
 
     override suspend fun signInWithGoogle(activity: Activity): GoogleIdTokenCredential? {
@@ -152,6 +150,10 @@ class AuthRepositoryIml @Inject constructor(
 
         }
 
+    }
+
+    override fun getCurrentUser(): FirebaseUser? {
+         return auth.currentUser
     }
 
 

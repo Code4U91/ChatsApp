@@ -1,14 +1,13 @@
 package com.example.chatapp.auth_feature.domain.usecase.auth_case
 
 import com.example.chatapp.auth_feature.domain.repository.AuthRepository
+import com.google.firebase.auth.FirebaseUser
 
-class ResetPasswordUseCase(
+class GetCurrentUser (
     private val authRepository: AuthRepository
 ) {
+    operator fun invoke(): FirebaseUser? {
 
-    operator fun invoke(email: String): String {
-
-        return authRepository.resetPassword(email)
+        return authRepository.getCurrentUser()
     }
-
 }

@@ -4,5 +4,7 @@ data class AuthUseCase(
     val signInUseCase: SignInUseCase,
     val signOutUseCase: SignOutUseCase,
     val changeEmailUseCase: ChangeEmailUseCase,
-    val resetPasswordUseCase: ResetPasswordUseCase
+    val resetPasswordUseCase: ResetPasswordUseCase,
+    val getCurrentUser: GetCurrentUser,
+    val signUpUseCase: SignUpUseCase
 )

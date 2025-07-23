@@ -7,11 +7,11 @@ import android.app.NotificationManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
+import com.example.chatapp.chat_feature.MessagingHandlerRepo
 import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
 import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.core.MESSAGE_FCM_CHANNEL_STRING
-import com.example.chatapp.chat_feature.MessagingHandlerRepo
-import com.example.chatapp.auth_feature.data.repositoryIml.OnlineStatusRepoIml
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -19,7 +19,7 @@ import javax.inject.Inject
 class ChatsApplication : Application(), DefaultLifecycleObserver {
 
     @Inject
-    lateinit var onlineStatusRepoIml: OnlineStatusRepoIml
+    lateinit var onlineStatusRepoIml: OnlineStatusRepo
 
     @Inject
     lateinit var messagingHandlerRepo: MessagingHandlerRepo

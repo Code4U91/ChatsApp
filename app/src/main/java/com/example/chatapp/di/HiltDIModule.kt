@@ -1,14 +1,8 @@
 package com.example.chatapp.di
 
-import android.app.Application
 import android.content.Context
-import androidx.credentials.CredentialManager
 import androidx.room.Room
 import com.example.chatapp.core.local_database.LocalRoomDatabase
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,36 +18,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object HiltDIModule {
 
-    @Provides
-    @Singleton
-    fun providesFirebaseAuth(): FirebaseAuth {
-        return FirebaseAuth.getInstance()
-    }
 
 
-    @Provides
-    @Singleton
-    fun providesSignClient(context: Application): CredentialManager {
-        return CredentialManager.create(context)
-    }
-
-    @Provides
-    @Singleton
-    fun firestoreDb(): FirebaseFirestore {
-        return FirebaseFirestore.getInstance()
-    }
-
-    @Provides
-    @Singleton
-    fun realTimeDb(): FirebaseDatabase {
-        return FirebaseDatabase.getInstance()
-    }
-
-    @Provides
-    @Singleton
-    fun firebaseMessaging(): FirebaseMessaging {
-        return FirebaseMessaging.getInstance()
-    }
 
     @Provides
     @Singleton

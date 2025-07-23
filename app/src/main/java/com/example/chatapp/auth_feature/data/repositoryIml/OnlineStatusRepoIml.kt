@@ -9,9 +9,8 @@ import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ServerValue
 import com.google.firebase.database.ValueEventListener
-import javax.inject.Inject
 
-class OnlineStatusRepoIml @Inject constructor(
+class OnlineStatusRepoIml (
     private val auth: FirebaseAuth,
     private val realTimeDb: FirebaseDatabase
 ) : OnlineStatusRepo {

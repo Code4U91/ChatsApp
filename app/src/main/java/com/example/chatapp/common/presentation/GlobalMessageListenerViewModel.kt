@@ -3,9 +3,13 @@ package com.example.chatapp.common.presentation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.chatapp.auth_feature.domain.repository.AuthRepository
+import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
 import com.example.chatapp.call_feature.domain.model.Call
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
 import com.example.chatapp.call_feature.presentation.mapper.toUi
+import com.example.chatapp.chat_feature.MessagingHandlerRepo
+import com.example.chatapp.common.GlobalMessageListenerRepo
 import com.example.chatapp.core.ChatItemData
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
@@ -15,10 +19,6 @@ import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.core.local_database.toUi
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.LocalDbRepo
-import com.example.chatapp.auth_feature.data.repositoryIml.AuthRepositoryIml
-import com.example.chatapp.common.GlobalMessageListenerRepo
-import com.example.chatapp.chat_feature.MessagingHandlerRepo
-import com.example.chatapp.auth_feature.data.repositoryIml.OnlineStatusRepoIml
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
@@ -41,9 +41,9 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val auth: FirebaseAuth,
     private val messagingHandlerRepo: MessagingHandlerRepo,
     private val globalMessageListenerRepo: GlobalMessageListenerRepo,
-    private val onlineStatusRepoIml: OnlineStatusRepoIml,
+    private val onlineStatusRepoIml: OnlineStatusRepo,
     private val localDbRepo: LocalDbRepo,
-    private val authRepositoryIml: AuthRepositoryIml,
+    private val authRepositoryIml: AuthRepository,
     private val callHistoryUseCase: CallHistoryUseCase
 ) : ViewModel() {
 
@@ -127,6 +127,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
             callHistoryUseCase.getCallHistoryUseCase(local = false)
                 .distinctUntilChanged()
                 .collect { callList ->
+                    Log.i("HISTORY_CHECK", callList.toString())
                     insertCallHistory(callList)
                 }
         }

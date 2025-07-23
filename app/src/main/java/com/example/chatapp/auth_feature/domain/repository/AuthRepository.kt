@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseUser
 
 interface AuthRepository {
 
+
     suspend fun signInWithGoogle(activity: Activity): GoogleIdTokenCredential?
 
     suspend fun fireBaseAuthWithGoogle(
@@ -29,6 +30,8 @@ interface AuthRepository {
         onFailure: (Exception) -> Unit
 
     )
+
+    fun getCurrentUser() : FirebaseUser?
 
 
     fun uploadUserDataInFireStore(userName: String, user: FirebaseUser, photoUrl: String)

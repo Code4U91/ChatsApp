@@ -8,21 +8,24 @@ class SignInUseCase (
 ) {
     
     suspend operator fun invoke(
-        activity: Activity, 
-        withGoogle : Boolean,
+        activity: Activity?,
+        withEmailAndPwd : Boolean,
         email : String,
         password : String,
         onSuccess : () -> Unit,
         onFailure: (Exception) -> Unit){
         
-        if(withGoogle){
+        if(withEmailAndPwd){
 
-            val token = authRepository.signInWithGoogle(activity)?.idToken
-            authRepository.fireBaseAuthWithGoogle(
-                token,
-                onSuccess = {onSuccess},
-                onFailure = {e -> onFailure(e) }
-            )
+            activity?.let {
+                val token = authRepository.signInWithGoogle(it)?.idToken
+                authRepository.fireBaseAuthWithGoogle(
+                    token,
+                    onSuccess = {onSuccess},
+                    onFailure = {e -> onFailure(e) }
+                )
+            }
+
 
         } else {
             authRepository.signInUsingEmailAndPwd(
