@@ -1,34 +1,37 @@
-package com.example.chatapp.common
+package com.example.chatapp.chat_feature.data.remote_source.repositoryImpl
 
 import android.content.Context
 import android.util.Log
+import com.example.chatapp.chat_feature.data.remote_source.mapper.toDomain
+import com.example.chatapp.chat_feature.data.remote_source.model.ChatData
+import com.example.chatapp.chat_feature.data.remote_source.model.MessageData
+import com.example.chatapp.chat_feature.domain.model.Chat
+import com.example.chatapp.chat_feature.domain.model.Message
+import com.example.chatapp.chat_feature.domain.repository.GlobalMessageListenerRepo
 import com.example.chatapp.core.CHATS_COLLECTION
-import com.example.chatapp.core.ChatItemData
 import com.example.chatapp.core.DEFAULT_PROFILE_PIC
 import com.example.chatapp.core.MESSAGE_COLLECTION
-import com.example.chatapp.core.Message
 import com.example.chatapp.core.USERS_COLLECTION
 import com.example.chatapp.core.appInstance
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import dagger.hilt.android.qualifiers.ApplicationContext
-import javax.inject.Inject
 
-class GlobalMessageListenerRepo @Inject constructor(
+class GlobalMessageListenerRepoImpl (
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
-    @ApplicationContext private val context: Context
-) {
+    private val context: Context
+) : GlobalMessageListenerRepo {
+
     private val activeListeners = mutableMapOf<String, ListenerRegistration>()
     private var isUserInChatScreen: (String) -> Boolean = { false }
-    private var currentChatList: List<ChatItemData> = emptyList()
+    private var currentChatList: List<Chat> = emptyList()
     private var chatListListener: ListenerRegistration? = null
 
 
-    fun startGlobalMessageListener(
+    override fun startGlobalMessageListener(
         isUserInChatScreen: (String) -> Boolean,
-        onFetchAllActiveChat: (List<ChatItemData>) -> Unit,
+        onFetchAllActiveChat: (List<Chat>) -> Unit,
         onNewMessages: (String, List<Message>) -> Unit
     ) {
 
@@ -62,7 +65,7 @@ class GlobalMessageListenerRepo @Inject constructor(
 
 
     private fun addListenersForNewChats(
-        chatList: List<ChatItemData>,
+        chatList: List<Chat>,
         onNewMessages: (String, List<Message>) -> Unit
     ) {
          auth.currentUser?.uid?.let { currentUserId->
@@ -85,7 +88,7 @@ class GlobalMessageListenerRepo @Inject constructor(
 
                              // Convert each document in the snapshot to a Message object.
                              val newMessages = snapshot?.documents?.mapNotNull { doc ->
-                                 doc.toObject(Message::class.java)
+                                 doc.toObject(MessageData::class.java)?.toDomain()
                              } ?: emptyList()
 
                              // update message ui
@@ -97,7 +100,7 @@ class GlobalMessageListenerRepo @Inject constructor(
 
                              snapshot?.documents?.forEach docLoop@{ doc ->
 
-                                 val message = doc.toObject(Message::class.java) ?: return@docLoop
+                                 val message = doc.toObject(MessageData::class.java) ?: return@docLoop
                                  val currentUserId = auth.currentUser?.uid ?: return@docLoop
                                  val appInstance = context.appInstance()
 
@@ -136,7 +139,7 @@ class GlobalMessageListenerRepo @Inject constructor(
 
     // provides chatId list sorted by the last message activity
     private fun fetchCurrentUserParticipantChats(
-        onUpdatedChatList: (List<ChatItemData>) -> Unit
+        onUpdatedChatList: (List<Chat>) -> Unit
     ): ListenerRegistration? {
 
         auth.currentUser?.uid?.let { currentUserId ->
@@ -159,7 +162,7 @@ class GlobalMessageListenerRepo @Inject constructor(
                         val participants =
                             doc.get("participants") as? List<String> ?: return@mapNotNull null
 
-                        val otherId = participants.firstOrNull { it != currentUserId }
+                        val otherId = participants.firstOrNull { it != currentUserId } ?: return@mapNotNull null
 
                         @Suppress("UNCHECKED_CAST")
                         val participantsName = doc.get("participantsName") as? Map<String, String>
@@ -171,13 +174,20 @@ class GlobalMessageListenerRepo @Inject constructor(
                         val participantsPhotoUrl = doc.get("participantsPhotoUrl") as? Map<String, String>
                         val otherUserPhotoUrl = participantsPhotoUrl?.get(otherId)
 
-                        ChatItemData(
+                        ChatData(
                             chatId = doc.id,
                             otherUserId = otherId,
                             lastMessageTimeStamp = lastMessageTimeStamp,
                             otherUserName = otherUserName.orEmpty(),
                             profileUrl = otherUserPhotoUrl ?: DEFAULT_PROFILE_PIC
-                        )
+                        ).toDomain()
+//                        ChatItemData(
+//                            chatId = doc.id,
+//                            otherUserId = otherId,
+//                            lastMessageTimeStamp = lastMessageTimeStamp,
+//                            otherUserName = otherUserName.orEmpty(),
+//                            profileUrl = otherUserPhotoUrl ?: DEFAULT_PROFILE_PIC
+//                        )
 
                     } ?: emptyList()
 
@@ -192,7 +202,7 @@ class GlobalMessageListenerRepo @Inject constructor(
 
     }
 
-    private fun removeObsoleteChatListeners(chatList: List<ChatItemData>) {
+    private fun removeObsoleteChatListeners(chatList: List<Chat>) {
         val activeChatIds = chatList.map { it.chatId }
         val chatIdsToRemove = activeListeners.keys.filter { it !in activeChatIds }
 
@@ -203,7 +213,7 @@ class GlobalMessageListenerRepo @Inject constructor(
         }
     }
 
-    fun clearAllGlobalListeners() {
+    override fun clearAllGlobalListeners() {
         activeListeners.values.forEach { it.remove() }
         activeListeners.clear()
         chatListListener?.remove()

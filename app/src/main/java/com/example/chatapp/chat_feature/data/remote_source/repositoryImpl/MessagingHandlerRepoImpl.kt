@@ -1,8 +1,9 @@
-package com.example.chatapp.chat_feature
+package com.example.chatapp.chat_feature.data.remote_source.repositoryImpl
 
 import android.content.Context
 import android.util.Log
 import com.example.chatapp.api.FcmNotificationSender
+import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo
 import com.example.chatapp.core.CHATS_COLLECTION
 import com.example.chatapp.core.FRIEND_COLLECTION
 import com.example.chatapp.core.FriendData
@@ -21,22 +22,21 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.messaging.FirebaseMessaging
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.tasks.await
-import javax.inject.Inject
 
-class MessagingHandlerRepo @Inject constructor(
+class MessagingHandlerRepoImpl(
     private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
     private val firebaseMessaging: FirebaseMessaging,
     private val fcmNotificationSender: FcmNotificationSender,
-    @ApplicationContext private val context: Context
-) {
+    private val context: Context
+) : MessageHandlerRepo {
+
 
     private val listenerRegistration = mutableListOf<ListenerRegistration>()
 
     // function to fetch current user data
-    fun fetchUserData(user: FirebaseUser, onDataChanged: (UserData?) -> Unit) {
+    override fun fetchUserData(user: FirebaseUser, onDataChanged: (UserData?) -> Unit) {
 
         val userRef = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 
@@ -66,7 +66,7 @@ class MessagingHandlerRepo @Inject constructor(
     // function to fetch friend user data
     // fetchUserData and fetchFriendData could be merged into one but currently they put the data in separate
     // data class of its own so not merged yet, might do in future
-    fun fetchFriendData(
+    override fun fetchFriendData(
         friendUserId: String,
         updatedFriendData: (FriendData) -> Unit
     ): ListenerRegistration? {
@@ -96,7 +96,7 @@ class MessagingHandlerRepo @Inject constructor(
 
     // function to add friend on the users friendList collection
     // user can add friend using either other user id or an email
-    fun addFriend(
+    override fun addFriend(
         friendUserIdEmail: String, onSuccess: () -> Unit, onFailure: (e: Exception) -> Unit
     ) {
 
@@ -126,7 +126,7 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
     // add friend using provided email address
-    private fun addFriendByEmail(
+    override fun addFriendByEmail(
         friendEmail: String,
         userId: String,
         onSuccess: () -> Unit,
@@ -164,7 +164,7 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
     // adds friend to friend list using id
-    private fun addFriendById(
+    override fun addFriendById(
         friendId: String,
         userId: String,
         onSuccess: () -> Unit,
@@ -200,7 +200,7 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
     // checks if the friendId is already friends with that user or not
-    private fun checkAndFriend(
+    override fun checkAndFriend(
         userId: String,
         friendId: String,
         friendName: String,
@@ -235,7 +235,7 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
 
-    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? { // added listener
+    override fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? { // added listener
 
         auth.currentUser?.uid?.let { userId ->
 
@@ -265,7 +265,7 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
 
-    suspend fun sendMessageToSingleUser(
+    override suspend fun sendMessageToSingleUser(
         messageText: String,
         otherUserId: String,
         fetchedChatId: String,
@@ -357,7 +357,7 @@ class MessagingHandlerRepo @Inject constructor(
     // 2. also currently this marks  all the delivered message as seen
     // proposed to only mark those message which are visible to the user
     // in screen.
-    fun markMessageAsSeen(chatId: String, currentUserId: String, friendId: String) {
+    override fun markMessageAsSeen(chatId: String, currentUserId: String, friendId: String) {
 
         if (chatId.isNotEmpty()) {
 
@@ -395,7 +395,7 @@ class MessagingHandlerRepo @Inject constructor(
     }
 
 
-    fun chatIdCreator(
+    override fun chatIdCreator(
         currentUserId: String, friendUserId: String, fetchedChatId: String
     ): String {
 
@@ -413,7 +413,7 @@ class MessagingHandlerRepo @Inject constructor(
 
     }
 
-    suspend fun updateFcmTokenIfNeeded(savedTokens: List<String>) {
+    override suspend fun updateFcmTokenIfNeeded(savedTokens: List<String>) {
         val user = auth.currentUser ?: return
 
         val currentToken = firebaseMessaging.token.await()
@@ -430,59 +430,8 @@ class MessagingHandlerRepo @Inject constructor(
         }
     }
 
-
-    // fetches call history from the firestore database
-//    fun fetchCallHistory(callHistory: (List<CallData>) -> Unit) {
-//
-//        auth.currentUser?.let { user ->
-//            val currentUserId = user.uid
-//
-//            val callRef = firestoreDb.collection(CALL_HISTORY)
-//                .whereArrayContains("participants", currentUserId)
-//                .addSnapshotListener { querySnapshot, error ->
-//
-//                    if (error != null) {
-//                        Log.e("Firestore", "Error fetching messages", error)
-//                        return@addSnapshotListener
-//                    }
-//                    val callList = querySnapshot?.documents?.mapNotNull { doc ->
-//
-//                        // multiple .where is causing issue so filtering the rest of data here
-//                        val status = doc.getString("status") ?: return@mapNotNull null
-//                        if (status == "ringing" || status == "ongoing") return@mapNotNull null
-//
-//                        @Suppress("UNCHECKED_CAST")
-//                        val participants =
-//                            doc.get("participants") as? List<String> ?: return@mapNotNull null
-//
-//                        val otherUserId =
-//                            participants.firstOrNull { it != currentUserId } // pulling other participant
-//
-//                        @Suppress("UNCHECKED_CAST")
-//                        val participantsName = doc.get("participantsName") as? Map<String, String>
-//
-//                        val otherUserName = participantsName?.get(otherUserId)
-//
-//                        doc.toObject(CallData::class.java)?.copy(
-//                            callId = doc.id,
-//                            otherUserName = otherUserName.orEmpty(),
-//                            otherUserId = otherUserId.orEmpty() // other participant
-//                        )
-//
-//                    } ?: emptyList()
-//
-//                    callHistory(callList)
-//
-//                }
-//
-//            listenerRegistration.add(callRef)
-//        }
-//
-//
-//    }
-
     // only deleting on the current user/user who applies for delete side only
-    fun deleteMessage(chatId: String, messageId: Set<String>, currentUserId: String) {
+    override fun deleteMessage(chatId: String, messageId: Set<String>, currentUserId: String) {
 
         val dbRef =
             firestoreDb.collection(USERS_COLLECTION)
@@ -507,7 +456,7 @@ class MessagingHandlerRepo @Inject constructor(
 
     }
 
-    fun deleteFriend(friendId: Set<String>) {
+    override fun deleteFriend(friendId: Set<String>) {
 
         val userId = auth.currentUser?.uid ?: return
 
@@ -530,7 +479,7 @@ class MessagingHandlerRepo @Inject constructor(
 
     // clear all active listeners
     // runs on viewmodel destroy/ sign out
-    fun clearMessageListeners() {
+    override fun clearMessageListeners() {
         listenerRegistration.forEach { it.remove() }
         listenerRegistration.clear()
     }
