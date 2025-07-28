@@ -7,7 +7,7 @@ interface OnlineStatusRepo {
 
     fun activeChatUpdate(chatId: String)
 
-    fun setOnlineStatusWithDisconnect(status: Boolean, chatId: String = "")
+    fun setOnlineStatusWithDisconnect(status: Boolean, chatId: String)
 
     fun listenForOnlineStatus(
         userId: String,

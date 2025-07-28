@@ -1,4 +1,4 @@
-package com.example.chatapp.chat_feature
+package com.example.chatapp.chat_feature.presentation
 
 import android.Manifest
 import android.content.Intent
@@ -72,18 +72,18 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.example.chatapp.core.CALL_INTENT
-import com.example.chatapp.core.Message
 import com.example.chatapp.core.appInstance
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.chat_feature.domain.model.Message
 import com.example.chatapp.core.formatOnlineStatusTime
 import com.example.chatapp.core.getDateLabelForMessage
 import com.example.chatapp.core.getMessageIconColor
 import com.example.chatapp.core.getMessageStatusIcon
 import com.example.chatapp.core.getTimeOnly
 import com.example.chatapp.core.local_database.toEntity
-import com.example.chatapp.core.toLocalDate
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.example.chatapp.core.model.CallMetadata
+import com.example.chatapp.core.toLocalDate
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import java.time.LocalDate
@@ -303,7 +303,7 @@ fun MainChatScreen(
                                     )
 
                                     val intent = Intent(context, CallActivity::class.java).apply {
-                                         this.setAction(CALL_INTENT)
+                                         this.action = CALL_INTENT
                                         putExtra("call_metadata", callMetaData)
                                     }
 
@@ -470,7 +470,7 @@ fun ChatLazyColumn(
         ) { index, message ->
 
             val nextMessage = messageList.getOrNull(index + 1)
-            val currentMessageDate = message.timeStamp?.toLocalDate()
+            val currentMessageDate = message.timeStamp.toLocalDate()
             val previousMessageDate = nextMessage?.timeStamp?.toLocalDate()
 
             val isNewGroup = nextMessage?.senderId != message.senderId
@@ -503,9 +503,7 @@ fun ChatLazyColumn(
             }
 
             if (currentMessageDate != previousMessageDate) {
-                currentMessageDate?.let { date ->
-                    DateChip(dateLabel = getDateLabel(date))
-                }
+                DateChip(dateLabel = getDateLabel(currentMessageDate))
             }
         }
     }
@@ -562,7 +560,7 @@ fun ChatBubble(
                 modifier = Modifier.padding(end = 4.dp)
             ) {
                 Text(
-                    text = getTimeOnly(message.timeStamp!!),
+                    text = getTimeOnly(message.timeStamp),
                     color = Color.Gray,
                     fontSize = 8.sp,
                     modifier = Modifier
@@ -596,7 +594,7 @@ fun ChatBubble(
                 .padding(8.dp)
         ) {
             Text(
-                text = message.messageContent.orEmpty(),
+                text = message.messageContent,
                 fontSize = 16.sp,
                 color = Color.Black
             )
@@ -604,7 +602,7 @@ fun ChatBubble(
 
         if (!isCurrentUser) {
             Text(
-                text = getTimeOnly(message.timeStamp!!),
+                text = getTimeOnly(message.timeStamp),
                 color = Color.Gray,
                 fontSize = 8.sp,
                 modifier = Modifier

@@ -1,15 +1,15 @@
 package com.example.chatapp.call_feature.di
 
 import android.content.Context
+import com.example.chatapp.call_feature.data.local_source.repositoryImpl.LocalLocalCallRepositoryImpl
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.AgoraSetUpRepoIml
-import com.example.chatapp.call_feature.data.local_source.repositoryImpl.CallRepositoryImpl
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.CallRingtoneManagerIml
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.CallSessionUpdaterRepoIml
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.RemoteCallRepoIml
 import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
-import com.example.chatapp.call_feature.domain.repository.CallRepository
 import com.example.chatapp.call_feature.domain.repository.CallRingtoneRepo
 import com.example.chatapp.call_feature.domain.repository.CallSessionUploaderRepo
+import com.example.chatapp.call_feature.domain.repository.LocalCallRepository
 import com.example.chatapp.call_feature.domain.repository.RemoteCallRepo
 import com.example.chatapp.call_feature.domain.usecase.audio_case.CallAudioCase
 import com.example.chatapp.call_feature.domain.usecase.audio_case.LocalAudioMuteUseCase
@@ -21,7 +21,7 @@ import com.example.chatapp.call_feature.domain.usecase.call_case.EndCallUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_case.StartCallUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.GetCallHistoryUseCase
-import com.example.chatapp.call_feature.domain.usecase.call_history_case.InsertCallHistoryCase
+import com.example.chatapp.call_feature.domain.usecase.call_history_case.SyncCallHistoryUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.CallVideoCase
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.EnableVideoPreviewUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.SetUpLocalVideoUseCase
@@ -54,36 +54,38 @@ object CallModule {
     @Singleton
     fun providesAgoraRepo(
         @ApplicationContext context: Context
-    ) : AgoraSetUpRepo {
+    ): AgoraSetUpRepo {
         return AgoraSetUpRepoIml(context)
     }
 
     @Provides
     @Singleton
-    fun provideCallRepository(db: LocalRoomDatabase): CallRepository {
+    fun provideCallRepository(db: LocalRoomDatabase): LocalCallRepository {
 
-        return CallRepositoryImpl(db.callDao)
+        return LocalLocalCallRepositoryImpl(db.callDao())
     }
 
     @Provides
     @Singleton
-    fun provideCallSessionRepo(auth: FirebaseAuth, remoteDb : FirebaseFirestore) : CallSessionUploaderRepo {
+    fun provideCallSessionRepo(
+        auth: FirebaseAuth,
+        remoteDb: FirebaseFirestore
+    ): CallSessionUploaderRepo {
         return CallSessionUpdaterRepoIml(auth, remoteDb)
     }
 
     @Provides
     @Singleton
-    fun providesRemoteCallRepo(auth: FirebaseAuth, remoteDb : FirebaseFirestore) : RemoteCallRepo {
+    fun providesRemoteCallRepo(auth: FirebaseAuth, remoteDb: FirebaseFirestore): RemoteCallRepo {
 
         return RemoteCallRepoIml(auth, remoteDb)
     }
 
     @Provides
     @Singleton
-    fun providesCallRingtoneRepo(@ApplicationContext context: Context) : CallRingtoneRepo {
+    fun providesCallRingtoneRepo(@ApplicationContext context: Context): CallRingtoneRepo {
         return CallRingtoneManagerIml(context)
     }
-
 
 
     // ----- USE CASE ------
@@ -109,7 +111,7 @@ object CallModule {
 
     @Provides
     @Singleton
-    fun providesAudioUseCase(agoraSetUpRepo: AgoraSetUpRepo) : CallAudioCase {
+    fun providesAudioUseCase(agoraSetUpRepo: AgoraSetUpRepo): CallAudioCase {
         return CallAudioCase(
 
             localAudioMuteUseCase = LocalAudioMuteUseCase(agoraSetUpRepo),
@@ -120,7 +122,7 @@ object CallModule {
 
     @Provides
     @Singleton
-    fun providesVideoUseCase(agoraSetUpRepo: AgoraSetUpRepo) : CallVideoCase{
+    fun providesVideoUseCase(agoraSetUpRepo: AgoraSetUpRepo): CallVideoCase {
 
         return CallVideoCase(
             enableVideoPreviewUseCase = EnableVideoPreviewUseCase(agoraSetUpRepo),
@@ -133,13 +135,13 @@ object CallModule {
     @Provides
     @Singleton
     fun providesCallHistoryUseCase(
-        callRepository: CallRepository,
+        localCallRepository: LocalCallRepository,
         remoteCallRepo: RemoteCallRepo
-    ) : CallHistoryUseCase {
+    ): CallHistoryUseCase {
 
         return CallHistoryUseCase(
-            getCallHistoryUseCase = GetCallHistoryUseCase(callRepository,remoteCallRepo),
-            insertCallHistoryCase = InsertCallHistoryCase(callRepository),
+            getCallHistoryUseCase = GetCallHistoryUseCase(localCallRepository, remoteCallRepo),
+            syncCallHistoryUseCase = SyncCallHistoryUseCase(remoteCallRepo, localCallRepository)
         )
 
     }
@@ -148,7 +150,7 @@ object CallModule {
     @Singleton
     fun providesRingtoneUseCase(
         callRingtoneRepo: CallRingtoneRepo
-    ) : RingtoneUseCase {
+    ): RingtoneUseCase {
 
         return RingtoneUseCase(
 
@@ -163,7 +165,7 @@ object CallModule {
     @Singleton
     fun providesCallSessionUploadUseCase(
         callSessionUploaderRepo: CallSessionUploaderRepo
-    ) : CallSessionUploadCase{
+    ): CallSessionUploadCase {
 
         return CallSessionUploadCase(
             uploadCallData = UploadCallData(callSessionUploaderRepo),

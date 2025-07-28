@@ -71,33 +71,6 @@ fun SignUpScreenUI(
             viewmodel.updateAuthState(AuthState.Unauthenticated) // clearing up error msg
         }
 
-//        when (authState) {
-//            AuthState.Authenticated -> {
-//
-//                Toast.makeText(context, "Sign up Successful!", Toast.LENGTH_SHORT)
-//                    .show()
-//
-//                navController.navigate("main_graph")
-//                {
-//                    popUpTo(0) { inclusive = true }
-//                }
-//
-//            }
-//
-//            is AuthState.Error -> {
-//
-//                Toast.makeText(
-//                    context,
-//                    "${(authState as AuthState.Error).message}",
-//                    Toast.LENGTH_SHORT
-//                )
-//                    .show()
-//                viewmodel.updateAuthState(AuthState.DoNothing)
-//            }
-//
-//            else -> {}
-//        }
-
     }
 
     Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
@@ -141,13 +114,6 @@ fun SignUpScreenUI(
                 CircularProgressIndicator()
             }
 
-//            when (authState) {
-//                AuthState.Loading -> {
-//                    CircularProgressIndicator()
-//                }
-//
-//                else -> {}
-//            }
         }
     }
 

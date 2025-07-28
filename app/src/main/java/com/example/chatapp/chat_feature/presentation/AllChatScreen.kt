@@ -1,4 +1,4 @@
-package com.example.chatapp.chat_feature
+package com.example.chatapp.chat_feature.presentation
 
 import android.Manifest
 import android.annotation.SuppressLint
@@ -61,7 +61,6 @@ import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
-import com.google.firebase.Timestamp
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
@@ -178,11 +177,11 @@ fun AllChatScreen(
                                 key = { _, chat -> chat.chatId }
                             ) { index, chat ->
 
-                                val friendData by globalMessageListenerViewModel.getFriendData(chat.otherUserId.orEmpty())
+                                val friendData by globalMessageListenerViewModel.getFriendData(chat.otherUserId)
                                     .collectAsState(null)
 
                                 ChatItemAndFriendListItem(
-                                    friendId = chat.otherUserId.orEmpty(),
+                                    friendId = chat.otherUserId,
                                     globalMessageListenerViewModel = globalMessageListenerViewModel,
                                     navController = navController,
                                     chatId = chat.chatId,
@@ -233,11 +232,10 @@ fun ChatItemAndFriendListItem(
     selectedForDeletion: (String) -> Unit,
 ) {
 
-    val message by globalMessageListenerViewModel.getMessage(chatId)
+    val messages by globalMessageListenerViewModel.getMessage(chatId)
         .collectAsState(initial = emptyList())
 
-    val lastMessage = if (message.isNotEmpty()) message.sortedByDescending { it.timeStamp }
-        .first() else null
+    val lastMessage = if (messages.isNotEmpty()) messages.maxByOrNull { it.timeStamp } else null
 
     DisposableEffect(friendId) {
 
@@ -254,7 +252,8 @@ fun ChatItemAndFriendListItem(
 
 
     val dateAndTime by remember(lastMessage?.timeStamp) {
-        mutableStateOf(formatTimestamp(lastMessage?.timeStamp ?: Timestamp.now()))
+
+        mutableStateOf(formatTimestamp(lastMessage?.timeStamp))
     }
 
 

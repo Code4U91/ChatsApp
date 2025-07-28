@@ -1,35 +1,11 @@
 package com.example.chatapp.core.local_database
 
-import com.example.chatapp.core.ChatItemData
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
-import com.example.chatapp.core.Message
 import com.example.chatapp.core.UserData
-import com.example.chatapp.localData.roomDbCache.ChatEntity
 import com.example.chatapp.localData.roomDbCache.FriendEntity
-import com.example.chatapp.localData.roomDbCache.MessageEntity
 import com.example.chatapp.localData.roomDbCache.UserEntity
-import com.google.firebase.Timestamp
 
-fun ChatItemData.toEntity(): ChatEntity {
-    return ChatEntity(
-        chatId = this.chatId,
-        otherUserId = this.otherUserId.orEmpty(),
-        otherUserName = this.otherUserName,
-        profileUrl = this.profileUrl,
-        lastMessageTimeStamp = this.lastMessageTimeStamp?.toDate()?.time ?: 0L
-    )
-}
-
-fun ChatEntity.toUi(): ChatItemData {
-    return ChatItemData(
-        chatId = this.chatId,
-        otherUserId = this.otherUserId,
-        otherUserName = this.otherUserName,
-        lastMessageTimeStamp = Timestamp(this.lastMessageTimeStamp / 1000, 0),
-        profileUrl = this.profileUrl
-    )
-}
 
 fun FriendData.toEntity(): FriendEntity {
     return FriendEntity(
@@ -58,29 +34,7 @@ fun FriendListData.toEntity() : FriendEntity {
     )
 }
 
-fun Message.toEntity(): MessageEntity {
-    return MessageEntity(
-        messageId = this.messageId,
-        chatId = this.chatId,
-        messageContent = this.messageContent.orEmpty(),
-        receiverId = this.receiverId,
-        senderId = this.senderId,
-        status = this.status,
-        timeStamp = this.timeStamp?.toDate()?.time ?: 0L
-    )
-}
 
-fun MessageEntity.toUi(): Message {
-    return Message(
-        messageId = this.messageId,
-        chatId = this.chatId,
-        messageContent = this.messageContent,
-        receiverId = this.receiverId,
-        senderId = this.senderId,
-        status = this.status,
-        timeStamp = Timestamp(this.timeStamp / 1000, 0)
-    )
-}
 
 fun UserData.toEntity(): UserEntity {
     return UserEntity(

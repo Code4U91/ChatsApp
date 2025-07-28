@@ -59,19 +59,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
-import com.example.chatapp.call_feature.presentation.model.CallUiData
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.example.chatapp.core.CALL_INTENT
 import com.example.chatapp.core.formatDurationText
 import com.example.chatapp.core.formatTimestampToDateTime
 import com.example.chatapp.core.getDateLabelForMessage
-import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.core.model.CallMetadata
-import com.example.chatapp.core.toLocalDate
-import com.example.chatapp.chat_feature.DateChip
-import com.example.chatapp.chat_feature.VideoCallButton
-import com.example.chatapp.chat_feature.VoiceCallButton
+import com.example.chatapp.chat_feature.presentation.DateChip
+import com.example.chatapp.chat_feature.presentation.VideoCallButton
+import com.example.chatapp.chat_feature.presentation.VoiceCallButton
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.call_feature.domain.model.Call
+import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.core.toLocalDate
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -201,7 +201,7 @@ fun CallHistoryScreen(
 
 @Composable
 fun CallLazyColumn(
-    callListData: List<CallUiData>,
+    callListData: List<Call>,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     listState: LazyListState = rememberLazyListState()
 ) {
@@ -279,7 +279,7 @@ fun CallLazyColumn(
 fun CallListItem(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     isCaller: Boolean,
-    callData: CallUiData,
+    callData: Call,
     startCall: (photoUrl : String) -> Unit
 ) {
 
@@ -288,9 +288,9 @@ fun CallListItem(
 
     DisposableEffect(callData.otherUserId) {
 
-        val listener = globalMessageListenerViewModel.fetchFriendData(callData.otherUserId) { data ->
+        val listener = globalMessageListenerViewModel.fetchFriendData(callData.otherUserId) { friendData ->
 
-            globalMessageListenerViewModel.insertFriend(data.toEntity())
+            globalMessageListenerViewModel.insertFriend(friendData.toEntity())
 
         }
 

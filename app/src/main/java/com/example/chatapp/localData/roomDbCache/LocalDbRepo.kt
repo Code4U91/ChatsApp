@@ -12,7 +12,6 @@ class LocalDbRepo @Inject constructor(
     private val localDb: LocalRoomDatabase
 ) {
 
-    val chats = localDb.getDbDao().getChats()
     val friendList = localDb.getDbDao().getFriendList()
     val userData = localDb.getDbDao().getUserData()
 
@@ -21,21 +20,9 @@ class LocalDbRepo @Inject constructor(
         localDb.getDbDao().insertUser(userData)
     }
 
-    suspend fun insertChats(chats: ChatEntity){
-        localDb.getDbDao().insertChats(chats)
-    }
-
-    suspend fun insertMessages(messages : MessageEntity){
-        localDb.getDbDao().insertMessages(messages)
-    }
 
     suspend fun insertFriend(friendEntity: FriendEntity){
         localDb.getDbDao().insertFriend(friendEntity)
-    }
-
-    fun getMessages(chatId : String) : Flow<List<MessageEntity>> {
-
-        return localDb.getDbDao().getMessages(chatId)
     }
 
 

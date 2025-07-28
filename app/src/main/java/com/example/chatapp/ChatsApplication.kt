@@ -7,8 +7,7 @@ import android.app.NotificationManager
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
-import com.example.chatapp.chat_feature.MessagingHandlerRepo
+import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
 import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
 import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
 import com.example.chatapp.core.MESSAGE_FCM_CHANNEL_STRING
@@ -19,10 +18,8 @@ import javax.inject.Inject
 class ChatsApplication : Application(), DefaultLifecycleObserver {
 
     @Inject
-    lateinit var onlineStatusRepoIml: OnlineStatusRepo
+    lateinit var onlineStatusUseCase: OnlineStatusUseCase
 
-    @Inject
-    lateinit var messagingHandlerRepo: MessagingHandlerRepo
 
     var isInForeground = false
 
@@ -40,14 +37,14 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
         super.onStart(owner) // can remove contains empty default implementation
 
         isInForeground = true
-        onlineStatusRepoIml.setOnlineStatusWithDisconnect(true)
+        onlineStatusUseCase.setOnlineStatus(true)
     }
 
     override fun onStop(owner: LifecycleOwner) {
         super.onStop(owner)
 
         isInForeground = false
-        onlineStatusRepoIml.setOnlineStatusWithDisconnect(false)
+        onlineStatusUseCase.setOnlineStatus(false)
     }
 
     private fun createNotificationChannel() {

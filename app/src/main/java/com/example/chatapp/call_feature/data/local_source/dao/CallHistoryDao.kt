@@ -12,7 +12,7 @@ interface CallHistoryDao {
 
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertCallHistory(callHistoryEntity: CallHistoryEntity)
+    suspend fun insertCallHistory(callHistoryEntity: List<CallHistoryEntity>)
 
 
     @Query("SELECT * FROM callHistory ORDER BY callEndTime DESC")

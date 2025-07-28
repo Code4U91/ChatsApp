@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.chatapp.ChatsApplication
-import com.google.firebase.Timestamp
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -69,12 +68,6 @@ fun Modifier.shimmerEffect(): Modifier = composed {
     this.background(brush)
 }
 
-fun Timestamp.toLocalDate(): LocalDate {
-    return this.toDate().toInstant()
-        .atZone(ZoneId.systemDefault())
-        .toLocalDate()
-}
-
 
 fun getMessageStatusIcon(messageStatus: String?): ImageVector {
 
@@ -94,29 +87,37 @@ fun getMessageIconColor(messageStatus: String?): Color {
     }
 }
 
-fun formatTimestamp(timestamp: Timestamp): String {
-    val instant = Instant.ofEpochSecond(timestamp.seconds)
-    val messageDate = instant.atZone(ZoneId.systemDefault()).toLocalDate()
-    val currentDate = LocalDate.now()
+fun formatTimestamp(timestampInMills: Long?): String {
 
-    return when {
-        messageDate.isEqual(currentDate) -> {
-            // Same day → Show time (e.g., "10:30 AM")
-            val timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
-            instant.atZone(ZoneId.systemDefault()).format(timeFormatter)
-        }
+    if(timestampInMills != null){
+        val instant = Instant.ofEpochMilli(timestampInMills)
+        val messageDate = instant.atZone(ZoneId.systemDefault()).toLocalDate()
+        val currentDate = LocalDate.now()
 
-        messageDate.isEqual(currentDate.minusDays(1)) -> {
-            // Yesterday → Show "Yesterday"
-            "Yesterday"
-        }
+        return when {
+            messageDate.isEqual(currentDate) -> {
+                // Same day → Show time (e.g., "10:30 AM")
+                val timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
+                instant.atZone(ZoneId.systemDefault()).format(timeFormatter)
+            }
 
-        else -> {
-            // Older than yesterday → Show date in MM/dd/yyyy format (e.g., "03/14/2025")
-            val dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.getDefault())
-            messageDate.format(dateFormatter)
+            messageDate.isEqual(currentDate.minusDays(1)) -> {
+                // Yesterday → Show "Yesterday"
+                "Yesterday"
+            }
+
+            else -> {
+                // Older than yesterday → Show date in MM/dd/yyyy format (e.g., "03/14/2025")
+                val dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy", Locale.getDefault())
+                messageDate.format(dateFormatter)
+            }
         }
+    } else {
+
+        return ""
     }
+
+
 }
 
 fun formatTimestampToDateTime(timeMills: Long): String {
@@ -153,9 +154,9 @@ fun formatDurationText(durationMillis: Long): String {
 }
 
 
-fun getTimeOnly(timestamp: Timestamp): String {
+fun getTimeOnly(timestampInMills: Long): String {
 
-    val instant = Instant.ofEpochSecond(timestamp.seconds)
+    val instant = Instant.ofEpochMilli(timestampInMills)
     val timeFormatter = DateTimeFormatter.ofPattern("h:mm a", Locale.getDefault())
 
     return instant.atZone(ZoneId.systemDefault()).format(timeFormatter)
@@ -172,7 +173,7 @@ fun getDateLabelForMessage(messageDate: LocalDate): String {
         messageDate.isAfter(today.minusDays(4)) -> messageDate.dayOfWeek.name.lowercase()
             .replaceFirstChar { it.uppercase() }
 
-        else -> messageDate.format(DateTimeFormatter.ofPattern("MMM,d, yyyy"))
+        else -> messageDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))
     }
 }
 

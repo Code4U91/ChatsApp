@@ -27,15 +27,15 @@ data class FriendScreenUiItem(
     val itemDescription: String = ""
 )
 
-data class Message(
-    val messageContent: String? = "",
-    val messageId: String = "",
-    val receiverId: String = "",
-    val senderId: String = "",
-    val status: String = "",  // sending -> sent -> delivered -> seen
-    val timeStamp: Timestamp? = Timestamp.now(),
-    val chatId: String = ""
-)
+//data class Message(
+//    val messageContent: String? = "",
+//    val messageId: String = "",
+//    val receiverId: String = "",
+//    val senderId: String = "",
+//    val status: String = "",  // sending -> sent -> delivered -> seen
+//    val timeStamp: Timestamp? = Timestamp.now(),
+//    val chatId: String = ""
+//)
 
 data class FriendData(
     val name: String = "",
@@ -44,13 +44,13 @@ data class FriendData(
     val uid: String = ""
 )
 
-data class ChatItemData(
-    val chatId: String = "",
-    val otherUserId: String? = "",
-    val lastMessageTimeStamp: Timestamp? = Timestamp.now(),
-    val otherUserName: String = "",
-    val profileUrl : String = ""
-)
+//data class ChatItemData(
+//    val chatId: String = "",
+//    val otherUserId: String? = "",
+//    val lastMessageTimeStamp: Timestamp? = Timestamp.now(),
+//    val otherUserName: String = "",
+//    val profileUrl : String = ""
+//)
 
 data class FriendListData(
     val friendId: String = "",
@@ -72,18 +72,18 @@ data class FriendListData(
 //)
 
 
-@Parcelize
-data class CallMetadata(
-    val channelName: String,
-    val uid: String,
-    val callType: String,
-    val callerName: String,
-    val callReceiverId: String,
-    val receiverName: String,
-    val isCaller: Boolean,
-    val receiverPhoto : String,
-    val callDocId: String?
-) : Parcelable
+//@Parcelize
+//data class CallMetadata(
+//    val channelName: String,
+//    val uid: String,
+//    val callType: String,
+//    val callerName: String,
+//    val callReceiverId: String,
+//    val receiverName: String,
+//    val isCaller: Boolean,
+//    val receiverPhoto : String,
+//    val callDocId: String?
+//) : Parcelable
 
 @Parcelize
 data class MessageFcmMetadata(

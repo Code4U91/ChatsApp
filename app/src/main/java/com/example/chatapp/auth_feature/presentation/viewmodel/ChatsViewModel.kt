@@ -4,8 +4,8 @@ import android.app.Activity
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
+import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
 import com.example.chatapp.core.MessageFcmMetadata
 import com.example.chatapp.core.USERS_COLLECTION
 import com.google.firebase.auth.FirebaseUser
@@ -21,7 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ChatsViewModel @Inject constructor(
     private val firestoreDb: FirebaseFirestore,
-    private val onlineStatusRepoIml: OnlineStatusRepo,
+    private val onlineStatusUseCase: OnlineStatusUseCase,
     private val authUseCase: AuthUseCase
 ) : ViewModel() {
 
@@ -95,26 +95,6 @@ class ChatsViewModel @Inject constructor(
                         AuthState.Error(exception.message.toString())
                     },
                 )
-
-//                val idToken = authRepositoryIml.signInWithGoogle(activity)
-//
-//                if (idToken != null) {
-//
-//                    updateAuthState(AuthState.Loading)
-//
-//                    authRepositoryIml.fireBaseAuthWithGoogle(
-//                        idToken.idToken,
-//                        onSuccess = {
-//
-//                            updateAuthState(AuthState.Authenticated)
-//                            setOnlineStatus()
-//
-//                        }, onFailure = { exception ->
-//                            AuthState.Error(exception.message.toString())
-//                        })
-//
-//
-//                }
             }
         }
 
@@ -140,15 +120,6 @@ class ChatsViewModel @Inject constructor(
                     updateAuthState(AuthState.Error(exception.message.toString()))
                 }
             )
-//            authRepositoryIml.signInUsingEmailAndPwd(
-//                email,
-//                password,
-//                onSuccess = {
-//                    updateAuthState(AuthState.Authenticated)
-//                    setOnlineStatus()
-//                },
-//                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
-//            )
         }
     }
 
@@ -169,16 +140,6 @@ class ChatsViewModel @Inject constructor(
                 onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString()))
                 }
             )
-//            authRepositoryIml.signUpUsingEmailAndPwd(
-//                email,
-//                password,
-//                userName,
-//                onSuccess = {
-//                    updateAuthState(AuthState.Authenticated)
-//                    setOnlineStatus()
-//                },
-//                onFailure = { exception -> updateAuthState(AuthState.Error(exception.message.toString())) }
-//            )
         }
     }
 
@@ -186,17 +147,18 @@ class ChatsViewModel @Inject constructor(
     fun resetPasswordUsingEmail(email: String, onClick: (response: String) -> Unit) {
 
         val response =  authUseCase.resetPasswordUseCase(email)
-            //authRepositoryIml.resetPassword(email)
         onClick(response)
     }
 
     // updates basic user data in firestore database and firebase auth
+    // migrate to use case and put it in profile feature
     fun updateUserData(
         newData: Map<String, Any?>,
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
 
+        // move to use case
         val user = authUseCase.getCurrentUser()
         val name = newData["name"] as? String
         val photoUrl = newData["photoUrl"] as? String
@@ -245,6 +207,7 @@ class ChatsViewModel @Inject constructor(
     }
 
     // uploads the user data on both firestore database and firebase auth
+    // move to use case
     private fun updateProfile(
         user: FirebaseUser,
         profileUpdates: UserProfileChangeRequest,
@@ -343,7 +306,7 @@ class ChatsViewModel @Inject constructor(
 
 
     private fun setOnlineStatus(status: Boolean = true) {
-        onlineStatusRepoIml.setOnlineStatusWithDisconnect(status)
+        onlineStatusUseCase.setOnlineStatus(status)
     }
 
 }

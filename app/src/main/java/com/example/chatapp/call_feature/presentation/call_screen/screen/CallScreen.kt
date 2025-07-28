@@ -53,7 +53,7 @@ import com.example.chatapp.call_feature.presentation.call_screen.state.CallUISta
 import com.example.chatapp.call_feature.presentation.call_screen.viewmodel.CallViewModel
 import com.example.chatapp.core.formatCallDuration
 import com.example.chatapp.core.model.CallMetadata
-import com.example.chatapp.chat_feature.requestPerm
+import com.example.chatapp.chat_feature.presentation.requestPerm
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 // Active call screen

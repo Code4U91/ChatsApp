@@ -42,11 +42,11 @@ import com.example.chatapp.core.AUTH_GRAPH_ROUTE
 import com.example.chatapp.core.MAIN_GRAPH_ROUTE
 import com.example.chatapp.auth_feature.presentation.screens.ChangeEmailAddressScreen
 import com.example.chatapp.friend_feature.FriendListScreen
-import com.example.chatapp.chat_feature.MainChatScreen
+import com.example.chatapp.chat_feature.presentation.MainChatScreen
 import com.example.chatapp.auth_feature.presentation.screens.ForgotPasswordScreen
 import com.example.chatapp.auth_feature.presentation.screens.SignInScreenUI
 import com.example.chatapp.auth_feature.presentation.screens.SignUpScreenUI
-import com.example.chatapp.chat_feature.AllChatScreen
+import com.example.chatapp.chat_feature.presentation.AllChatScreen
 import com.example.chatapp.call_feature.presentation.call_history_screen.CallHistoryScreen
 import com.example.chatapp.profile_feature.ProfileSettingScreen
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel

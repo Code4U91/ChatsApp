@@ -49,7 +49,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.core.FriendScreenUiItem
 import com.example.chatapp.common.presentation.dialogBox.AddFriendDialogBox
-import com.example.chatapp.chat_feature.ChatItemAndFriendListItem
+import com.example.chatapp.chat_feature.presentation.ChatItemAndFriendListItem
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
 import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
