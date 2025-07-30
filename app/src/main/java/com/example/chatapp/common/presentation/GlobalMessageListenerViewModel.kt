@@ -3,22 +3,19 @@ package com.example.chatapp.common.presentation
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.chatapp.auth_feature.domain.repository.AuthRepository
+import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
 import com.example.chatapp.chat_feature.domain.model.Message
-import com.example.chatapp.chat_feature.domain.repository.GlobalMessageListenerRepo
 import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo
 import com.example.chatapp.chat_feature.domain.use_case.message_use_case.MessageUseCase
 import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.ChatsSyncAndUnSyncUseCase
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
-import com.example.chatapp.core.UserData
-import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.core.local_database.toUi
 import com.example.chatapp.localData.roomDbCache.FriendEntity
 import com.example.chatapp.localData.roomDbCache.LocalDbRepo
-import com.google.firebase.auth.FirebaseAuth
+import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.ListenerRegistration
@@ -36,21 +33,23 @@ import javax.inject.Inject
 
 @HiltViewModel
 class GlobalMessageListenerViewModel @Inject constructor(
-    private val auth: FirebaseAuth,
+
     private val messagingHandlerRepoImpl: MessageHandlerRepo,
-    private val globalMessageListenerRepoImpl: GlobalMessageListenerRepo,
     private val localDbRepo: LocalDbRepo,
-    private val authRepositoryIml: AuthRepository,
+
+    private val authUseCase: AuthUseCase,
     private val callHistoryUseCase: CallHistoryUseCase,
     private val chatsSyncAndUnSyncUseCase: ChatsSyncAndUnSyncUseCase,
     private val messageUseCase: MessageUseCase,
-    private val onlineStatusUseCase: OnlineStatusUseCase
+    private val onlineStatusUseCase: OnlineStatusUseCase,
+    private val userDataUseCase : UserDataUseCase
 ) : ViewModel() {
 
 
     private val _currentOpenChatId = MutableStateFlow<String?>(null)
     val currentOpenChatId = _currentOpenChatId.asStateFlow()
 
+    // done
     val activeChats = messageUseCase.getAllChats()
         .stateIn(
             viewModelScope,
@@ -58,61 +57,66 @@ class GlobalMessageListenerViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    val userData = localDbRepo.userData
-        .map { userEntity -> userEntity?.toUi() }
-        .stateIn(viewModelScope,
+    // done
+    val userData = userDataUseCase.getUserData()
+        .stateIn(
+            viewModelScope,
             SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = null
         )
 
     val friendList = localDbRepo.friendList
         .map { friendEntities -> friendEntities.map { it.toUi() } }
-        .stateIn(viewModelScope,
+        .stateIn(
+            viewModelScope,
             SharingStarted.Companion.WhileSubscribed(5000),
-            initialValue = emptyList())
+            initialValue = emptyList()
+        )
 
-    val callHistory =  callHistoryUseCase.getCallHistoryUseCase(true)
-        .map { call -> call.map { it } }
-        .stateIn(viewModelScope,
+    // done
+    val callHistory = callHistoryUseCase.getCallHistoryUseCase()
+        .stateIn(
+            viewModelScope,
             SharingStarted.Companion.WhileSubscribed(5000),
-            initialValue = emptyList())
-
+            initialValue = emptyList()
+        )
 
 
     init {
 
-        Log.i("TimesExecuted", "Executed")
-
         startGlobalListener()
+
         fetchUserData()
+
         setOnlineStatus() // -> marks true, online
 
-         listenToRemoteCallHistory()
+
+        listenToRemoteCallHistory()
 
         viewModelScope.launch {
             userData.filterNotNull().collect { user ->
-                messagingHandlerRepoImpl.updateFcmTokenIfNeeded(user.fcmTokens)
+                messagingHandlerRepoImpl.updateFcmTokenIfNeeded(user.allFcmToken)
             }
         }
 
     }
 
+    // done
     private fun startGlobalListener() {
 
-        chatsSyncAndUnSyncUseCase.syncChats(
-            scope = viewModelScope,
-            isUserInChatScreen = {  chatId -> _currentOpenChatId.value == chatId }
-        )
-
-    }
-
-    fun  listenToRemoteCallHistory () {
         viewModelScope.launch {
-          callHistoryUseCase.syncCallHistoryUseCase()
+            chatsSyncAndUnSyncUseCase.syncChats(
+                isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId }
+            )
         }
     }
 
-
+    // done
+    fun listenToRemoteCallHistory() {
+        viewModelScope.launch {
+            callHistoryUseCase.syncCallHistoryUseCase()
+        }
+    }
 
 
     // ROOM DB FUNCTIONS ---- START
@@ -121,16 +125,15 @@ class GlobalMessageListenerViewModel @Inject constructor(
     // done
     fun getMessage(chatId: String): Flow<List<Message>> {
 
-       return  messageUseCase.getMessage(chatId)
+        return messageUseCase.getMessage(chatId)
 
     }
 
-    fun getFriendData(friendId: String) : Flow<FriendData?> {
+    fun getFriendData(friendId: String): Flow<FriendData?> {
 
         return localDbRepo.getFriendData(friendId)
             .map { it?.toUi() }
     }
-
 
 
     fun insertFriend(friendEntity: FriendEntity) = viewModelScope.launch {
@@ -139,25 +142,16 @@ class GlobalMessageListenerViewModel @Inject constructor(
     }
 
 
-    fun insertUserData(userData: UserData) = viewModelScope.launch {
-        localDbRepo.insertUserData(userData.toEntity())
-    }
-
     // ROOM DB FUNCTION -------- END
 
 
+    // done
     private fun fetchUserData() {
 
-        auth.currentUser?.let {
-
-            messagingHandlerRepoImpl.fetchUserData(it)
-            { updatedUserData ->
-
-                updatedUserData?.let { data ->
-                    insertUserData(data)
-                }
-            }
+        viewModelScope.launch {
+            userDataUseCase.syncUserData()
         }
+
     }
 
     fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
@@ -207,9 +201,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     fun calculateChatId(otherId: String): String? {
 
-        val currentUserId = auth.currentUser?.uid
-        return currentUserId?.let {
-            messagingHandlerRepoImpl.chatIdCreator(it, otherId, "")
+        return authUseCase.getCurrentUser()?.let { user ->
+            messageUseCase.calculateChatId(user.uid, otherId)
         }
     }
 
@@ -218,7 +211,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
         onStatusChanged: (Long) -> Unit
     ): Pair<DatabaseReference, ValueEventListener> {
 
-       return onlineStatusUseCase.listenForOnlineStatus(
+        return onlineStatusUseCase.listenForOnlineStatus(
             userId,
             onStatusChanged = { onlineStatus ->
                 onStatusChanged(onlineStatus)
@@ -238,14 +231,15 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     fun markAllMessageAsSeen(chatId: String, friendId: String) {
 
-        auth.currentUser?.uid?.let { currentUserId ->
-
-            messagingHandlerRepoImpl.markMessageAsSeen(chatId, currentUserId, friendId)
+        authUseCase.getCurrentUser()?.let {
+            messagingHandlerRepoImpl.markMessageAsSeen(chatId, it.uid, friendId)
         }
     }
 
     fun isCurrentUserASender(senderId: String): Boolean {
-        val user = auth.currentUser
+
+
+        val user = authUseCase.getCurrentUser()
 
         return senderId == user?.uid
 
@@ -253,7 +247,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     fun hasUnseenMessages(messages: List<Message>): Boolean {
 
-        val currentUserId = auth.currentUser?.uid ?: return false
+        val currentUserId = authUseCase.getCurrentUser()?.uid ?: return false
         return messages.any { it.receiverId == currentUserId && it.status == "delivered" }
     }
 
@@ -261,16 +255,17 @@ class GlobalMessageListenerViewModel @Inject constructor(
         message: String,
         friendId: String,
         fetchedChatId: String = "",
-        friendName: String?,
-        currentUsername: String?,
+        friendName: String,
+        currentUsername: String,
     ) {
         viewModelScope.launch {
-            messagingHandlerRepoImpl.sendMessageToSingleUser(
-                message,
-                friendId,
-                fetchedChatId,
-                friendName,
-                currentUsername,
+
+            messageUseCase.sendMessage(
+                messageContent = message,
+                receiverId = friendId,
+                fetchedChatId = fetchedChatId,
+                receiverName = friendName,
+                userName = currentUsername
             )
         }
 
@@ -279,9 +274,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     fun deleteMessage(chatId: String, messageId: Set<String>) {
 
-        auth.currentUser?.uid?.let{
-            messagingHandlerRepoImpl.deleteMessage(chatId, messageId, it)
+        viewModelScope.launch {
+            authUseCase.getCurrentUser()?.let {
+                messageUseCase.deleteMessages(chatId, messageId, it.uid)
+            }
         }
+
 
     }
 
@@ -293,12 +291,9 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         viewModelScope.launch {
 
-            globalMessageListenerRepoImpl.clearAllGlobalListeners()
-            messagingHandlerRepoImpl.clearMessageListeners()
-            authRepositoryIml.signOut()
+            authUseCase.signOutUseCase()
             delay(100)
             localDbRepo.clearAllTables()
-
 
         }
 
@@ -308,8 +303,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
     override fun onCleared() {
 
         Log.i("TimesEx", "OnDestroy")
-        globalMessageListenerRepoImpl.clearAllGlobalListeners()
-        messagingHandlerRepoImpl.clearMessageListeners()
         super.onCleared()
     }
 }
