@@ -1,0 +1,59 @@
+package com.example.chatapp.profile_feature.di
+
+import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
+import com.example.chatapp.core.local_database.LocalRoomDatabase
+import com.example.chatapp.profile_feature.data.local_source.LocalProfileRepoImpl
+import com.example.chatapp.profile_feature.data.remote_source.RemoteProfileRepoImpl
+import com.example.chatapp.profile_feature.domain.repository.LocalProfileRepo
+import com.example.chatapp.profile_feature.domain.repository.RemoteProfileRepo
+import com.example.chatapp.profile_feature.domain.use_case.GetUserData
+import com.example.chatapp.profile_feature.domain.use_case.SyncUserData
+import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
+import com.google.firebase.firestore.FirebaseFirestore
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+object ProfileModule {
+
+    @Provides
+    @Singleton
+    fun providesLocalProfileRepo(
+        db : LocalRoomDatabase
+    ) : LocalProfileRepo {
+        return LocalProfileRepoImpl(
+            userDao = db.getUserDao()
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun providesRemoteProfileRepo(
+        firestoreDb : FirebaseFirestore
+    ) : RemoteProfileRepo{
+        return RemoteProfileRepoImpl(
+            firestoreDb =  firestoreDb
+        )
+    }
+
+    //---
+    // PROVIDES USE CASE
+    // ---
+
+    @Provides
+    @Singleton
+    fun providesUserDataUseCase(
+        localProfileRepo: LocalProfileRepo,
+        remoteProfileRepo: RemoteProfileRepo,
+        authUseCase: AuthUseCase
+    ) : UserDataUseCase {
+        return UserDataUseCase(
+            getUserData = GetUserData(localProfileRepo),
+            syncUserData = SyncUserData(localProfileRepo, remoteProfileRepo, authUseCase)
+        )
+    }
+}
