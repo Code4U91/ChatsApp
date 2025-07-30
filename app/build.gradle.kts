@@ -168,6 +168,9 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
+    // GSON
+    implementation(libs.gson)
+
 
 
 }

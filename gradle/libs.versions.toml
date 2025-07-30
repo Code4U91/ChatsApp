@@ -5,6 +5,7 @@ coilNetworkOkhttp = "3.3.0"
 credentialsPlayServicesAuth = "1.5.0"
 datastorePreferences = "1.1.7"
 firebaseMessaging = "25.0.0"
+gson = "2.13.1"
 hiltAndroidCompiler = "2.57"
 hiltAndroidCompilerVersion = "2.57"
 hiltNavigationCompose = "1.2.0"
@@ -49,6 +50,7 @@ androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilNetworkOkhttp" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilNetworkOkhttp" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
+gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
 hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltAndroidCompiler" }
 hilt-android-compiler-v2562 = { module = "com.google.dagger:hilt-android-compiler", version.ref = "hiltAndroidCompilerVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
