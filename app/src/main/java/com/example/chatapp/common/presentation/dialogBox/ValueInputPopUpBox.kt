@@ -37,8 +37,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.chatapp.profile_feature.isKeyboardVisible
-import com.example.chatapp.profile_feature.onSaveOrCancel
+import com.example.chatapp.profile_feature.presentation.isKeyboardVisible
+import com.example.chatapp.profile_feature.presentation.onSaveOrCancel
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 

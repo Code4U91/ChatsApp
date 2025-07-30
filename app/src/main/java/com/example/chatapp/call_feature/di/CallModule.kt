@@ -1,7 +1,7 @@
 package com.example.chatapp.call_feature.di
 
 import android.content.Context
-import com.example.chatapp.call_feature.data.local_source.repositoryImpl.LocalLocalCallRepositoryImpl
+import com.example.chatapp.call_feature.data.local_source.repositoryImpl.LocalCallRepositoryImpl
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.AgoraSetUpRepoIml
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.CallRingtoneManagerIml
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.CallSessionUpdaterRepoIml
@@ -62,7 +62,7 @@ object CallModule {
     @Singleton
     fun provideCallRepository(db: LocalRoomDatabase): LocalCallRepository {
 
-        return LocalLocalCallRepositoryImpl(db.callDao())
+        return LocalCallRepositoryImpl(db.callDao())
     }
 
     @Provides
@@ -140,7 +140,7 @@ object CallModule {
     ): CallHistoryUseCase {
 
         return CallHistoryUseCase(
-            getCallHistoryUseCase = GetCallHistoryUseCase(localCallRepository, remoteCallRepo),
+            getCallHistoryUseCase = GetCallHistoryUseCase(localCallRepository),
             syncCallHistoryUseCase = SyncCallHistoryUseCase(remoteCallRepo, localCallRepository)
         )
 

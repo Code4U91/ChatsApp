@@ -2,9 +2,7 @@ package com.example.chatapp.core.local_database
 
 import com.example.chatapp.core.FriendData
 import com.example.chatapp.core.FriendListData
-import com.example.chatapp.core.UserData
 import com.example.chatapp.localData.roomDbCache.FriendEntity
-import com.example.chatapp.localData.roomDbCache.UserEntity
 
 
 fun FriendData.toEntity(): FriendEntity {
@@ -31,28 +29,6 @@ fun FriendListData.toEntity() : FriendEntity {
         friendName = this.friendName,
         photoUrl = "",
         about = ""
-    )
-}
-
-
-
-fun UserData.toEntity(): UserEntity {
-    return UserEntity(
-        uid = this.uid,
-        name = this.name,
-        photoUrl = this.photoUrl,
-        email = this.email,
-        about = this.about
-    )
-}
-
-fun UserEntity.toUi() : UserData {
-    return UserData(
-        uid = this.uid,
-        name = this.name,
-        photoUrl = this.photoUrl,
-        email = this.email,
-        about = this.about
     )
 }
 

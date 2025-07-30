@@ -1,14 +1,12 @@
 package com.example.chatapp.call_feature.data.remote_source.repositoryImpl
 
 import android.util.Log
-import com.example.chatapp.call_feature.data.remote_source.mapper.toDomain
 import com.example.chatapp.call_feature.data.remote_source.model.CallData
 import com.example.chatapp.call_feature.domain.repository.RemoteCallRepo
 import com.example.chatapp.core.CALL_HISTORY
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.channels.awaitClose
-import com.example.chatapp.call_feature.domain.model.Call
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
@@ -17,7 +15,7 @@ class RemoteCallRepoIml(
     private val firestoreDb: FirebaseFirestore
 ) : RemoteCallRepo {
 
-    override fun fetchCallHistory(): Flow<List<Call>> = callbackFlow {
+    override fun fetchCallHistory(): Flow<List<CallData>> = callbackFlow {
 
         auth.currentUser?.let { user ->
             val currentUserId = user.uid
@@ -52,7 +50,7 @@ class RemoteCallRepoIml(
                             callId = doc.id,
                             otherUserName = otherUserName.orEmpty(),
                             otherUserId = otherUserId.orEmpty() // other participant
-                        )?.toDomain()
+                        )
 
                     } ?: emptyList()
 

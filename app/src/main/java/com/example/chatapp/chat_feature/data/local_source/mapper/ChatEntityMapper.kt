@@ -6,7 +6,7 @@ import com.example.chatapp.chat_feature.domain.model.Chat
 fun ChatEntity.toDomain() = Chat(
     chatId = chatId,
     otherUserId = otherUserId,
-    lastMessageTimeStamp = lastMessageTimeStamp,
+    lastMessageTimeInMills = lastMessageTimeInMills,
     otherUserName = otherUserId,
     profileUrl = profileUrl
 )
@@ -14,7 +14,7 @@ fun ChatEntity.toDomain() = Chat(
 fun Chat.toEntity() = ChatEntity(
     chatId = chatId,
     otherUserId = otherUserId,
-    lastMessageTimeStamp = lastMessageTimeStamp,
+    lastMessageTimeInMills = lastMessageTimeInMills,
     otherUserName = otherUserName,
     profileUrl = profileUrl
 )

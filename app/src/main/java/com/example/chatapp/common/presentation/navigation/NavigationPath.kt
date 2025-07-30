@@ -48,7 +48,7 @@ import com.example.chatapp.auth_feature.presentation.screens.SignInScreenUI
 import com.example.chatapp.auth_feature.presentation.screens.SignUpScreenUI
 import com.example.chatapp.chat_feature.presentation.AllChatScreen
 import com.example.chatapp.call_feature.presentation.call_history_screen.CallHistoryScreen
-import com.example.chatapp.profile_feature.ProfileSettingScreen
+import com.example.chatapp.profile_feature.presentation.ProfileSettingScreen
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 

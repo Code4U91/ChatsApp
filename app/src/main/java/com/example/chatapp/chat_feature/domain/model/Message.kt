@@ -8,5 +8,5 @@ data class Message(
     val receiverId: String,
     val senderId: String,
     val status: String,
-    val timeStamp: Long
+    val timeInMills: Long
 )

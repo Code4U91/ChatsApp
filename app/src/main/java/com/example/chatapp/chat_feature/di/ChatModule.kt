@@ -2,18 +2,20 @@ package com.example.chatapp.chat_feature.di
 
 import android.content.Context
 import com.example.chatapp.api.FcmNotificationSender
+import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.chat_feature.data.local_source.repositoryIml.LocalChatRepoImpl
 import com.example.chatapp.chat_feature.data.remote_source.repositoryImpl.GlobalMessageListenerRepoImpl
 import com.example.chatapp.chat_feature.data.remote_source.repositoryImpl.MessagingHandlerRepoImpl
 import com.example.chatapp.chat_feature.domain.repository.GlobalMessageListenerRepo
 import com.example.chatapp.chat_feature.domain.repository.LocalChatRepo
 import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo
+import com.example.chatapp.chat_feature.domain.use_case.message_use_case.CalculateChatId
+import com.example.chatapp.chat_feature.domain.use_case.message_use_case.DeleteMessages
 import com.example.chatapp.chat_feature.domain.use_case.message_use_case.GetAllChats
 import com.example.chatapp.chat_feature.domain.use_case.message_use_case.GetMessage
 import com.example.chatapp.chat_feature.domain.use_case.message_use_case.MessageUseCase
 import com.example.chatapp.chat_feature.domain.use_case.message_use_case.SendMessage
 import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.ChatsSyncAndUnSyncUseCase
-import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.ClearAllListeners
 import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.SyncChats
 import com.example.chatapp.core.local_database.LocalRoomDatabase
 import com.google.firebase.auth.FirebaseAuth
@@ -83,13 +85,22 @@ object ChatModule {
     @Singleton
     fun providesMessageUseCase(
         localChatRepo : LocalChatRepo,
-        messageHandlerRepo: MessageHandlerRepo
+        messageHandlerRepo: MessageHandlerRepo,
+        authUseCase: AuthUseCase
     ) : MessageUseCase {
 
         return MessageUseCase(
             getMessage = GetMessage(localChatRepo),
             sendMessage = SendMessage(messageHandlerRepo),
-            getAllChats = GetAllChats(localChatRepo)
+            getAllChats = GetAllChats(localChatRepo),
+            calculateChatId = CalculateChatId(
+                messageHandlerRepo,
+                authUseCase = authUseCase
+            ),
+            deleteMessages = DeleteMessages(
+                messageHandlerRepo = messageHandlerRepo,
+                localChatRepo = localChatRepo
+            )
         )
     }
 
@@ -97,17 +108,14 @@ object ChatModule {
     @Singleton
     fun providesChatSyncUseCase(
         globalMessageListenerRepo: GlobalMessageListenerRepo,
-        messageHandlerRepo: MessageHandlerRepo,
-        localChatRepo: LocalChatRepo
+        localChatRepo: LocalChatRepo,
+        authUseCase: AuthUseCase
     ) : ChatsSyncAndUnSyncUseCase {
         return ChatsSyncAndUnSyncUseCase(
             syncChats = SyncChats(
                 globalMessageListenerRepo = globalMessageListenerRepo,
-                localChatRepo = localChatRepo
-            ),
-            clearAllListeners = ClearAllListeners(
-                globalMessageListenerRepo = globalMessageListenerRepo,
-                messageHandlerRepo = messageHandlerRepo
+                localChatRepo = localChatRepo,
+                authUseCase =  authUseCase
             )
         )
     }

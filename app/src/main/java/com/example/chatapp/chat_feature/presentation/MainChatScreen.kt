@@ -417,8 +417,8 @@ fun MainChatScreen(
                                 messageText,
                                 otherId,
                                 chatId,
-                                friendData?.name,
-                                currentUserData?.name
+                                friendData?.name.orEmpty(),
+                                currentUserData?.name.orEmpty()
                             )
                             messageText = ""
                         }
@@ -470,8 +470,8 @@ fun ChatLazyColumn(
         ) { index, message ->
 
             val nextMessage = messageList.getOrNull(index + 1)
-            val currentMessageDate = message.timeStamp.toLocalDate()
-            val previousMessageDate = nextMessage?.timeStamp?.toLocalDate()
+            val currentMessageDate = message.timeInMills.toLocalDate()
+            val previousMessageDate = nextMessage?.timeInMills?.toLocalDate()
 
             val isNewGroup = nextMessage?.senderId != message.senderId
             val isSelected = selectedMessageSet.contains(message.messageId)
@@ -560,7 +560,7 @@ fun ChatBubble(
                 modifier = Modifier.padding(end = 4.dp)
             ) {
                 Text(
-                    text = getTimeOnly(message.timeStamp),
+                    text = getTimeOnly(message.timeInMills),
                     color = Color.Gray,
                     fontSize = 8.sp,
                     modifier = Modifier
@@ -602,7 +602,7 @@ fun ChatBubble(
 
         if (!isCurrentUser) {
             Text(
-                text = getTimeOnly(message.timeStamp),
+                text = getTimeOnly(message.timeInMills),
                 color = Color.Gray,
                 fontSize = 8.sp,
                 modifier = Modifier

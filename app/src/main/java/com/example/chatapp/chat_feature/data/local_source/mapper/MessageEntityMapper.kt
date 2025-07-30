@@ -10,7 +10,7 @@ fun MessageEntity.toDomain() = Message(
     receiverId = receiverId,
     senderId = senderId,
     status = status,
-    timeStamp = timeStamp
+    timeInMills = timeInMills
 )
 
 fun Message.toEntity() = MessageEntity(
@@ -20,5 +20,5 @@ fun Message.toEntity() = MessageEntity(
     receiverId = receiverId,
     senderId = senderId,
     status = status,
-    timeStamp = timeStamp
+    timeInMills = timeInMills
 )

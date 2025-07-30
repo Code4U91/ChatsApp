@@ -1,4 +1,4 @@
-package com.example.chatapp.profile_feature
+package com.example.chatapp.profile_feature.presentation
 
 import android.annotation.SuppressLint
 import android.content.ClipData
@@ -65,11 +65,11 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.core.ProfileItem
-import com.example.chatapp.core.UserData
 import com.example.chatapp.common.presentation.dialogBox.LogOutPopUpBox
 import com.example.chatapp.common.presentation.dialogBox.PopUpBox
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.profile_feature.domain.model.CurrentUser
 import kotlinx.coroutines.launch
 
 
@@ -499,7 +499,7 @@ fun onSaveOrCancel(
 }
 
 
-fun getProfileItemList(userData: UserData?): List<ProfileItem> {
+fun getProfileItemList(userData: CurrentUser?): List<ProfileItem> {
 
     return  listOf(
         ProfileItem(

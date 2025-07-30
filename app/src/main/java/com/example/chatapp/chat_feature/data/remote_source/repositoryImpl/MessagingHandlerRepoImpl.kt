@@ -11,12 +11,10 @@ import com.example.chatapp.core.FriendListData
 import com.example.chatapp.core.MESSAGE_COLLECTION
 import com.example.chatapp.core.MessageNotificationRequest
 import com.example.chatapp.core.USERS_COLLECTION
-import com.example.chatapp.core.UserData
 import com.example.chatapp.core.checkEmailPattern
 import com.example.chatapp.localData.dataStore.LocalFcmTokenManager
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -31,36 +29,6 @@ class MessagingHandlerRepoImpl(
     private val fcmNotificationSender: FcmNotificationSender,
     private val context: Context
 ) : MessageHandlerRepo {
-
-
-    private val listenerRegistration = mutableListOf<ListenerRegistration>()
-
-    // function to fetch current user data
-    override fun fetchUserData(user: FirebaseUser, onDataChanged: (UserData?) -> Unit) {
-
-        val userRef = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
-
-        val userDataListener = userRef.addSnapshotListener { snapshot, error ->
-            if (error != null) {
-                return@addSnapshotListener
-            }
-
-            if (snapshot != null && snapshot.exists()) {
-
-                val fetchedUserData = snapshot.toObject(UserData::class.java)
-
-                @Suppress("UNCHECKED_CAST")
-                val fcmTokens = snapshot.get("fcmTokens") as? List<String> ?: emptyList()
-
-                val userData = fetchedUserData?.copy(
-                    fcmTokens = fcmTokens
-                )
-                onDataChanged(userData)
-            }
-        }
-
-        listenerRegistration.add(userDataListener)
-    }
 
 
     // function to fetch friend user data
@@ -126,7 +94,7 @@ class MessagingHandlerRepoImpl(
     }
 
     // add friend using provided email address
-    override fun addFriendByEmail(
+   private fun addFriendByEmail(
         friendEmail: String,
         userId: String,
         onSuccess: () -> Unit,
@@ -164,7 +132,7 @@ class MessagingHandlerRepoImpl(
     }
 
     // adds friend to friend list using id
-    override fun addFriendById(
+    private fun addFriendById(
         friendId: String,
         userId: String,
         onSuccess: () -> Unit,
@@ -200,7 +168,7 @@ class MessagingHandlerRepoImpl(
     }
 
     // checks if the friendId is already friends with that user or not
-    override fun checkAndFriend(
+    private fun checkAndFriend(
         userId: String,
         friendId: String,
         friendName: String,
@@ -269,13 +237,13 @@ class MessagingHandlerRepoImpl(
         messageText: String,
         otherUserId: String,
         fetchedChatId: String,
-        friendName: String?,
-        currentUsername: String?
+        friendName: String,
+        currentUsername: String
     ) {
         auth.currentUser?.uid?.let { currentUserId ->
 
             val chatId =
-                fetchedChatId.ifEmpty { chatIdCreator(currentUserId, otherUserId, fetchedChatId) }
+                fetchedChatId.ifEmpty { chatIdCreator(currentUserId, otherUserId) }
 
             val currentTime = Timestamp.Companion.now()
 
@@ -290,8 +258,8 @@ class MessagingHandlerRepoImpl(
                 .document(chatId)
 
             val mapIdWithName = mapOf(
-                currentUserId to currentUsername.orEmpty(),
-                otherUserId to friendName.orEmpty()
+                currentUserId to currentUsername,
+                otherUserId to friendName
             )
 
             val chatData = mapOf(
@@ -396,20 +364,16 @@ class MessagingHandlerRepoImpl(
 
 
     override fun chatIdCreator(
-        currentUserId: String, friendUserId: String, fetchedChatId: String
+        currentUserId: String, friendUserId: String
     ): String {
 
-        if (fetchedChatId.isEmpty()) {
-            val chatId = if (currentUserId < friendUserId) {
-                "${currentUserId}_$friendUserId"
-            } else {
-                "${friendUserId}_$currentUserId"
-            }
-
-            return chatId
+        val chatId = if (currentUserId < friendUserId) {
+            "${currentUserId}_$friendUserId"
         } else {
-            return fetchedChatId
+            "${friendUserId}_$currentUserId"
         }
+
+        return chatId
 
     }
 
@@ -475,13 +439,6 @@ class MessagingHandlerRepoImpl(
             }
             batch.commit()
         }
-    }
-
-    // clear all active listeners
-    // runs on viewmodel destroy/ sign out
-    override fun clearMessageListeners() {
-        listenerRegistration.forEach { it.remove() }
-        listenerRegistration.clear()
     }
 
 }

@@ -4,7 +4,7 @@ data class Chat(
 
     val chatId: String,
     val otherUserId: String,
-    val lastMessageTimeStamp: Long,
+    val lastMessageTimeInMills: Long,
     val otherUserName: String,
     val profileUrl : String
 )

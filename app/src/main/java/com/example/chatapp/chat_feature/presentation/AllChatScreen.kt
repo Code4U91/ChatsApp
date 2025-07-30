@@ -235,7 +235,7 @@ fun ChatItemAndFriendListItem(
     val messages by globalMessageListenerViewModel.getMessage(chatId)
         .collectAsState(initial = emptyList())
 
-    val lastMessage = if (messages.isNotEmpty()) messages.maxByOrNull { it.timeStamp } else null
+    val lastMessage = if (messages.isNotEmpty()) messages.maxByOrNull { it.timeInMills } else null
 
     DisposableEffect(friendId) {
 
@@ -251,9 +251,9 @@ fun ChatItemAndFriendListItem(
     }
 
 
-    val dateAndTime by remember(lastMessage?.timeStamp) {
+    val dateAndTime by remember(lastMessage?.timeInMills) {
 
-        mutableStateOf(formatTimestamp(lastMessage?.timeStamp))
+        mutableStateOf(formatTimestamp(lastMessage?.timeInMills))
     }
 
 

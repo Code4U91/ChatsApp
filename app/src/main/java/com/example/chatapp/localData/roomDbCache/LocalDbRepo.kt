@@ -13,12 +13,7 @@ class LocalDbRepo @Inject constructor(
 ) {
 
     val friendList = localDb.getDbDao().getFriendList()
-    val userData = localDb.getDbDao().getUserData()
 
-    suspend fun insertUserData(userData: UserEntity){
-
-        localDb.getDbDao().insertUser(userData)
-    }
 
 
     suspend fun insertFriend(friendEntity: FriendEntity){

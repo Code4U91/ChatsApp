@@ -12,5 +12,5 @@ data class MessageEntity(
     val receiverId: String,
     val senderId: String,
     val status: String,
-    val timeStamp: Long
+    val timeInMills: Long
 )
