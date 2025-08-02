@@ -1,13 +1,11 @@
 package com.example.chatapp.chat_feature.data.local_source.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.chatapp.chat_feature.data.local_source.entity.ChatEntity
 import com.example.chatapp.chat_feature.data.local_source.entity.MessageEntity
-
 import kotlinx.coroutines.flow.Flow
 
 @Dao

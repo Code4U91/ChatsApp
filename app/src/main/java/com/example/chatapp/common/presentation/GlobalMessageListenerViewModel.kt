@@ -7,26 +7,21 @@ import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
 import com.example.chatapp.chat_feature.domain.model.Message
-import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.MessageUseCase
-import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.ChatsSyncAndUnSyncUseCase
-import com.example.chatapp.core.FriendData
-import com.example.chatapp.core.FriendListData
-import com.example.chatapp.core.local_database.toUi
-import com.example.chatapp.localData.roomDbCache.FriendEntity
-import com.example.chatapp.localData.roomDbCache.LocalDbRepo
+import com.example.chatapp.chat_feature.domain.message_use_case.MessageUseCase
+import com.example.chatapp.friend_feature.domain.model.Friend
+import com.example.chatapp.friend_feature.domain.use_case.FriendUseCase
 import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
-import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -34,22 +29,23 @@ import javax.inject.Inject
 @HiltViewModel
 class GlobalMessageListenerViewModel @Inject constructor(
 
-    private val messagingHandlerRepoImpl: MessageHandlerRepo,
-    private val localDbRepo: LocalDbRepo,
-
     private val authUseCase: AuthUseCase,
     private val callHistoryUseCase: CallHistoryUseCase,
-    private val chatsSyncAndUnSyncUseCase: ChatsSyncAndUnSyncUseCase,
     private val messageUseCase: MessageUseCase,
     private val onlineStatusUseCase: OnlineStatusUseCase,
-    private val userDataUseCase : UserDataUseCase
+    private val userDataUseCase: UserDataUseCase,
+    private val friendUseCase: FriendUseCase
+
 ) : ViewModel() {
 
 
     private val _currentOpenChatId = MutableStateFlow<String?>(null)
     val currentOpenChatId = _currentOpenChatId.asStateFlow()
 
-    // done
+    private val messageFlows = mutableMapOf<String, StateFlow<List<Message>>>()
+    private val friendFlows = mutableMapOf<String, StateFlow<Friend?>>()
+
+
     val activeChats = messageUseCase.getAllChats()
         .stateIn(
             viewModelScope,
@@ -57,7 +53,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
             initialValue = emptyList()
         )
 
-    // done
+
     val userData = userDataUseCase.getUserData()
         .stateIn(
             viewModelScope,
@@ -65,15 +61,14 @@ class GlobalMessageListenerViewModel @Inject constructor(
             initialValue = null
         )
 
-    val friendList = localDbRepo.friendList
-        .map { friendEntities -> friendEntities.map { it.toUi() } }
+    val friendList = friendUseCase.getFriendList()
         .stateIn(
-            viewModelScope,
-            SharingStarted.Companion.WhileSubscribed(5000),
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
-    // done
+
     val callHistory = callHistoryUseCase.getCallHistoryUseCase()
         .stateIn(
             viewModelScope,
@@ -88,6 +83,8 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         fetchUserData()
 
+        syncFriendData()
+
         setOnlineStatus() // -> marks true, online
 
 
@@ -95,23 +92,23 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         viewModelScope.launch {
             userData.filterNotNull().collect { user ->
-                messagingHandlerRepoImpl.updateFcmTokenIfNeeded(user.allFcmToken)
+                authUseCase.updateFcmTokenIfNeeded(user.allFcmToken)
             }
         }
 
     }
 
-    // done
+
     private fun startGlobalListener() {
 
         viewModelScope.launch {
-            chatsSyncAndUnSyncUseCase.syncChats(
+             messageUseCase.syncChats(
                 isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId }
             )
         }
     }
 
-    // done
+
     fun listenToRemoteCallHistory() {
         viewModelScope.launch {
             callHistoryUseCase.syncCallHistoryUseCase()
@@ -119,33 +116,42 @@ class GlobalMessageListenerViewModel @Inject constructor(
     }
 
 
-    // ROOM DB FUNCTIONS ---- START
 
 
-    // done
+    fun getOrFetchFriend(friendId: String) : StateFlow<Friend?> {
+
+        return friendFlows.getOrPut(friendId) {
+            friendUseCase.getFriendDataById(friendId)
+                .onEach { friend ->
+                    if (friend == null){
+                        addNewFriend(friendId, {}, {
+                            e ->
+                            Log.i("FRIEND_ADD", e)
+                        })
+                        Log.i("FRIEND_ADD", "times called")
+                    }
+                }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.WhileSubscribed(5000),
+                    initialValue = null
+                )
+        }
+    }
+
     fun getMessage(chatId: String): Flow<List<Message>> {
 
-        return messageUseCase.getMessage(chatId)
-
-    }
-
-    fun getFriendData(friendId: String): Flow<FriendData?> {
-
-        return localDbRepo.getFriendData(friendId)
-            .map { it?.toUi() }
-    }
-
-
-    fun insertFriend(friendEntity: FriendEntity) = viewModelScope.launch {
-
-        localDbRepo.insertFriend(friendEntity)
+        return messageFlows.getOrPut(chatId){
+            messageUseCase.getMessage(chatId)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.WhileSubscribed(5000),
+                    emptyList()
+                )
+        }
     }
 
 
-    // ROOM DB FUNCTION -------- END
-
-
-    // done
     private fun fetchUserData() {
 
         viewModelScope.launch {
@@ -154,37 +160,22 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
-    fun fetchFriendList(onFriendUpdated: (List<FriendListData>) -> Unit): ListenerRegistration? {
+    fun syncFriendData() = viewModelScope.launch {
 
-        return messagingHandlerRepoImpl.fetchFriendList { friendListData ->
-
-            onFriendUpdated(friendListData)
-        }
-    }
-
-    fun fetchFriendData(
-        friendUserId: String,
-        updatedFriendData: (FriendData) -> Unit
-    ): ListenerRegistration? {
-
-        return messagingHandlerRepoImpl.fetchFriendData(friendUserId)
-        {
-
-            updatedFriendData(it) // used where multiple new friend data is required at once
-
-        }
+        friendUseCase.syncFriendData()
     }
 
     fun addNewFriend(
         friendUserId: String,
         onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
+        onFailure: (message: String) -> Unit
     ) {
-        messagingHandlerRepoImpl.addFriend(
+
+        friendUseCase.addFriend(
             friendUserId,
             onSuccess = { onSuccess() },
-            onFailure = { e -> onFailure(e) }
-        )
+            onFailure = { e -> onFailure(e.message.orEmpty()) })
+
     }
 
     private fun setOnlineStatus(status: Boolean = true) {
@@ -225,14 +216,18 @@ class GlobalMessageListenerViewModel @Inject constructor(
         onlineStatusUseCase.setActiveChatUseCase(chatId)
     }
 
-    fun deleteFriend(friendId: Set<String>) {
-        messagingHandlerRepoImpl.deleteFriend(friendId)
+    fun deleteFriend(friendIds: Set<String>) {
+
+        viewModelScope.launch {
+            friendUseCase.deleteFriend(friendIds)
+        }
+
     }
 
     fun markAllMessageAsSeen(chatId: String, friendId: String) {
 
         authUseCase.getCurrentUser()?.let {
-            messagingHandlerRepoImpl.markMessageAsSeen(chatId, it.uid, friendId)
+            messageUseCase.markMessageAsSeen(chatId, it.uid, friendId)
         }
     }
 
@@ -291,9 +286,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         viewModelScope.launch {
 
+            messageUseCase.clearAllChatsAndMessageListeners()
+            userDataUseCase.clearUserDataListener()
+            callHistoryUseCase.clearCallHistoryListener()
             authUseCase.signOutUseCase()
-            delay(100)
-            localDbRepo.clearAllTables()
+            delay(300)
+            userDataUseCase.clearLocalDbUseCase()
 
         }
 

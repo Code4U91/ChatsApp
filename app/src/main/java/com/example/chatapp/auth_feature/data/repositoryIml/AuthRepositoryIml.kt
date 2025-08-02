@@ -11,7 +11,6 @@ import com.example.chatapp.auth_feature.domain.repository.AuthRepository
 import com.example.chatapp.core.DEFAULT_PROFILE_PIC
 import com.example.chatapp.core.USERS_COLLECTION
 import com.example.chatapp.core.USERS_REF
-import com.example.chatapp.localData.dataStore.LocalFcmTokenManager
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth
@@ -24,7 +23,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
 
-class AuthRepositoryIml (
+class AuthRepositoryIml(
     private val auth: FirebaseAuth,
     private val credentialManager: CredentialManager,
     private val firestoreDb: FirebaseFirestore,
@@ -82,7 +81,7 @@ class AuthRepositoryIml (
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        if(idToken == null) onFailure(Exception("Invalid token"))
+        if (idToken == null) onFailure(Exception("Invalid token"))
 
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         try {
@@ -153,7 +152,7 @@ class AuthRepositoryIml (
     }
 
     override fun getCurrentUser(): FirebaseUser? {
-         return auth.currentUser
+        return auth.currentUser
     }
 
 
@@ -207,12 +206,29 @@ class AuthRepositoryIml (
     ) {
         auth.currentUser?.verifyBeforeUpdateEmail(newEmail)?.addOnCompleteListener { task ->
 
-            if(task.isSuccessful){
+            if (task.isSuccessful) {
                 onSuccess
             } else {
-               onFailure(task.exception?.message)
+                onFailure(task.exception?.message)
             }
 
+        }
+    }
+
+    override suspend fun updateFcmTokenIfNeeded(savedTokens: List<String>) {
+        val user = auth.currentUser ?: return
+
+        val currentToken = firebaseMessaging.token.await()
+        // save token locally using datastore
+        // LocalFcmTokenManager.saveToken(context, currentToken)
+
+        val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
+
+        if (currentToken !in savedTokens) {
+            //  adding only unique values automatically
+            userDoc.update("fcmTokens", FieldValue.arrayUnion(currentToken))
+                .addOnSuccessListener { Log.i("FCMCheck", "FCM Token updated: $currentToken") }
+                .addOnFailureListener { Log.e("FCMError", "Failed to update token", it) }
         }
     }
 
@@ -221,8 +237,9 @@ class AuthRepositoryIml (
         val user = auth.currentUser
         if (user != null) {
 
+            val currentToken = firebaseMessaging.token.await()
+
             val userId = user.uid
-            val token = LocalFcmTokenManager.getToken(context)
             val realTimeDbRef = realTimeDb.getReference(USERS_REF).child(user.uid)
 
             realTimeDbRef.setValue(
@@ -232,10 +249,9 @@ class AuthRepositoryIml (
                 )
             ).await()
 
-            token?.let {
-                removeFcmTokenFromUser(userId, it)
-                LocalFcmTokenManager.clearToken(context)
-            }
+            removeFcmTokenFromUser(userId, currentToken)
+           // LocalFcmTokenManager.clearToken(context)
+
             auth.signOut()
         }
 

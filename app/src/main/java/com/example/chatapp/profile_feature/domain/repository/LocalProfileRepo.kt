@@ -9,4 +9,6 @@ interface LocalProfileRepo {
     fun getUserData() : Flow<CurrentUser?>
 
     suspend fun insertUserData(user : UserData)
+
+     suspend fun clearAllDbTables()
 }

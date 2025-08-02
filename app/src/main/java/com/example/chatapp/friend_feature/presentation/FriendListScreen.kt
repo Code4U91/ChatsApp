@@ -1,4 +1,4 @@
-package com.example.chatapp.friend_feature
+package com.example.chatapp.friend_feature.presentation
 
 import android.util.Log
 import androidx.compose.foundation.background
@@ -33,7 +33,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -47,12 +46,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
-import com.example.chatapp.core.FriendScreenUiItem
-import com.example.chatapp.common.presentation.dialogBox.AddFriendDialogBox
-import com.example.chatapp.chat_feature.presentation.ChatItemAndFriendListItem
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
-import com.example.chatapp.core.local_database.toEntity
+import com.example.chatapp.chat_feature.presentation.ChatItemAndFriendListItem
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.common.presentation.dialogBox.AddFriendDialogBox
+import com.example.chatapp.core.FriendScreenUiItem
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,23 +76,10 @@ fun FriendListScreen(
     val friendList by globalMessageListenerViewModel.friendList.collectAsState()
 
 
-    DisposableEffect(Unit) {
-
-        val listener = globalMessageListenerViewModel.fetchFriendList { friendListData ->
-
-            friendListData.forEach {
-                globalMessageListenerViewModel.insertFriend(it.toEntity())
-            }
-        }
-
-
-        onDispose {
-            listener?.remove()
-        }
-    }
 
     // filters fetched friend list
-    val filteredFriendList = friendList.filter {
+    val filteredFriendList = friendList
+        .filter {
         it.name.trim().contains(searchQuery.trim(), ignoreCase = true)
     }.sortedBy { it.name.lowercase() }
 
@@ -260,7 +245,7 @@ fun FriendListScreen(
 
                 // composes profile items of all fetch friends
                 itemsIndexed(
-                    items = if (!showSearchBar) friendList else filteredFriendList,
+                    items = filteredFriendList,
                     key = { _, friend -> friend.name }) { index, friend ->
 
                     val isSelected = friendDeleteList.contains(friend.uid)

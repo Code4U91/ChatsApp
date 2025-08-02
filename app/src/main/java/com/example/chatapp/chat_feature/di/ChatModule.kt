@@ -1,31 +1,32 @@
 package com.example.chatapp.chat_feature.di
 
 import android.content.Context
-import com.example.chatapp.api.FcmNotificationSender
-import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.chat_feature.data.local_source.repositoryIml.LocalChatRepoImpl
+import com.example.chatapp.chat_feature.data.remote_source.repositoryImpl.FcmMessageNotificationSenderImpl
 import com.example.chatapp.chat_feature.data.remote_source.repositoryImpl.GlobalMessageListenerRepoImpl
 import com.example.chatapp.chat_feature.data.remote_source.repositoryImpl.MessagingHandlerRepoImpl
 import com.example.chatapp.chat_feature.domain.repository.GlobalMessageListenerRepo
 import com.example.chatapp.chat_feature.domain.repository.LocalChatRepo
 import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.CalculateChatId
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.DeleteMessages
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.GetAllChats
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.GetMessage
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.MessageUseCase
-import com.example.chatapp.chat_feature.domain.use_case.message_use_case.SendMessage
-import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.ChatsSyncAndUnSyncUseCase
-import com.example.chatapp.chat_feature.domain.use_case.sync_use_case.SyncChats
+import com.example.chatapp.chat_feature.domain.message_use_case.CalculateChatId
+import com.example.chatapp.chat_feature.domain.message_use_case.ClearAllChatsAndMessageListeners
+import com.example.chatapp.chat_feature.domain.message_use_case.DeleteMessages
+import com.example.chatapp.chat_feature.domain.message_use_case.GetAllChats
+import com.example.chatapp.chat_feature.domain.message_use_case.GetMessage
+import com.example.chatapp.chat_feature.domain.message_use_case.MarkMessageAsSeen
+import com.example.chatapp.chat_feature.domain.message_use_case.MessageUseCase
+import com.example.chatapp.chat_feature.domain.message_use_case.SendMessage
+import com.example.chatapp.chat_feature.domain.message_use_case.SyncChats
+import com.example.chatapp.chat_feature.domain.repository.FcmMessageNotificationSenderRepo
 import com.example.chatapp.core.local_database.LocalRoomDatabase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
 import javax.inject.Singleton
 
 @Module
@@ -37,32 +38,28 @@ object ChatModule {
     fun providesMessageHandlerRepo (
         auth : FirebaseAuth,
         firestoreDb: FirebaseFirestore,
-        firebaseMessaging: FirebaseMessaging,
-        fcmNotificationSender: FcmNotificationSender,
-        @ApplicationContext context: Context
+        fcmNotificationSender:  FcmMessageNotificationSenderRepo
     ) : MessageHandlerRepo{
 
         return MessagingHandlerRepoImpl(
             auth = auth,
             firestoreDb = firestoreDb,
-            firebaseMessaging = firebaseMessaging,
-            fcmNotificationSender = fcmNotificationSender,
-            context =  context
+            fcmMessageNotificationSenderRepo = fcmNotificationSender,
         )
     }
 
     @Provides
     @Singleton
     fun providesGlobalMessageListenerRepo (
-        auth : FirebaseAuth,
         firestoreDb: FirebaseFirestore,
+        auth : FirebaseAuth,
         @ApplicationContext context: Context
     ) : GlobalMessageListenerRepo {
 
         return GlobalMessageListenerRepoImpl(
-            auth = auth,
             firestoreDb = firestoreDb,
-            context = context
+            context = context,
+            auth = auth
         )
     }
 
@@ -77,6 +74,18 @@ object ChatModule {
         )
     }
 
+    @Provides
+    @Singleton
+    fun providesFcmMessageNotification(
+        client: HttpClient,
+        auth : FirebaseAuth
+    ) : FcmMessageNotificationSenderRepo{
+        return FcmMessageNotificationSenderImpl(
+            client = client,
+            auth = auth
+        )
+    }
+
     // -----
     // PROVIDES USE CASE
     //-----
@@ -86,7 +95,7 @@ object ChatModule {
     fun providesMessageUseCase(
         localChatRepo : LocalChatRepo,
         messageHandlerRepo: MessageHandlerRepo,
-        authUseCase: AuthUseCase
+        globalMessageListenerRepo: GlobalMessageListenerRepo
     ) : MessageUseCase {
 
         return MessageUseCase(
@@ -94,29 +103,16 @@ object ChatModule {
             sendMessage = SendMessage(messageHandlerRepo),
             getAllChats = GetAllChats(localChatRepo),
             calculateChatId = CalculateChatId(
-                messageHandlerRepo,
-                authUseCase = authUseCase
+                messageHandlerRepo
             ),
             deleteMessages = DeleteMessages(
                 messageHandlerRepo = messageHandlerRepo,
                 localChatRepo = localChatRepo
-            )
+            ),
+            markMessageAsSeen = MarkMessageAsSeen(messageHandlerRepo),
+            syncChats = SyncChats(globalMessageListenerRepo,localChatRepo),
+            clearAllChatsAndMessageListeners = ClearAllChatsAndMessageListeners(globalMessageListenerRepo)
         )
     }
 
-    @Provides
-    @Singleton
-    fun providesChatSyncUseCase(
-        globalMessageListenerRepo: GlobalMessageListenerRepo,
-        localChatRepo: LocalChatRepo,
-        authUseCase: AuthUseCase
-    ) : ChatsSyncAndUnSyncUseCase {
-        return ChatsSyncAndUnSyncUseCase(
-            syncChats = SyncChats(
-                globalMessageListenerRepo = globalMessageListenerRepo,
-                localChatRepo = localChatRepo,
-                authUseCase =  authUseCase
-            )
-        )
-    }
 }

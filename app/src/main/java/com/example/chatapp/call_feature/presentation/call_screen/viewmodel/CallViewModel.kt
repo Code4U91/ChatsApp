@@ -40,7 +40,6 @@ class CallViewModel @Inject constructor(
     val uiState = _uiState.asStateFlow()
 
 
-    // may not need remove after testing
     init {
 
 

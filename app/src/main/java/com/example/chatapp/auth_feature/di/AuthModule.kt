@@ -14,6 +14,7 @@ import com.example.chatapp.auth_feature.domain.usecase.auth_case.ResetPasswordUs
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.SignInUseCase
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.SignOutUseCase
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.SignUpUseCase
+import com.example.chatapp.auth_feature.domain.usecase.auth_case.UpdateFcmTokenIfNeeded
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.ListenForOnlineStatus
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.SetActiveChatUseCase
@@ -113,7 +114,8 @@ object AuthModule {
             changeEmailUseCase = ChangeEmailUseCase(authRepository),
             resetPasswordUseCase = ResetPasswordUseCase(authRepository),
             getCurrentUser = GetCurrentUser(authRepository),
-            signUpUseCase = SignUpUseCase(authRepository)
+            signUpUseCase = SignUpUseCase(authRepository),
+            updateFcmTokenIfNeeded = UpdateFcmTokenIfNeeded(authRepository)
         )
     }
 

@@ -122,11 +122,11 @@ fun AddFriendDialogBox(
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onFailure = { exception ->
+                                    onFailure = { message ->
 
                                         Toast.makeText(
                                             context,
-                                            exception.message,
+                                            message,
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     })
@@ -168,11 +168,11 @@ fun AddFriendDialogBox(
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     },
-                                    onFailure = { exception ->
+                                    onFailure = { message ->
 
                                         Toast.makeText(
                                             context,
-                                            exception.message,
+                                            message,
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     })

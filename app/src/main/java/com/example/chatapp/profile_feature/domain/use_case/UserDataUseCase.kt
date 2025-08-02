@@ -2,5 +2,7 @@ package com.example.chatapp.profile_feature.domain.use_case
 
 data class UserDataUseCase(
     val getUserData: GetUserData,
-    val syncUserData: SyncUserData
+    val syncUserData: SyncUserData,
+    val clearLocalDbUseCase: ClearLocalDbUseCase,
+    val clearUserDataListener: ClearUserDataListener
 )

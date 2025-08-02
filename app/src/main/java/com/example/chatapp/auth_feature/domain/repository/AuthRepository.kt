@@ -46,5 +46,8 @@ interface AuthRepository {
         onSuccess: () -> Unit
     )
 
+    suspend fun updateFcmTokenIfNeeded(savedTokens: List<String>)
+
+
     suspend fun signOut()
 }

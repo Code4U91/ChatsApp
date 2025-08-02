@@ -3,10 +3,12 @@ package com.example.chatapp.call_feature.di
 import android.content.Context
 import com.example.chatapp.call_feature.data.local_source.repositoryImpl.LocalCallRepositoryImpl
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.AgoraSetUpRepoIml
+import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.FcmFcmCallNotificationSenderImpl
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.CallRingtoneManagerIml
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.CallSessionUpdaterRepoIml
 import com.example.chatapp.call_feature.data.remote_source.repositoryImpl.RemoteCallRepoIml
 import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call_feature.domain.repository.FcmCallNotificationSenderRepo
 import com.example.chatapp.call_feature.domain.repository.CallRingtoneRepo
 import com.example.chatapp.call_feature.domain.repository.CallSessionUploaderRepo
 import com.example.chatapp.call_feature.domain.repository.LocalCallRepository
@@ -20,6 +22,7 @@ import com.example.chatapp.call_feature.domain.usecase.call_case.DeclineCallUseC
 import com.example.chatapp.call_feature.domain.usecase.call_case.EndCallUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_case.StartCallUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
+import com.example.chatapp.call_feature.domain.usecase.call_history_case.ClearCallHistoryListener
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.GetCallHistoryUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.SyncCallHistoryUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.CallVideoCase
@@ -44,6 +47,7 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
 import javax.inject.Singleton
 
 @Module
@@ -85,6 +89,20 @@ object CallModule {
     @Singleton
     fun providesCallRingtoneRepo(@ApplicationContext context: Context): CallRingtoneRepo {
         return CallRingtoneManagerIml(context)
+    }
+
+    @Provides
+    @Singleton
+    fun providesFcmCallNotificationInvite(
+        client: HttpClient,
+        auth: FirebaseAuth
+
+    ): FcmCallNotificationSenderRepo {
+
+        return FcmFcmCallNotificationSenderImpl(
+            client = client,
+            auth = auth
+        )
     }
 
 
@@ -141,7 +159,8 @@ object CallModule {
 
         return CallHistoryUseCase(
             getCallHistoryUseCase = GetCallHistoryUseCase(localCallRepository),
-            syncCallHistoryUseCase = SyncCallHistoryUseCase(remoteCallRepo, localCallRepository)
+            syncCallHistoryUseCase = SyncCallHistoryUseCase(remoteCallRepo, localCallRepository),
+            clearCallHistoryListener = ClearCallHistoryListener(remoteCallRepo)
         )
 
     }

@@ -1,4 +1,4 @@
-package com.example.chatapp.chat_feature.domain.use_case.message_use_case
+package com.example.chatapp.chat_feature.domain.message_use_case
 
 import com.example.chatapp.chat_feature.domain.repository.LocalChatRepo
 import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo

@@ -6,4 +6,6 @@ import kotlinx.coroutines.flow.Flow
 interface RemoteCallRepo {
 
     fun fetchCallHistory() : Flow<List<CallData>>
+
+    fun clearCallHistoryListener()
 }

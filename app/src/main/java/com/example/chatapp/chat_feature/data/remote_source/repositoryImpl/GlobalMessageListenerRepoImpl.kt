@@ -11,6 +11,7 @@ import com.example.chatapp.core.MESSAGE_COLLECTION
 import com.example.chatapp.core.USERS_COLLECTION
 import com.example.chatapp.core.appInstance
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.QuerySnapshot
@@ -19,9 +20,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 
 class GlobalMessageListenerRepoImpl(
-    private val auth: FirebaseAuth,
     private val firestoreDb: FirebaseFirestore,
-    private val context: Context
+    private val context: Context,
+    private val auth : FirebaseAuth
 ) : GlobalMessageListenerRepo {
 
     private val activeListeners = mutableMapOf<String, ListenerRegistration>()
@@ -32,79 +33,85 @@ class GlobalMessageListenerRepoImpl(
         isUserInChatScreen: (String) -> Boolean
     ): Flow<GlobalChatEvent> = callbackFlow {
 
-        var currentChatList: List<ChatData> = emptyList()
+        auth.currentUser?.let { user ->
 
-        chatListListener?.remove()
+            var currentChatList: List<ChatData> = emptyList()
 
-        chatListListener = fetchCurrentUserParticipantChats { chatList ->
-
-
-            if (chatList != currentChatList) {
-                currentChatList = chatList
-
-                trySend(GlobalChatEvent.AllChatsFetched(chatList))
-            }
-
-            removeObsoleteChatListeners(chatList)
-            addListenersForNewChats(chatList, isUserInChatScreen){ event ->
-                trySend(event)
-            }
-
-        }
-
-        awaitClose {
             chatListListener?.remove()
-            activeListeners.values.forEach { it.remove() }
-            activeListeners.clear()
-        }
+
+
+            chatListListener = fetchCurrentUserParticipantChats(user) { chatList ->
+
+
+                if (chatList != currentChatList) {
+                    currentChatList = chatList
+
+                    trySend(GlobalChatEvent.AllChatsFetched(chatList))
+                }
+
+                removeObsoleteChatListeners(chatList)
+                addListenersForNewChats(chatList, user, isUserInChatScreen) { event ->
+                    trySend(event)
+                }
+
+            }
+
+            awaitClose {
+                chatListListener?.remove()
+                activeListeners.values.forEach { it.remove() }
+                activeListeners.clear()
+            }
+
+        } ?: close()
 
     }
 
     fun addListenersForNewChats(
         chatList: List<ChatData>,
+        user: FirebaseUser,
         isUserInChatScreen: (String) -> Boolean,
         sendEvent: (GlobalChatEvent) -> Unit
     ) {
-        auth.currentUser?.uid?.let { currentUserId ->
 
-            for (chat in chatList) {
-                val chatId = chat.chatId
+        for (chat in chatList) {
+            val chatId = chat.chatId
 
-                if (activeListeners.containsKey(chatId)) continue
+            if (activeListeners.containsKey(chatId)) continue
 
-                val listener = firestoreDb.collection(USERS_COLLECTION).document(currentUserId)
-                    .collection(CHATS_COLLECTION)
-                    .document(chatId)
-                    .collection(MESSAGE_COLLECTION)
-                    .addSnapshotListener { snapshot, error ->
+            val listener = firestoreDb.collection(USERS_COLLECTION)
+                .document(user.uid)
+                .collection(CHATS_COLLECTION)
+                .document(chatId)
+                .collection(MESSAGE_COLLECTION)
+                .addSnapshotListener { snapshot, error ->
 
-                        if (error != null) return@addSnapshotListener
+                    if (error != null) return@addSnapshotListener
 
-                        // Convert each document in the snapshot to a Message object.
-                        val newMessages = snapshot?.documents?.mapNotNull { doc ->
-                            doc.toObject(MessageData::class.java)
-                        } ?: emptyList()
+                    // Convert each document in the snapshot to a Message object.
+                    val newMessages = snapshot?.documents?.mapNotNull { doc ->
+                        doc.toObject(MessageData::class.java)
+                    } ?: emptyList()
 
-                        sendEvent(GlobalChatEvent.NewMessages(chatId, newMessages))
+                    sendEvent(GlobalChatEvent.NewMessages(chatId, newMessages))
 
-                        updateMessageStatus(snapshot, chatId, isUserInChatScreen)
+                    updateMessageStatus(snapshot, chatId, user, isUserInChatScreen)
 
-                    }
+                }
 
-                activeListeners[chatId] = listener
+            activeListeners[chatId] = listener
 
-            }
         }
     }
 
     private fun updateMessageStatus(
         snapshot: QuerySnapshot?,
-        chatId : String,
+        chatId: String,
+        user: FirebaseUser,
         isUserInChatScreen: (String) -> Boolean
-    ){
+    ) {
         // Loop Through Each Document for Status Updates
         val batch = firestoreDb.batch()
-        val currentUserId = auth.currentUser?.uid ?: return
+        val currentUserId = user.uid
         val appInstance = context.appInstance()
 
         snapshot?.documents?.forEach docLoop@{ doc ->
@@ -141,58 +148,54 @@ class GlobalMessageListenerRepoImpl(
 
     // provides chatId list sorted by the last message activity
     private fun fetchCurrentUserParticipantChats(
+        user: FirebaseUser,
         onUpdatedChatList: (List<ChatData>) -> Unit
     ): ListenerRegistration? {
 
-        auth.currentUser?.uid?.let { currentUserId ->
 
-            val chatRef = firestoreDb.collection(USERS_COLLECTION)
-                .document(currentUserId).collection(CHATS_COLLECTION)
+        val chatRef = firestoreDb.collection(USERS_COLLECTION)
+            .document(user.uid).collection(CHATS_COLLECTION)
 
-            // unnecessary condition check , since we are storing chats on user collection for each user
-            // may remove it later
-            return chatRef.whereArrayContains("participants", currentUserId)
-                .addSnapshotListener { snapshots, error ->
+        // unnecessary condition check , since we are storing chats on user collection for each user
+        // may remove it later
+        return chatRef.whereArrayContains("participants", user.uid)
+            .addSnapshotListener { snapshots, error ->
 
-                    if (error != null) {
-                        Log.e("Firestore", "Error fetching messages", error)
-                        return@addSnapshotListener
-                    }
-                    val chatList = snapshots?.documents?.mapNotNull { doc ->
-
-                        @Suppress("UNCHECKED_CAST")
-                        val participants =
-                            doc.get("participants") as? List<String> ?: return@mapNotNull null
-
-                        val otherId = participants.firstOrNull { it != currentUserId }
-                            ?: return@mapNotNull null
-
-                        @Suppress("UNCHECKED_CAST")
-                        val participantsName = doc.get("participantsName") as? Map<String, String>
-
-                        val otherUserName = participantsName?.get(otherId)
-                        val lastMessageTimeStamp = doc.getTimestamp("lastMessageTimeStamp")
-
-                        @Suppress("UNCHECKED_CAST")
-                        val participantsPhotoUrl =
-                            doc.get("participantsPhotoUrl") as? Map<String, String>
-                        val otherUserPhotoUrl = participantsPhotoUrl?.get(otherId)
-
-                        ChatData(
-                            chatId = doc.id,
-                            otherUserId = otherId,
-                            lastMessageTimeStamp = lastMessageTimeStamp,
-                            otherUserName = otherUserName.orEmpty(),
-                            profileUrl = otherUserPhotoUrl ?: DEFAULT_PROFILE_PIC
-                        )
-                    } ?: emptyList()
-
-                    onUpdatedChatList(chatList)
+                if (error != null) {
+                    Log.e("Firestore", "Error fetching messages", error)
+                    return@addSnapshotListener
                 }
+                val chatList = snapshots?.documents?.mapNotNull { doc ->
 
+                    @Suppress("UNCHECKED_CAST")
+                    val participants =
+                        doc.get("participants") as? List<String> ?: return@mapNotNull null
 
-        }
-        return null
+                    val otherId = participants.firstOrNull { it != user.uid }
+                        ?: return@mapNotNull null
+
+                    @Suppress("UNCHECKED_CAST")
+                    val participantsName = doc.get("participantsName") as? Map<String, String>
+
+                    val otherUserName = participantsName?.get(otherId)
+                    val lastMessageTimeStamp = doc.getTimestamp("lastMessageTimeStamp")
+
+                    @Suppress("UNCHECKED_CAST")
+                    val participantsPhotoUrl =
+                        doc.get("participantsPhotoUrl") as? Map<String, String>
+                    val otherUserPhotoUrl = participantsPhotoUrl?.get(otherId)
+
+                    ChatData(
+                        chatId = doc.id,
+                        otherUserId = otherId,
+                        lastMessageTimeStamp = lastMessageTimeStamp,
+                        otherUserName = otherUserName.orEmpty(),
+                        profileUrl = otherUserPhotoUrl ?: DEFAULT_PROFILE_PIC
+                    )
+                } ?: emptyList()
+
+                onUpdatedChatList(chatList)
+            }
 
 
     }

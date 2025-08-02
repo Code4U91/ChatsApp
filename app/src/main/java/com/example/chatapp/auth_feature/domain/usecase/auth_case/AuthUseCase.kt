@@ -6,5 +6,6 @@ data class AuthUseCase(
     val changeEmailUseCase: ChangeEmailUseCase,
     val resetPasswordUseCase: ResetPasswordUseCase,
     val getCurrentUser: GetCurrentUser,
-    val signUpUseCase: SignUpUseCase
+    val signUpUseCase: SignUpUseCase,
+    val updateFcmTokenIfNeeded: UpdateFcmTokenIfNeeded
 )

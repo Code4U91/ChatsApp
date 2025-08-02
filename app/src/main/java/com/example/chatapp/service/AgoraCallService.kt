@@ -14,8 +14,8 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.R
-import com.example.chatapp.api.FcmNotificationSender
 import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
+import com.example.chatapp.call_feature.domain.repository.FcmCallNotificationSenderRepo
 import com.example.chatapp.call_feature.domain.usecase.ringtone_case.RingtoneUseCase
 import com.example.chatapp.call_feature.domain.usecase.session_case.CallSessionUploadCase
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
@@ -47,9 +47,9 @@ class AgoraCallService : LifecycleService() {
     @Inject
     lateinit var ringtoneUseCase: RingtoneUseCase
 
-
     @Inject
-    lateinit var fcmNotificationSender: FcmNotificationSender
+    lateinit var fcmCallNotificationSenderRepo: FcmCallNotificationSenderRepo
+
 
 
     private lateinit var callMetadata: CallMetadata
@@ -186,12 +186,10 @@ class AgoraCallService : LifecycleService() {
                                     receiverName = callMetadata.receiverName
                                 )
 
-                                // check if the call is declined by the receiver
-                                // if the call is declined, receiver updates the document with status "declined", we listen for that update here
                                 callId?.let {
 
                                     // sending call invitation after creating call session/ call document
-                                    fcmNotificationSender.sendCallNotification(
+                                     fcmCallNotificationSenderRepo.sendCallNotification(
                                         CallNotificationRequest(
                                             callId = it,
                                             channelName = callMetadata.channelName,

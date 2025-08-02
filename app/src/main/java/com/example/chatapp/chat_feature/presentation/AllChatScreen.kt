@@ -3,6 +3,7 @@ package com.example.chatapp.chat_feature.presentation
 import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -34,7 +35,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -53,11 +53,10 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
-import com.example.chatapp.core.FriendData
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.example.chatapp.core.formatTimestamp
 import com.example.chatapp.core.shimmerEffect
-import com.example.chatapp.core.local_database.toEntity
-import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.friend_feature.domain.model.Friend
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
@@ -164,6 +163,8 @@ fun AllChatScreen(
             )
             {
 
+                //val friendDataMap by globalMessageListenerViewModel.friendList.collectAsState()
+
                 when {
                     activeChatList.isNotEmpty() -> {
                         LazyColumn(
@@ -177,8 +178,12 @@ fun AllChatScreen(
                                 key = { _, chat -> chat.chatId }
                             ) { index, chat ->
 
-                                val friendData by globalMessageListenerViewModel.getFriendData(chat.otherUserId)
-                                    .collectAsState(null)
+                                val friendData by globalMessageListenerViewModel.getOrFetchFriend(chat.otherUserId).collectAsState()
+
+                                Log.i(
+                                    "FRIEND_LOCAL",
+                                    "${friendData.toString()} and ${chat.otherUserId}"
+                                )
 
                                 ChatItemAndFriendListItem(
                                     friendId = chat.otherUserId,
@@ -228,7 +233,7 @@ fun ChatItemAndFriendListItem(
     chatId: String,
     isChatList: Boolean,
     isDeleteBarActive: Boolean = false,
-    friendData: FriendData?,
+    friendData: Friend?,
     selectedForDeletion: (String) -> Unit,
 ) {
 
@@ -236,19 +241,6 @@ fun ChatItemAndFriendListItem(
         .collectAsState(initial = emptyList())
 
     val lastMessage = if (messages.isNotEmpty()) messages.maxByOrNull { it.timeInMills } else null
-
-    DisposableEffect(friendId) {
-
-        val listener = globalMessageListenerViewModel.fetchFriendData(friendId) { data ->
-
-            globalMessageListenerViewModel.insertFriend(data.toEntity())
-
-        }
-
-        onDispose {
-            listener?.remove()
-        }
-    }
 
 
     val dateAndTime by remember(lastMessage?.timeInMills) {

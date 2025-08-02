@@ -58,19 +58,18 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.call_feature.domain.model.Call
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
+import com.example.chatapp.chat_feature.presentation.DateChip
+import com.example.chatapp.chat_feature.presentation.VideoCallButton
+import com.example.chatapp.chat_feature.presentation.VoiceCallButton
 import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.example.chatapp.core.CALL_INTENT
 import com.example.chatapp.core.formatDurationText
 import com.example.chatapp.core.formatTimestampToDateTime
 import com.example.chatapp.core.getDateLabelForMessage
 import com.example.chatapp.core.model.CallMetadata
-import com.example.chatapp.chat_feature.presentation.DateChip
-import com.example.chatapp.chat_feature.presentation.VideoCallButton
-import com.example.chatapp.chat_feature.presentation.VoiceCallButton
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
-import com.example.chatapp.call_feature.domain.model.Call
-import com.example.chatapp.core.local_database.toEntity
 import com.example.chatapp.core.toLocalDate
 import kotlinx.coroutines.delay
 
@@ -283,21 +282,7 @@ fun CallListItem(
     startCall: (photoUrl : String) -> Unit
 ) {
 
-    val friendData by globalMessageListenerViewModel.getFriendData(callData.otherUserId)
-        .collectAsState(null)
-
-    DisposableEffect(callData.otherUserId) {
-
-        val listener = globalMessageListenerViewModel.fetchFriendData(callData.otherUserId) { friendData ->
-
-            globalMessageListenerViewModel.insertFriend(friendData.toEntity())
-
-        }
-
-        onDispose {
-            listener?.remove()
-        }
-    }
+    val friendData  by globalMessageListenerViewModel.getOrFetchFriend(callData.otherUserId).collectAsState()
 
     val time by remember {
         mutableStateOf(formatTimestampToDateTime(callData.callStartTime))

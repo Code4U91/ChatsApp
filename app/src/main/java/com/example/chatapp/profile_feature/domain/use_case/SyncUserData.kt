@@ -5,24 +5,22 @@ import com.example.chatapp.profile_feature.domain.repository.LocalProfileRepo
 import com.example.chatapp.profile_feature.domain.repository.RemoteProfileRepo
 import kotlinx.coroutines.flow.distinctUntilChanged
 
-class SyncUserData (
+class SyncUserData(
     private val localProfileRepo: LocalProfileRepo,
     private val remoteProfileRepo: RemoteProfileRepo,
     private val authUseCase: AuthUseCase
 ) {
 
-   suspend operator fun invoke() {
+    suspend operator fun invoke() {
 
-        authUseCase.getCurrentUser()?.let { user ->
-
-            remoteProfileRepo.fetchUserData(user)
+        authUseCase.getCurrentUser()?.let {
+            remoteProfileRepo.fetchUserData()
                 .distinctUntilChanged()
                 .collect { userData ->
-                userData?.let {
-                    localProfileRepo.insertUserData(it)
+                    userData?.let {
+                        localProfileRepo.insertUserData(it)
+                    }
                 }
-            }
         }
-
     }
 }

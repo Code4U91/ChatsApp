@@ -18,19 +18,6 @@ data class FriendScreenUiItem(
     val itemDescription: String = ""
 )
 
-data class FriendData(
-    val name: String = "",
-    val photoUrl: String = "",
-    val about: String = "",
-    val uid: String = ""
-)
-
-
-
-data class FriendListData(
-    val friendId: String = "",
-    val friendName: String = ""
-)
 
 @Parcelize
 data class MessageFcmMetadata(

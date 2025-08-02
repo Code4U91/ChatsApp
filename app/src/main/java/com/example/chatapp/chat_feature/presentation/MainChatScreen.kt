@@ -71,17 +71,16 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
-import com.example.chatapp.core.CALL_INTENT
-import com.example.chatapp.core.appInstance
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
 import com.example.chatapp.chat_feature.domain.model.Message
+import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.appInstance
 import com.example.chatapp.core.formatOnlineStatusTime
 import com.example.chatapp.core.getDateLabelForMessage
 import com.example.chatapp.core.getMessageIconColor
 import com.example.chatapp.core.getMessageStatusIcon
 import com.example.chatapp.core.getTimeOnly
-import com.example.chatapp.core.local_database.toEntity
-import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
 import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.core.toLocalDate
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -101,8 +100,10 @@ fun MainChatScreen(
         mutableStateOf("")
     }
 
+
     val messageList by globalMessageListenerViewModel.getMessage(fetchedChatId).collectAsState(initial = emptyList())
-    val friendData by globalMessageListenerViewModel.getFriendData(otherId).collectAsState(initial = null)
+
+    val friendData  by globalMessageListenerViewModel.getOrFetchFriend(otherId).collectAsState()
 
 
     val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
@@ -113,18 +114,6 @@ fun MainChatScreen(
 
     val isDeleteBarOn = messageDeletionSet.isNotEmpty()
 
-
-    DisposableEffect(otherId) {
-
-        val listener = globalMessageListenerViewModel.fetchFriendData(otherId){
-
-            globalMessageListenerViewModel.insertFriend(it.toEntity())
-        }
-        onDispose {
-
-            listener?.remove()
-        }
-    }
 
     val currentChatId by globalMessageListenerViewModel.currentOpenChatId.collectAsState()
 

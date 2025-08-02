@@ -41,7 +41,7 @@ import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.core.AUTH_GRAPH_ROUTE
 import com.example.chatapp.core.MAIN_GRAPH_ROUTE
 import com.example.chatapp.auth_feature.presentation.screens.ChangeEmailAddressScreen
-import com.example.chatapp.friend_feature.FriendListScreen
+import com.example.chatapp.friend_feature.presentation.FriendListScreen
 import com.example.chatapp.chat_feature.presentation.MainChatScreen
 import com.example.chatapp.auth_feature.presentation.screens.ForgotPasswordScreen
 import com.example.chatapp.auth_feature.presentation.screens.SignInScreenUI
