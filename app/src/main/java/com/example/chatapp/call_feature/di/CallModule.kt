@@ -25,6 +25,7 @@ import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHis
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.ClearCallHistoryListener
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.GetCallHistoryUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.SyncCallHistoryUseCase
+import com.example.chatapp.call_feature.domain.usecase.call_invite_fcm.SendCallInviteNotification
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.CallVideoCase
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.EnableVideoPreviewUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_video_case.SetUpLocalVideoUseCase
@@ -193,5 +194,13 @@ object CallModule {
             uploadDataOnCallEnd = UploadDataOnCallEnd(callSessionUploaderRepo)
         )
 
+    }
+
+    @Provides
+    @Singleton
+    fun providesCallInviteUseCase(
+        fcmCallNotificationSenderRepo: FcmCallNotificationSenderRepo
+    ) : SendCallInviteNotification {
+        return SendCallInviteNotification(fcmCallNotificationSenderRepo)
     }
 }

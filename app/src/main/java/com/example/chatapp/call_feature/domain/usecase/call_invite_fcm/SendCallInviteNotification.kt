@@ -1,4 +1,4 @@
-package com.example.chatapp.call_feature.domain.usecase.call_invite_api_case
+package com.example.chatapp.call_feature.domain.usecase.call_invite_fcm
 
 import com.example.chatapp.call_feature.domain.repository.FcmCallNotificationSenderRepo
 import com.example.chatapp.core.CallNotificationRequest

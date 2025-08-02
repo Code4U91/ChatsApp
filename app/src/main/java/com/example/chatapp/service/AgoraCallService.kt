@@ -15,7 +15,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.R
 import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
-import com.example.chatapp.call_feature.domain.repository.FcmCallNotificationSenderRepo
+import com.example.chatapp.call_feature.domain.usecase.call_invite_fcm.SendCallInviteNotification
 import com.example.chatapp.call_feature.domain.usecase.ringtone_case.RingtoneUseCase
 import com.example.chatapp.call_feature.domain.usecase.session_case.CallSessionUploadCase
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
@@ -48,7 +48,7 @@ class AgoraCallService : LifecycleService() {
     lateinit var ringtoneUseCase: RingtoneUseCase
 
     @Inject
-    lateinit var fcmCallNotificationSenderRepo: FcmCallNotificationSenderRepo
+    lateinit var  sendCallInviteNotification: SendCallInviteNotification
 
 
 
@@ -189,7 +189,7 @@ class AgoraCallService : LifecycleService() {
                                 callId?.let {
 
                                     // sending call invitation after creating call session/ call document
-                                     fcmCallNotificationSenderRepo.sendCallNotification(
+                                      sendCallInviteNotification(
                                         CallNotificationRequest(
                                             callId = it,
                                             channelName = callMetadata.channelName,
