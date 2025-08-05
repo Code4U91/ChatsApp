@@ -1,6 +1,6 @@
-package com.example.chatapp.common.presentation.dialogBox
+package com.example.chatapp.shared.presentation.dialogBox
 
-import androidx.activity.compose.BackHandler
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -38,23 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.chatapp.profile_feature.presentation.isKeyboardVisible
-import com.example.chatapp.profile_feature.presentation.onSaveOrCancel
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
-// used in profile screen for inputting values like name
 @Composable
-fun PopUpBox(
-    valueDescription: String,
-    profileValue: String,
-    viewmodel: ChatsViewModel,
-    onDismiss: (expanded: Boolean) -> Unit
+fun AddFriendDialogBox(
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
+    onDismiss: (state: Boolean) -> Unit
 ) {
-
-
-    var profileValueNew by rememberSaveable {
-        mutableStateOf(profileValue)
-    }
 
     val keyboardController = LocalSoftwareKeyboardController.current
     val isKeyboardVisible = isKeyboardVisible()
@@ -62,20 +52,18 @@ fun PopUpBox(
 
     val context = LocalContext.current
 
+    var friendUserId by rememberSaveable {
+        mutableStateOf("")
+    }
+
     LaunchedEffect(Unit) {
         delay(300)
         focusRequester.requestFocus()
         keyboardController?.show()
     }
 
-    // back press
-    BackHandler {
-        onDismiss(false)
-        keyboardController?.hide()
-    }
-
-
     Dialog(onDismissRequest = {
+        friendUserId = ""
         onDismiss(false)
         keyboardController?.hide()
     }) {
@@ -83,10 +71,11 @@ fun PopUpBox(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()
                 .clickable {
+
+                    friendUserId = ""
                     onDismiss(false)
-//                    profileValueNew = ""
+                    keyboardController?.hide()
                 },
             contentAlignment = if (isKeyboardVisible) Alignment.Center else Alignment.BottomCenter
         ) {
@@ -99,17 +88,19 @@ fun PopUpBox(
             ) {
 
                 Column(
-                    modifier = Modifier.padding(15.dp)
+                    modifier = Modifier
+                        .padding(15.dp)
+                        .fillMaxWidth()
                 ) {
 
-                    Text(text = "Enter your $valueDescription", fontSize = 20.sp)
+                    Text(text = "Enter your friend user id or email", fontSize = 20.sp)
                     Spacer(modifier = Modifier.height(15.dp))
 
                     TextField(
-                        value = profileValueNew,
-                        onValueChange = { profileValueNew = it },
+                        value = friendUserId,
+                        onValueChange = { friendUserId = it },
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .padding(4.dp)
                             .focusRequester(focusRequester),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
@@ -123,17 +114,28 @@ fun PopUpBox(
                         keyboardActions = KeyboardActions(
                             onDone = {
 
-                                viewmodel.updateLoadingIndicator(true)
+                                globalMessageListenerViewModel.addNewFriend(friendUserId,
+                                    onSuccess = {
+                                        Toast.makeText(
+                                            context,
+                                            "Friend added successfully",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onFailure = { message ->
 
-                                onSaveOrCancel(
-                                    valueDescription,
-                                    profileValueNew,
-                                    viewmodel,
-                                    context,
-                                )
+                                        Toast.makeText(
+                                            context,
+                                            message,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    })
+                                friendUserId = ""
+                                onDismiss(false)
                                 keyboardController?.hide()
                             }
-                        )
+                        ),
+                        maxLines = 4,
                     )
 
                     Spacer(modifier = Modifier.height(10.dp))
@@ -148,32 +150,35 @@ fun PopUpBox(
                                 .padding(end = 16.dp)
                                 .clickable {
 
-                                    profileValueNew = ""
-                                    keyboardController?.hide()
+                                    friendUserId = ""
                                     onDismiss(false)
+                                    keyboardController?.hide()
                                 }
                         )
 
                         Text(
-                            text = "Save",
+                            text = "Add",
                             modifier = Modifier.clickable {
 
-                                if (profileValueNew.isNotEmpty()){
+                                 globalMessageListenerViewModel.addNewFriend(friendUserId,
+                                    onSuccess = {
+                                        Toast.makeText(
+                                            context,
+                                            "Friend added successfully",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    },
+                                    onFailure = { message ->
 
-                                    viewmodel.updateLoadingIndicator(true)
-
-                                    onSaveOrCancel(
-                                        valueDescription,
-                                        profileValueNew,
-                                        viewmodel,
-                                        context,
-                                    )
-                                    profileValueNew = ""
-
-                                }
-
-                                keyboardController?.hide()
+                                        Toast.makeText(
+                                            context,
+                                            message,
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    })
+                                friendUserId = ""
                                 onDismiss(false)
+                                keyboardController?.hide()
                             }
                         )
 

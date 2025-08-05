@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.chatapp.core.checkEmailPattern
+import com.example.chatapp.core.util.checkEmailPattern
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 

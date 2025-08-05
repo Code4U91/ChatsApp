@@ -3,7 +3,7 @@ package com.example.chatapp.call_feature.data.remote_source.repositoryImpl
 import android.util.Log
 import com.example.chatapp.call_feature.data.remote_source.model.CallData
 import com.example.chatapp.call_feature.domain.repository.RemoteCallRepo
-import com.example.chatapp.core.CALL_HISTORY
+import com.example.chatapp.core.util.CALL_HISTORY
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration

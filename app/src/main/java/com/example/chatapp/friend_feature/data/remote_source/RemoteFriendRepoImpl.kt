@@ -1,8 +1,8 @@
 package com.example.chatapp.friend_feature.data.remote_source
 
-import com.example.chatapp.core.FRIEND_COLLECTION
-import com.example.chatapp.core.USERS_COLLECTION
-import com.example.chatapp.core.checkEmailPattern
+import com.example.chatapp.core.util.FRIEND_COLLECTION
+import com.example.chatapp.core.util.USERS_COLLECTION
+import com.example.chatapp.core.util.checkEmailPattern
 import com.example.chatapp.friend_feature.domain.repository.RemoteFriendRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

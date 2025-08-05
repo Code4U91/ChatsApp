@@ -1,4 +1,4 @@
-package com.example.chatapp.core
+package com.example.chatapp.core.util
 
 import android.content.Context
 import androidx.compose.animation.core.LinearEasing

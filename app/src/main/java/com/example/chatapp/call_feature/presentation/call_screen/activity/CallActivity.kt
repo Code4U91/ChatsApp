@@ -17,7 +17,7 @@ import androidx.compose.runtime.getValue
 import com.example.chatapp.call_feature.presentation.call_screen.screen.CallScreen
 import com.example.chatapp.call_feature.presentation.call_screen.state.CallEvent
 import com.example.chatapp.call_feature.presentation.call_screen.viewmodel.CallViewModel
-import com.example.chatapp.core.CALL_INTENT
+import com.example.chatapp.core.util.CALL_INTENT
 import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.ui.theme.ChatsAppTheme
 import dagger.hilt.android.AndroidEntryPoint

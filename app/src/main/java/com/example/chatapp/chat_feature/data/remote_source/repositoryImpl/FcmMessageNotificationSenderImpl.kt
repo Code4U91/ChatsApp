@@ -1,8 +1,8 @@
 package com.example.chatapp.chat_feature.data.remote_source.repositoryImpl
 
 import android.util.Log
+import com.example.chatapp.chat_feature.data.remote_source.model.MessageNotificationRequest
 import com.example.chatapp.chat_feature.domain.repository.FcmMessageNotificationSenderRepo
-import com.example.chatapp.core.MessageNotificationRequest
 import com.google.firebase.auth.FirebaseAuth
 import io.ktor.client.HttpClient
 import io.ktor.client.request.headers

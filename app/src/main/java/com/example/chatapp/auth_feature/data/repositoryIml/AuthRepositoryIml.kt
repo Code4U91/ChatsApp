@@ -8,9 +8,9 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialException
 import com.example.chatapp.R
 import com.example.chatapp.auth_feature.domain.repository.AuthRepository
-import com.example.chatapp.core.DEFAULT_PROFILE_PIC
-import com.example.chatapp.core.USERS_COLLECTION
-import com.example.chatapp.core.USERS_REF
+import com.example.chatapp.core.util.DEFAULT_PROFILE_PIC
+import com.example.chatapp.core.util.USERS_COLLECTION
+import com.example.chatapp.core.util.USERS_REF
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuth

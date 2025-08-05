@@ -40,7 +40,7 @@ import com.example.chatapp.call_feature.domain.usecase.session_case.CheckCurrent
 import com.example.chatapp.call_feature.domain.usecase.session_case.UpdateCallStatus
 import com.example.chatapp.call_feature.domain.usecase.session_case.UploadCallData
 import com.example.chatapp.call_feature.domain.usecase.session_case.UploadDataOnCallEnd
-import com.example.chatapp.core.local_database.LocalRoomDatabase
+import com.example.chatapp.core.database.LocalRoomDatabase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module

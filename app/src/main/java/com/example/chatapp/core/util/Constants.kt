@@ -1,4 +1,4 @@
-package com.example.chatapp.core
+package com.example.chatapp.core.util
 
 import com.example.chatapp.BuildConfig
 

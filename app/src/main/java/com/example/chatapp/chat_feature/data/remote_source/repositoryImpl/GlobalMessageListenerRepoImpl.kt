@@ -5,11 +5,11 @@ import android.util.Log
 import com.example.chatapp.chat_feature.data.remote_source.model.ChatData
 import com.example.chatapp.chat_feature.data.remote_source.model.MessageData
 import com.example.chatapp.chat_feature.domain.repository.GlobalMessageListenerRepo
-import com.example.chatapp.core.CHATS_COLLECTION
-import com.example.chatapp.core.DEFAULT_PROFILE_PIC
-import com.example.chatapp.core.MESSAGE_COLLECTION
-import com.example.chatapp.core.USERS_COLLECTION
-import com.example.chatapp.core.appInstance
+import com.example.chatapp.core.util.CHATS_COLLECTION
+import com.example.chatapp.core.util.DEFAULT_PROFILE_PIC
+import com.example.chatapp.core.util.MESSAGE_COLLECTION
+import com.example.chatapp.core.util.USERS_COLLECTION
+import com.example.chatapp.core.util.appInstance
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore

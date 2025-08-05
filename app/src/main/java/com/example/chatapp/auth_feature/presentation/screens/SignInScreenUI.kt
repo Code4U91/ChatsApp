@@ -50,7 +50,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.R
-import com.example.chatapp.core.checkEmailPattern
+import com.example.chatapp.core.util.checkEmailPattern
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 

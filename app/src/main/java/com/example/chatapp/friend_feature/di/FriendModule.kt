@@ -1,6 +1,6 @@
 package com.example.chatapp.friend_feature.di
 
-import com.example.chatapp.core.local_database.LocalRoomDatabase
+import com.example.chatapp.core.database.LocalRoomDatabase
 import com.example.chatapp.friend_feature.data.local_source.LocalFriendRepoImpl
 import com.example.chatapp.friend_feature.data.remote_source.RemoteFriendRepoImpl
 import com.example.chatapp.friend_feature.domain.repository.LocalFriendRepo

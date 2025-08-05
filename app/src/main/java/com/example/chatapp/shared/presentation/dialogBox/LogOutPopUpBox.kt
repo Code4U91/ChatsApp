@@ -1,4 +1,4 @@
-package com.example.chatapp.common.presentation.dialogBox
+package com.example.chatapp.shared.presentation.dialogBox
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -19,7 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 
 @Composable
 fun LogOutPopUpBox(

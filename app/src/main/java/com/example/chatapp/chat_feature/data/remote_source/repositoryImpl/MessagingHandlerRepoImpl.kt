@@ -1,12 +1,12 @@
 package com.example.chatapp.chat_feature.data.remote_source.repositoryImpl
 
 import android.util.Log
+import com.example.chatapp.chat_feature.data.remote_source.model.MessageNotificationRequest
 import com.example.chatapp.chat_feature.domain.repository.MessageHandlerRepo
 import com.example.chatapp.chat_feature.domain.repository.FcmMessageNotificationSenderRepo
-import com.example.chatapp.core.CHATS_COLLECTION
-import com.example.chatapp.core.MESSAGE_COLLECTION
-import com.example.chatapp.core.MessageNotificationRequest
-import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.util.CHATS_COLLECTION
+import com.example.chatapp.core.util.MESSAGE_COLLECTION
+import com.example.chatapp.core.util.USERS_COLLECTION
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

@@ -6,8 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
-import com.example.chatapp.core.MessageFcmMetadata
-import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.model.MessageFcmMetadata
+import com.example.chatapp.core.util.USERS_COLLECTION
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.UserProfileChangeRequest
 import com.google.firebase.auth.userProfileChangeRequest

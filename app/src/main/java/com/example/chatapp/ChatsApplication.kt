@@ -8,9 +8,9 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
-import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
-import com.example.chatapp.core.CALL_FCM_NOTIFICATION_CHANNEL_STRING
-import com.example.chatapp.core.MESSAGE_FCM_CHANNEL_STRING
+import com.example.chatapp.core.util.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.example.chatapp.core.util.CALL_FCM_NOTIFICATION_CHANNEL_STRING
+import com.example.chatapp.core.util.MESSAGE_FCM_CHANNEL_STRING
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 

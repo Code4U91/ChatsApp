@@ -1,6 +1,6 @@
 package com.example.chatapp.profile_feature.data.remote_source
 
-import com.example.chatapp.core.USERS_COLLECTION
+import com.example.chatapp.core.util.USERS_COLLECTION
 import com.example.chatapp.profile_feature.domain.repository.RemoteProfileRepo
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore

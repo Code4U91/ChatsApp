@@ -14,17 +14,17 @@ import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.chatapp.R
+import com.example.chatapp.call_feature.data.remote_source.model.CallNotificationRequest
 import com.example.chatapp.call_feature.domain.repository.AgoraSetUpRepo
 import com.example.chatapp.call_feature.domain.usecase.call_invite_fcm.SendCallInviteNotification
 import com.example.chatapp.call_feature.domain.usecase.ringtone_case.RingtoneUseCase
 import com.example.chatapp.call_feature.domain.usecase.session_case.CallSessionUploadCase
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
-import com.example.chatapp.core.AGORA_ID
-import com.example.chatapp.core.CALL_CHANNEL_NOTIFICATION_NAME_ID
-import com.example.chatapp.core.CALL_INTENT
-import com.example.chatapp.core.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
-import com.example.chatapp.core.CallNotificationRequest
-import com.example.chatapp.core.INCOMING_CALL_FCM_NOTIFICATION_ID
+import com.example.chatapp.core.util.AGORA_ID
+import com.example.chatapp.core.util.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.example.chatapp.core.util.CALL_INTENT
+import com.example.chatapp.core.util.CALL_SERVICE_ACTIVE_NOTIFICATION_ID
+import com.example.chatapp.core.util.INCOMING_CALL_FCM_NOTIFICATION_ID
 import com.example.chatapp.core.model.CallMetadata
 import com.google.firebase.firestore.ListenerRegistration
 import dagger.hilt.android.AndroidEntryPoint
@@ -190,13 +190,13 @@ class AgoraCallService : LifecycleService() {
 
                                     // sending call invitation after creating call session/ call document
                                       sendCallInviteNotification(
-                                        CallNotificationRequest(
-                                            callId = it,
-                                            channelName = callMetadata.channelName,
-                                            callType = callMetadata.callType,
-                                            senderId = callMetadata.uid,
-                                            receiverId = callMetadata.callReceiverId
-                                        )
+                                          CallNotificationRequest(
+                                              callId = it,
+                                              channelName = callMetadata.channelName,
+                                              callType = callMetadata.callType,
+                                              senderId = callMetadata.uid,
+                                              receiverId = callMetadata.callReceiverId
+                                          )
                                     )
 
                                     // when the receiver declines the call

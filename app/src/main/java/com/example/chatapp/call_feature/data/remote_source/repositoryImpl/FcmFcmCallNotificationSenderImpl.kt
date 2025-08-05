@@ -1,8 +1,8 @@
 package com.example.chatapp.call_feature.data.remote_source.repositoryImpl
 
 import android.util.Log
+import com.example.chatapp.call_feature.data.remote_source.model.CallNotificationRequest
 import com.example.chatapp.call_feature.domain.repository.FcmCallNotificationSenderRepo
-import com.example.chatapp.core.CallNotificationRequest
 import com.google.firebase.auth.FirebaseAuth
 import io.ktor.client.HttpClient
 import io.ktor.client.request.headers

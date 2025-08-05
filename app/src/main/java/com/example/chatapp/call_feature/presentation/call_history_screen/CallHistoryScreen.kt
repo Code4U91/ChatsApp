@@ -64,13 +64,13 @@ import com.example.chatapp.call_feature.presentation.call_screen.activity.CallAc
 import com.example.chatapp.chat_feature.presentation.DateChip
 import com.example.chatapp.chat_feature.presentation.VideoCallButton
 import com.example.chatapp.chat_feature.presentation.VoiceCallButton
-import com.example.chatapp.common.presentation.GlobalMessageListenerViewModel
-import com.example.chatapp.core.CALL_INTENT
-import com.example.chatapp.core.formatDurationText
-import com.example.chatapp.core.formatTimestampToDateTime
-import com.example.chatapp.core.getDateLabelForMessage
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.core.util.CALL_INTENT
+import com.example.chatapp.core.util.formatDurationText
+import com.example.chatapp.core.util.formatTimestampToDateTime
+import com.example.chatapp.core.util.getDateLabelForMessage
 import com.example.chatapp.core.model.CallMetadata
-import com.example.chatapp.core.toLocalDate
+import com.example.chatapp.core.util.toLocalDate
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)

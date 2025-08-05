@@ -1,4 +1,4 @@
-package com.example.chatapp.core.local_database
+package com.example.chatapp.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase

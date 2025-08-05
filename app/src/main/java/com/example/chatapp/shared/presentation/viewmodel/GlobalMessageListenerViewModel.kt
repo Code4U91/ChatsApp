@@ -1,4 +1,4 @@
-package com.example.chatapp.common.presentation
+package com.example.chatapp.shared.presentation.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
 import com.example.chatapp.call_feature.domain.usecase.call_history_case.CallHistoryUseCase
-import com.example.chatapp.chat_feature.domain.model.Message
 import com.example.chatapp.chat_feature.domain.message_use_case.MessageUseCase
+import com.example.chatapp.chat_feature.domain.model.Message
 import com.example.chatapp.friend_feature.domain.model.Friend
 import com.example.chatapp.friend_feature.domain.use_case.FriendUseCase
 import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
@@ -64,7 +64,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
     val friendList = friendUseCase.getFriendList()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
+            started = SharingStarted.Companion.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
@@ -133,7 +133,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
                 }
                 .stateIn(
                     scope = viewModelScope,
-                    started = SharingStarted.WhileSubscribed(5000),
+                    started = SharingStarted.Companion.WhileSubscribed(5000),
                     initialValue = null
                 )
         }
@@ -145,7 +145,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
             messageUseCase.getMessage(chatId)
                 .stateIn(
                     viewModelScope,
-                    SharingStarted.WhileSubscribed(5000),
+                    SharingStarted.Companion.WhileSubscribed(5000),
                     emptyList()
                 )
         }

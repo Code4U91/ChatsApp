@@ -1,7 +1,7 @@
 package com.example.chatapp.auth_feature.data.repositoryIml
 
 import com.example.chatapp.auth_feature.domain.repository.OnlineStatusRepo
-import com.example.chatapp.core.USERS_REF
+import com.example.chatapp.core.util.USERS_REF
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError

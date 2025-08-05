@@ -1,7 +1,7 @@
 package com.example.chatapp.profile_feature.di
 
 import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
-import com.example.chatapp.core.local_database.LocalRoomDatabase
+import com.example.chatapp.core.database.LocalRoomDatabase
 import com.example.chatapp.profile_feature.data.local_source.LocalProfileRepoImpl
 import com.example.chatapp.profile_feature.data.remote_source.RemoteProfileRepoImpl
 import com.example.chatapp.profile_feature.domain.repository.LocalProfileRepo

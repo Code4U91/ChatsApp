@@ -18,7 +18,7 @@ import com.example.chatapp.chat_feature.domain.message_use_case.MessageUseCase
 import com.example.chatapp.chat_feature.domain.message_use_case.SendMessage
 import com.example.chatapp.chat_feature.domain.message_use_case.SyncChats
 import com.example.chatapp.chat_feature.domain.repository.FcmMessageNotificationSenderRepo
-import com.example.chatapp.core.local_database.LocalRoomDatabase
+import com.example.chatapp.core.database.LocalRoomDatabase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module

@@ -1,7 +1,7 @@
 package com.example.chatapp.call_feature.data.remote_source.repositoryImpl
 
 import com.example.chatapp.call_feature.domain.repository.CallSessionUploaderRepo
-import com.example.chatapp.core.CALL_HISTORY
+import com.example.chatapp.core.util.CALL_HISTORY
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
