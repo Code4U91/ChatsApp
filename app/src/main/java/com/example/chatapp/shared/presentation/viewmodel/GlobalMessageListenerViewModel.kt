@@ -115,7 +115,21 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
+    fun loadMessagesOnceForOldChat(chatId : String){
+        val existingChat = activeChats.value.firstOrNull {it.chatId == chatId}
 
+        if(existingChat != null){
+            viewModelScope.launch {
+                messageUseCase.loadOldMessageOnce(
+                    isUserInChatScreen = { id -> _currentOpenChatId.value == id},
+                    chatId =  chatId
+                )
+            }
+
+        } else {
+            Log.d("maybeLoadMessages", "Chat with id $chatId does not exist locally, skipping fetch")
+        }
+    }
 
 
     fun getOrFetchFriend(friendId: String) : StateFlow<Friend?> {

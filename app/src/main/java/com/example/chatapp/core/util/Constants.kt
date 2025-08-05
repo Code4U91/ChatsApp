@@ -36,3 +36,5 @@ const val CALL_HISTORY_INTENT = "callHistory"
 
 const val DEFAULT_PROFILE_PIC = "https://upload.wikimedia.org/wikipedia/commons/a/ac/Default_pfp.jpg"
 
+const val MAX_ACTIVE_CHAT_LISTENERS = 10
+

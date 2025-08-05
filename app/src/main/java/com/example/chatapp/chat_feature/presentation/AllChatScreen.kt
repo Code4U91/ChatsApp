@@ -53,6 +53,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
+import com.example.chatapp.chat_feature.domain.model.Message
 import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import com.example.chatapp.core.util.formatTimestamp
 import com.example.chatapp.core.util.shimmerEffect
@@ -163,8 +164,6 @@ fun AllChatScreen(
             )
             {
 
-                //val friendDataMap by globalMessageListenerViewModel.friendList.collectAsState()
-
                 when {
                     activeChatList.isNotEmpty() -> {
                         LazyColumn(
@@ -239,6 +238,13 @@ fun ChatItemAndFriendListItem(
 
     val messages by globalMessageListenerViewModel.getMessage(chatId)
         .collectAsState(initial = emptyList())
+
+    LaunchedEffect(chatId) {
+
+        if(messages.isEmpty()){
+            globalMessageListenerViewModel.loadMessagesOnceForOldChat(chatId)
+        }
+    }
 
     val lastMessage = if (messages.isNotEmpty()) messages.maxByOrNull { it.timeInMills } else null
 

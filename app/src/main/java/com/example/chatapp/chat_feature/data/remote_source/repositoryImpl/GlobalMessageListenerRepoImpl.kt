@@ -7,6 +7,7 @@ import com.example.chatapp.chat_feature.data.remote_source.model.MessageData
 import com.example.chatapp.chat_feature.domain.repository.GlobalMessageListenerRepo
 import com.example.chatapp.core.util.CHATS_COLLECTION
 import com.example.chatapp.core.util.DEFAULT_PROFILE_PIC
+import com.example.chatapp.core.util.MAX_ACTIVE_CHAT_LISTENERS
 import com.example.chatapp.core.util.MESSAGE_COLLECTION
 import com.example.chatapp.core.util.USERS_COLLECTION
 import com.example.chatapp.core.util.appInstance
@@ -18,11 +19,12 @@ import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class GlobalMessageListenerRepoImpl(
     private val firestoreDb: FirebaseFirestore,
     private val context: Context,
-    private val auth : FirebaseAuth
+    private val auth: FirebaseAuth
 ) : GlobalMessageListenerRepo {
 
     private val activeListeners = mutableMapOf<String, ListenerRegistration>()
@@ -42,6 +44,10 @@ class GlobalMessageListenerRepoImpl(
 
             chatListListener = fetchCurrentUserParticipantChats(user) { chatList ->
 
+                // Only attach listeners to top active chats
+                val topChats = chatList.sortedByDescending { it.lastMessageTimeStamp }.take(
+                    MAX_ACTIVE_CHAT_LISTENERS
+                )
 
                 if (chatList != currentChatList) {
                     currentChatList = chatList
@@ -49,8 +55,8 @@ class GlobalMessageListenerRepoImpl(
                     trySend(GlobalChatEvent.AllChatsFetched(chatList))
                 }
 
-                removeObsoleteChatListeners(chatList)
-                addListenersForNewChats(chatList, user, isUserInChatScreen) { event ->
+                removeObsoleteChatListeners(topChats)
+                addListenersForNewChats(topChats, user, isUserInChatScreen) { event ->
                     trySend(event)
                 }
 
@@ -94,7 +100,7 @@ class GlobalMessageListenerRepoImpl(
 
                     sendEvent(GlobalChatEvent.NewMessages(chatId, newMessages))
 
-                    updateMessageStatus(snapshot, chatId, user, isUserInChatScreen)
+                    updateMessageStatus(snapshot, chatId, user.uid, isUserInChatScreen)
 
                 }
 
@@ -106,12 +112,11 @@ class GlobalMessageListenerRepoImpl(
     private fun updateMessageStatus(
         snapshot: QuerySnapshot?,
         chatId: String,
-        user: FirebaseUser,
+        userId: String,
         isUserInChatScreen: (String) -> Boolean
     ) {
         // Loop Through Each Document for Status Updates
         val batch = firestoreDb.batch()
-        val currentUserId = user.uid
         val appInstance = context.appInstance()
 
         snapshot?.documents?.forEach docLoop@{ doc ->
@@ -124,7 +129,7 @@ class GlobalMessageListenerRepoImpl(
                     .collection(MESSAGE_COLLECTION).document(doc.id)
 
             if (
-                message.receiverId == currentUserId &&
+                message.receiverId ==  userId &&
                 message.status !in listOf("delivered", "seen")
             ) {
 
@@ -217,6 +222,33 @@ class GlobalMessageListenerRepoImpl(
         chatListListener?.remove()
         chatListListener = null
         Log.d("ChatManager", "Cleared all global chat listeners")
+    }
+
+    override suspend fun fetchMessagesOnceForChat(
+        isUserInChatScreen: (String) -> Boolean,
+        chatId: String
+    ): List<MessageData> {
+
+        val currentUserId = auth.currentUser?.uid ?: return emptyList()
+
+        return try {
+            val snapShot = firestoreDb.collection(USERS_COLLECTION)
+                .document(currentUserId)
+                .collection(CHATS_COLLECTION)
+                .document(chatId)
+                .collection(MESSAGE_COLLECTION)
+                .get()
+                .await()
+
+            updateMessageStatus(snapShot, chatId, currentUserId, isUserInChatScreen)
+
+            snapShot.documents.mapNotNull { it.toObject(MessageData::class.java) }
+        } catch (e : Exception){
+            Log.e("ChatLoad", "failed to load messages for $chatId", e)
+            emptyList()
+
+        }
+
     }
 
 

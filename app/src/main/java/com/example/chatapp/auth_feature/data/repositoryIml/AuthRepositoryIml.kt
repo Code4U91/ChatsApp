@@ -22,6 +22,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 
 class AuthRepositoryIml(
     private val auth: FirebaseAuth,
@@ -234,26 +235,35 @@ class AuthRepositoryIml(
 
     override suspend fun signOut() {
 
-        val user = auth.currentUser
-        if (user != null) {
+        val user = auth.currentUser ?: return
 
-            val currentToken = firebaseMessaging.token.await()
+        val  currentFcmToken = runCatching {
+            withTimeout(5000){
+                firebaseMessaging.token.await()
+            }
+        }.getOrNull()
 
-            val userId = user.uid
-            val realTimeDbRef = realTimeDb.getReference(USERS_REF).child(user.uid)
+        runCatching {
+            withTimeout(5000){
+                val realTimeDbRef = realTimeDb.getReference(USERS_REF).child(user.uid)
 
-            realTimeDbRef.setValue(
-                mapOf(
-                    "onlineStatus" to false,
-                    "lastSeen" to ServerValue.TIMESTAMP
-                )
-            ).await()
-
-            removeFcmTokenFromUser(userId, currentToken)
-           // LocalFcmTokenManager.clearToken(context)
-
-            auth.signOut()
+                realTimeDbRef.setValue(
+                    mapOf(
+                        "onlineStatus" to false,
+                        "lastSeen" to ServerValue.TIMESTAMP
+                    )
+                ).await()
+            }
+        }.onFailure {
+            Log.e("SingOut", "failed to update status", it)
         }
+
+         currentFcmToken?.let {
+            removeFcmTokenFromUser(user.uid, it)
+        }
+
+        auth.signOut()
+
 
     }
 

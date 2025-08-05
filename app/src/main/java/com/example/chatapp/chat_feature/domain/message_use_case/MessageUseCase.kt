@@ -8,5 +8,6 @@ data class MessageUseCase(
     val deleteMessages: DeleteMessages,
     val markMessageAsSeen: MarkMessageAsSeen,
     val syncChats: SyncChats,
-    val clearAllChatsAndMessageListeners: ClearAllChatsAndMessageListeners
+    val clearAllChatsAndMessageListeners: ClearAllChatsAndMessageListeners,
+    val loadOldMessageOnce: LoadOldMessageOnce
 )

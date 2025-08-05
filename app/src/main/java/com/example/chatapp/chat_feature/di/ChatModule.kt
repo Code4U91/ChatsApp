@@ -13,6 +13,7 @@ import com.example.chatapp.chat_feature.domain.message_use_case.ClearAllChatsAnd
 import com.example.chatapp.chat_feature.domain.message_use_case.DeleteMessages
 import com.example.chatapp.chat_feature.domain.message_use_case.GetAllChats
 import com.example.chatapp.chat_feature.domain.message_use_case.GetMessage
+import com.example.chatapp.chat_feature.domain.message_use_case.LoadOldMessageOnce
 import com.example.chatapp.chat_feature.domain.message_use_case.MarkMessageAsSeen
 import com.example.chatapp.chat_feature.domain.message_use_case.MessageUseCase
 import com.example.chatapp.chat_feature.domain.message_use_case.SendMessage
@@ -111,7 +112,11 @@ object ChatModule {
             ),
             markMessageAsSeen = MarkMessageAsSeen(messageHandlerRepo),
             syncChats = SyncChats(globalMessageListenerRepo,localChatRepo),
-            clearAllChatsAndMessageListeners = ClearAllChatsAndMessageListeners(globalMessageListenerRepo)
+            clearAllChatsAndMessageListeners = ClearAllChatsAndMessageListeners(globalMessageListenerRepo),
+            loadOldMessageOnce = LoadOldMessageOnce(
+                globalMessageListenerRepo,
+                localChatRepo
+            )
         )
     }
 
