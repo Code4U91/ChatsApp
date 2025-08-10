@@ -1,6 +1,5 @@
 package com.example.chatapp.profile_feature.di
 
-import com.example.chatapp.auth_feature.domain.usecase.auth_case.AuthUseCase
 import com.example.chatapp.core.database.LocalRoomDatabase
 import com.example.chatapp.profile_feature.data.local_source.LocalProfileRepoImpl
 import com.example.chatapp.profile_feature.data.remote_source.RemoteProfileRepoImpl
@@ -8,6 +7,7 @@ import com.example.chatapp.profile_feature.domain.repository.LocalProfileRepo
 import com.example.chatapp.profile_feature.domain.repository.RemoteProfileRepo
 import com.example.chatapp.profile_feature.domain.use_case.ClearLocalDbUseCase
 import com.example.chatapp.profile_feature.domain.use_case.ClearUserDataListener
+import com.example.chatapp.profile_feature.domain.use_case.FetchUserDataOnce
 import com.example.chatapp.profile_feature.domain.use_case.GetUserData
 import com.example.chatapp.profile_feature.domain.use_case.SyncUserData
 import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
@@ -54,14 +54,14 @@ object ProfileModule {
     @Singleton
     fun providesUserDataUseCase(
         localProfileRepo: LocalProfileRepo,
-        remoteProfileRepo: RemoteProfileRepo,
-        authUseCase: AuthUseCase
+        remoteProfileRepo: RemoteProfileRepo
     ) : UserDataUseCase {
         return UserDataUseCase(
             getUserData = GetUserData(localProfileRepo),
-            syncUserData = SyncUserData(localProfileRepo, remoteProfileRepo, authUseCase),
+            syncUserData = SyncUserData(localProfileRepo, remoteProfileRepo),
             clearLocalDbUseCase = ClearLocalDbUseCase(localProfileRepo),
-            clearUserDataListener = ClearUserDataListener(remoteProfileRepo)
+            clearUserDataListener = ClearUserDataListener(remoteProfileRepo),
+            fetchUserDataOnce = FetchUserDataOnce(remoteProfileRepo,localProfileRepo)
         )
     }
 
