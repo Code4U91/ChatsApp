@@ -1,5 +1,6 @@
 package com.example.chatapp.friend_feature.data.remote_source
 
+import android.util.Log
 import com.example.chatapp.core.util.FRIEND_COLLECTION
 import com.example.chatapp.core.util.USERS_COLLECTION
 import com.example.chatapp.core.util.checkEmailPattern
@@ -10,14 +11,104 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlin.collections.chunked
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 
 class RemoteFriendRepoImpl(
     private val firestoreDb: FirebaseFirestore,
-    private val auth : FirebaseAuth
+    private val auth: FirebaseAuth
 ) : RemoteFriendRepo {
 
     private val friendListeners = mutableMapOf<String, ListenerRegistration>()
+    private val mutex = Mutex()
+
+    override fun syncOnlyVisibleFriendIds(visibleFriendIds: Set<String>): Flow<FriendData> =
+        callbackFlow {
+
+            Log.i("VISIBLE_FRIEND_REPO", visibleFriendIds.toString())
+
+            val user = auth.currentUser
+
+            if (user == null) {
+                clearFriendDataListeners()
+                close()
+                return@callbackFlow
+            }
+
+            mutex.withLock {
+                val current = friendListeners.keys
+
+                val toRemove = current - visibleFriendIds
+                val toAdd = visibleFriendIds - current
+
+                toRemove.forEach { id ->
+
+
+                    friendListeners[id]?.remove()
+                    friendListeners.remove(id)
+
+
+                }
+
+
+                toAdd.forEach { id ->
+
+                    Log.i("TO_ADD", id)
+
+                    val listener = firestoreDb.collection(USERS_COLLECTION)
+                        .document(id)
+                        .addSnapshotListener { snapshot, error ->
+
+                            if (error != null) return@addSnapshotListener
+
+                            val data = snapshot?.toObject(FriendData::class.java)
+
+                            if (data != null) {
+                                trySend(data)
+                            }
+
+
+                        }
+
+                    friendListeners[id] = listener
+
+                }
+            }
+
+            awaitClose {
+                launch {
+                    clearFriendDataListeners()
+                }
+
+            }
+        }
+
+    override suspend fun fetchFriendDataById(id: String): FriendData? {
+
+        return try {
+
+            val snapshot = firestoreDb.collection(USERS_COLLECTION)
+                .document(id)
+                .get()
+                .await()
+
+            if (snapshot.exists()) {
+                snapshot.toObject(FriendData::class.java)
+            } else {
+                null
+            }
+
+
+        } catch (e: Exception) {
+            Log.e("FETCH_FRIEND_DATA", "Error fetching friend data for id=$id", e)
+            null
+        }
+
+
+    }
 
     override fun fetchFriendList(): Flow<List<FriendData>> = callbackFlow {
 
@@ -46,49 +137,6 @@ class RemoteFriendRepoImpl(
         } ?: close()
     }
 
-    override fun fetchRemoteFriendDataById(id: String): Flow<FriendData> = callbackFlow {
-
-        auth.currentUser?.let {
-
-            if (id.isEmpty()) {
-                close()
-                return@callbackFlow
-            }
-
-            if (friendListeners.containsKey(id)) {
-                close()
-                return@callbackFlow
-            }
-
-
-            val listener = firestoreDb.collection(USERS_COLLECTION).document(id)
-                .addSnapshotListener { snapshot, error ->
-
-                    if (error != null) {
-                        return@addSnapshotListener
-                    }
-
-                    snapshot?.let {
-                        val friendData = snapshot.toObject(FriendData::class.java)
-
-                        friendData?.let {
-                            trySend(friendData)
-                        }
-
-                    }
-                }
-
-            friendListeners[id] = listener
-
-            awaitClose {
-                friendListeners[id]?.remove()
-                friendListeners.remove(id)
-            }
-
-        } ?: close()
-
-    }
-
     // function to add friend on the users friendList collection
     // user can add friend using either other user id or an email
     override fun addFriend(
@@ -99,7 +147,8 @@ class RemoteFriendRepoImpl(
 
             val userId = user.uid
 
-            val currentUserEmail = user.email ?: return onFailure(Exception("Email is not available"))
+            val currentUserEmail =
+                user.email ?: return onFailure(Exception("Email is not available"))
 
             // check if the user is trying to add themselves
             if (friendUserIdEmail == userId || friendUserIdEmail == currentUserEmail) {
@@ -121,9 +170,8 @@ class RemoteFriendRepoImpl(
         } ?: return onFailure(Exception("User not authenticated"))
 
 
-
-
     }
+
 
     override fun deleteFriend(friendIds: Set<String>) {
 
@@ -145,6 +193,18 @@ class RemoteFriendRepoImpl(
                 batch.commit()
             }
         } ?: return
+
+    }
+
+    override suspend fun clearFriendDataListeners() {
+
+        mutex.withLock {
+            friendListeners.forEach { (_, registration) ->
+                registration.remove()
+            }
+
+            friendListeners.clear()
+        }
 
     }
 

@@ -8,9 +8,10 @@ import com.example.chatapp.friend_feature.domain.repository.RemoteFriendRepo
 import com.example.chatapp.friend_feature.domain.use_case.AddFriend
 import com.example.chatapp.friend_feature.domain.use_case.DeleteFriend
 import com.example.chatapp.friend_feature.domain.use_case.FriendUseCase
+import com.example.chatapp.friend_feature.domain.use_case.GetAndSaveAllFriendList
 import com.example.chatapp.friend_feature.domain.use_case.GetFriendDataById
 import com.example.chatapp.friend_feature.domain.use_case.GetFriendList
-import com.example.chatapp.friend_feature.domain.use_case.SyncFriendData
+import com.example.chatapp.friend_feature.domain.use_case.SyncVisibleFriendData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module
@@ -58,8 +59,9 @@ object FriendModule {
             addFriend = AddFriend(remoteFriendRepo),
             deleteFriend = DeleteFriend(remoteFriendRepo, localFriendRepo),
             getFriendDataById = GetFriendDataById(localFriendRepo),
-            syncFriendData = SyncFriendData(remoteFriendRepo, localFriendRepo),
-            getFriendList = GetFriendList(localFriendRepo)
+            syncVisibleFriendData = SyncVisibleFriendData(remoteFriendRepo, localFriendRepo),
+            getFriendList = GetFriendList(localFriendRepo),
+            getAndSaveAllFriendList = GetAndSaveAllFriendList(localFriendRepo,remoteFriendRepo)
         )
 
     }

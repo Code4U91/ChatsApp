@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -42,6 +43,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,17 +55,19 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
-import com.example.chatapp.chat_feature.domain.model.Message
-import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import com.example.chatapp.core.util.formatTimestamp
 import com.example.chatapp.core.util.shimmerEffect
 import com.example.chatapp.friend_feature.domain.model.Friend
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 
-@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class, FlowPreview::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun AllChatScreen(
@@ -92,7 +96,33 @@ fun AllChatScreen(
         }
     }
 
+    val visibleChatList = if(!showSearchBar) activeChatList else filteredActiveChatList
+
+    val lazyListState = rememberLazyListState()
+
     var showEmptyState by remember { mutableStateOf(false) }
+
+    LaunchedEffect(lazyListState, visibleChatList) {
+
+        if(visibleChatList.isNotEmpty()){
+
+            snapshotFlow {
+                lazyListState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
+
+                    Log.i("VISIBLE_FRIEND_ALL", visibleChatList.getOrNull(itemInfo.index)?.otherUserId.toString())
+
+                    visibleChatList.getOrNull(itemInfo.index)?.otherUserId
+
+                }
+            }
+                .debounce(200)
+                .distinctUntilChanged()
+                .collect { visibleIds ->
+                    globalMessageListenerViewModel.updateVisibleFriendIds(visibleIds.toSet())
+                }
+        }
+
+    }
 
     LaunchedEffect(Unit) {
         delay(1000)
@@ -167,17 +197,21 @@ fun AllChatScreen(
                 when {
                     activeChatList.isNotEmpty() -> {
                         LazyColumn(
+                            state = lazyListState,
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(10.dp)
 
                         ) {
 
                             itemsIndexed(
-                                items = if (!showSearchBar) activeChatList else filteredActiveChatList,
+                                items =  visibleChatList,
                                 key = { _, chat -> chat.chatId }
                             ) { index, chat ->
 
-                                val friendData by globalMessageListenerViewModel.getOrFetchFriend(chat.otherUserId).collectAsState()
+                                val friendData by globalMessageListenerViewModel
+                                    .getOrFetchFriend(chat.otherUserId)
+                                    .collectAsState()
+
 
                                 Log.i(
                                     "FRIEND_LOCAL",
@@ -218,7 +252,6 @@ fun AllChatScreen(
 
         }
     }
-
 
 }
 

@@ -7,11 +7,15 @@ interface RemoteFriendRepo {
 
     fun fetchFriendList() : Flow<List<FriendData>>
 
-    fun fetchRemoteFriendDataById(id : String) : Flow<FriendData>
-
     fun addFriend(
         friendUserIdEmail: String, onSuccess: () -> Unit, onFailure: (e: Exception) -> Unit
     )
 
+    suspend fun fetchFriendDataById(id: String): FriendData?
+
+    fun syncOnlyVisibleFriendIds(visibleFriendIds : Set<String>): Flow<FriendData>
+
     fun deleteFriend(friendIds: Set<String>)
+
+    suspend fun clearFriendDataListeners()
 }

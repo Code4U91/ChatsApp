@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.Flow
 interface FriendDao{
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertFriend(friendEntity: FriendEntity)
+    suspend fun insertFriend(friendEntity: List<FriendEntity>)
 
 
     @Query("SELECT * FROM friends ORDER BY LOWER(friendName) ASC")

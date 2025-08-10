@@ -157,6 +157,7 @@ fun MainChatScreen(
 
     LaunchedEffect(key1 = chatId) {
         globalMessageListenerViewModel.setActiveChat(chatId)
+        globalMessageListenerViewModel.updateVisibleFriendIds( setOf(otherId))
     }
 
 

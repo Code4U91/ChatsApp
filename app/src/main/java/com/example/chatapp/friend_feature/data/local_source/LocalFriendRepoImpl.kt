@@ -11,9 +11,9 @@ class LocalFriendRepoImpl (
     private val friendDao: FriendDao
 ) : LocalFriendRepo {
 
-    override suspend fun insertFriendData(data : FriendData) {
+    override suspend fun insertFriendData(data : List<FriendData>) {
 
-        friendDao.insertFriend(data.toEntity())
+        friendDao.insertFriend(data.map { it.toEntity() })
     }
 
     override fun getFriendList():  Flow<List<Friend>> {

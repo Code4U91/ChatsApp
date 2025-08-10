@@ -45,6 +45,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,7 +72,10 @@ import com.example.chatapp.core.util.formatTimestampToDateTime
 import com.example.chatapp.core.util.getDateLabelForMessage
 import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.core.util.toLocalDate
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -198,6 +202,7 @@ fun CallHistoryScreen(
     }
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 fun CallLazyColumn(
     callListData: List<Call>,
@@ -207,6 +212,23 @@ fun CallLazyColumn(
 
     val context = LocalContext.current
     val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
+
+    LaunchedEffect(listState, callListData) {
+
+        snapshotFlow {
+            listState.layoutInfo.visibleItemsInfo.mapNotNull {listItemInfo ->
+
+                callListData.getOrNull(listItemInfo.index)?.otherUserId
+
+            }
+        }
+            .debounce(200)
+            .distinctUntilChanged()
+            .collect {visibleIds ->
+
+                globalMessageListenerViewModel.updateVisibleFriendIds(visibleIds.toSet())
+            }
+    }
 
     LaunchedEffect(callListData.firstOrNull()?.callId) {
 

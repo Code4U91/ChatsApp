@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface LocalFriendRepo {
 
-    suspend fun insertFriendData(data : FriendData)
+    suspend fun insertFriendData(data : List<FriendData>)
 
     fun getFriendList() : Flow<List<Friend>>
 

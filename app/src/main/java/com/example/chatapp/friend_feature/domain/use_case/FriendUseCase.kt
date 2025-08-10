@@ -4,6 +4,7 @@ data class FriendUseCase(
     val addFriend: AddFriend,
     val deleteFriend: DeleteFriend,
     val getFriendDataById: GetFriendDataById,
-    val syncFriendData: SyncFriendData,
-    val getFriendList: GetFriendList
+    val syncVisibleFriendData: SyncVisibleFriendData,
+    val getFriendList: GetFriendList,
+    val getAndSaveAllFriendList: GetAndSaveAllFriendList
 )
