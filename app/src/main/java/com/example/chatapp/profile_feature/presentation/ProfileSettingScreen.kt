@@ -41,7 +41,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -66,9 +66,9 @@ import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import com.example.chatapp.profile_feature.domain.model.CurrentUser
-import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import com.example.chatapp.shared.presentation.dialogBox.LogOutPopUpBox
 import com.example.chatapp.shared.presentation.dialogBox.PopUpBox
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.launch
 
 
@@ -87,10 +87,20 @@ fun ProfileSettingScreen(
 
     val loadingIndicator by viewmodel.loadingIndicator.collectAsState()
 
-    LaunchedEffect(Unit) {
+    DisposableEffect(userData) {
+
+        globalMessageListenerViewModel.closeVisibleFriendsListener()
 
         userData?.email?.let { currentEmailInDBb ->
             viewmodel.checkAndUpdateEmailOnFireStore(currentEmailInDBb)
+        }
+
+        globalMessageListenerViewModel.syncUserData()
+
+        onDispose {
+
+            globalMessageListenerViewModel.stopUserDataSync()
+
         }
     }
 

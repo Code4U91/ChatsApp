@@ -1,5 +1,6 @@
 package com.example.chatapp.profile_feature.data.remote_source
 
+import android.util.Log
 import com.example.chatapp.core.util.USERS_COLLECTION
 import com.example.chatapp.profile_feature.domain.repository.RemoteProfileRepo
 import com.google.firebase.auth.FirebaseAuth
@@ -8,23 +9,25 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
 
 class RemoteProfileRepoImpl(
     private val firestoreDb: FirebaseFirestore,
-    private val auth : FirebaseAuth
+    private val auth: FirebaseAuth
 ) : RemoteProfileRepo {
 
-    private var listener : ListenerRegistration? = null
+    private var listener: ListenerRegistration? = null
 
     // function to fetch current user data
-    override fun fetchUserData() : Flow<UserData?> = callbackFlow{
+
+    override fun fetchUserData(): Flow<UserData?> = callbackFlow {
 
         auth.currentUser?.let { user ->
 
             val userRef = firestoreDb.collection(USERS_COLLECTION)
                 .document(user.uid)
 
-             listener  = userRef.addSnapshotListener { snapshot, error ->
+            listener = userRef.addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     return@addSnapshotListener
                 }
@@ -44,7 +47,7 @@ class RemoteProfileRepoImpl(
             }
 
             awaitClose {
-                 listener?.remove()
+                listener?.remove()
             }
 
         } ?: close()
@@ -54,6 +57,32 @@ class RemoteProfileRepoImpl(
 
         listener?.remove()
         listener = null
+    }
+
+    override suspend fun oneTimeUserDataFetch(): UserData? {
+
+        return auth.currentUser?.uid?.let {
+
+            try {
+                val snapshot = firestoreDb.collection(USERS_COLLECTION)
+                    .document(it)
+                    .get()
+                    .await()
+
+                if (snapshot.exists()) {
+                    snapshot.toObject(UserData::class.java)
+                } else {
+                    null
+                }
+
+            } catch (e: Exception) {
+
+                Log.e("FETCH_USER_DATA", "Error fetching user data for id=$it", e)
+                null
+            }
+        }
+
+
     }
 
 }

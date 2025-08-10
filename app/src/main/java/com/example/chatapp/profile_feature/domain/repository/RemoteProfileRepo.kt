@@ -9,5 +9,7 @@ interface RemoteProfileRepo {
 
     fun clearProfileUserDataListener()
 
+    suspend fun oneTimeUserDataFetch() : UserData?
+
 
 }

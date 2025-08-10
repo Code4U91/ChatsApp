@@ -4,5 +4,6 @@ data class UserDataUseCase(
     val getUserData: GetUserData,
     val syncUserData: SyncUserData,
     val clearLocalDbUseCase: ClearLocalDbUseCase,
-    val clearUserDataListener: ClearUserDataListener
+    val clearUserDataListener: ClearUserDataListener,
+    val fetchUserDataOnce: FetchUserDataOnce
 )

@@ -14,6 +14,7 @@ import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.ValueEventListener
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,8 +22,10 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -45,6 +48,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
     private val messageFlows = mutableMapOf<String, StateFlow<List<Message>>>()
     private val friendFlows = mutableMapOf<String, StateFlow<Friend?>>()
 
+    private val _visibleFriendIds = MutableStateFlow<Set<String>>(emptySet())
+    val visibleFriendIds = _visibleFriendIds.asStateFlow()
+
+    private var friendListListenerJob: Job? = null
+    private var visibleFriendSyncJob: Job? = null
+    private var userDataSyncJob: Job? = null
 
     val activeChats = messageUseCase.getAllChats()
         .stateIn(
@@ -83,26 +92,75 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         fetchUserData()
 
-        syncFriendData()
-
         setOnlineStatus() // -> marks true, online
-
 
         listenToRemoteCallHistory()
 
+        observeVisibleFriends()
+
+        updateFcmTokenIfNeed()
+
+    }
+
+    fun updateFcmTokenIfNeed() {
         viewModelScope.launch {
-            userData.filterNotNull().collect { user ->
-                authUseCase.updateFcmTokenIfNeeded(user.allFcmToken)
+
+            val allFcmTokens = userData.filterNotNull().first().allFcmToken
+
+            if (allFcmTokens.isNotEmpty()) {
+                authUseCase.updateFcmTokenIfNeeded(allFcmTokens)
             }
         }
+    }
 
+    fun updateVisibleFriendIds(visibleIds: Set<String>) {
+        _visibleFriendIds.update { visibleIds }
+
+        Log.i("VISIBLE_FRIEND_UPDATE", visibleIds.toString())
+    }
+
+    private fun observeVisibleFriends() {
+        viewModelScope.launch {
+            visibleFriendIds
+                .collect { currentVisibleIds ->
+                    visibleFriendSyncJob?.cancel()
+
+                    if (currentVisibleIds.isNotEmpty()) {
+
+                        visibleFriendSyncJob = launch {
+
+                            Log.i("VISIBLE_FRIEND_OB", currentVisibleIds.toString())
+
+                            friendUseCase.syncVisibleFriendData(currentVisibleIds)
+
+                        }
+                    }
+
+                }
+        }
+    }
+
+    fun closeVisibleFriendsListener() {
+        visibleFriendSyncJob?.cancel()
+        visibleFriendSyncJob = null
+    }
+
+    fun startFriendListListener() {
+
+        friendListListenerJob = friendUseCase.getAndSaveAllFriendList(viewModelScope)
+
+    }
+
+    fun stopFriendListListener() {
+        friendListListenerJob?.cancel()
+        friendListListenerJob = null
     }
 
 
     private fun startGlobalListener() {
 
         viewModelScope.launch {
-             messageUseCase.syncChats(
+            messageUseCase.syncChats(
                 isUserInChatScreen = { chatId -> _currentOpenChatId.value == chatId }
             )
         }
@@ -115,31 +173,33 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
-    fun loadMessagesOnceForOldChat(chatId : String){
-        val existingChat = activeChats.value.firstOrNull {it.chatId == chatId}
+    fun loadMessagesOnceForOldChat(chatId: String) {
+        val existingChat = activeChats.value.firstOrNull { it.chatId == chatId }
 
-        if(existingChat != null){
+        if (existingChat != null) {
             viewModelScope.launch {
                 messageUseCase.loadOldMessageOnce(
-                    isUserInChatScreen = { id -> _currentOpenChatId.value == id},
-                    chatId =  chatId
+                    isUserInChatScreen = { id -> _currentOpenChatId.value == id },
+                    chatId = chatId
                 )
             }
 
         } else {
-            Log.d("maybeLoadMessages", "Chat with id $chatId does not exist locally, skipping fetch")
+            Log.d(
+                "maybeLoadMessages",
+                "Chat with id $chatId does not exist locally, skipping fetch"
+            )
         }
     }
 
 
-    fun getOrFetchFriend(friendId: String) : StateFlow<Friend?> {
+    fun getOrFetchFriend(friendId: String): StateFlow<Friend?> {
 
         return friendFlows.getOrPut(friendId) {
             friendUseCase.getFriendDataById(friendId)
                 .onEach { friend ->
-                    if (friend == null){
-                        addNewFriend(friendId, {}, {
-                            e ->
+                    if (friend == null) {
+                        addNewFriend(friendId, {}, { e ->
                             Log.i("FRIEND_ADD", e)
                         })
                         Log.i("FRIEND_ADD", "times called")
@@ -155,7 +215,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     fun getMessage(chatId: String): Flow<List<Message>> {
 
-        return messageFlows.getOrPut(chatId){
+        return messageFlows.getOrPut(chatId) {
             messageUseCase.getMessage(chatId)
                 .stateIn(
                     viewModelScope,
@@ -165,18 +225,25 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
-
-    private fun fetchUserData() {
+    fun fetchUserData() {
 
         viewModelScope.launch {
+            userDataUseCase.fetchUserDataOnce()
+        }
+    }
+
+
+    fun syncUserData() {
+
+        userDataSyncJob = viewModelScope.launch {
             userDataUseCase.syncUserData()
         }
 
     }
 
-    fun syncFriendData() = viewModelScope.launch {
-
-        friendUseCase.syncFriendData()
+    fun stopUserDataSync() {
+        userDataSyncJob?.cancel()
+        userDataSyncJob = null
     }
 
     fun addNewFriend(
