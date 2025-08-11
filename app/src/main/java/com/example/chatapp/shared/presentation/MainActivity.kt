@@ -26,7 +26,7 @@ import com.example.chatapp.shared.presentation.navigation.MainNavigationHost
 import com.example.chatapp.shared.presentation.navigation.Screen
 import com.example.chatapp.ui.theme.ChatsAppTheme
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 import com.example.chatapp.core.model.MessageFcmMetadata
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var auth: FirebaseAuth
 
-    private val chatsViewModel: ChatsViewModel by viewModels()
+    private val authViewModel:  AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -54,8 +54,8 @@ class MainActivity : ComponentActivity() {
 
             MESSAGE_FCM_INTENT -> {
 
-                if (chatsViewModel.fcmMessageMetadata.value != null) {
-                    val data = chatsViewModel.fcmMessageMetadata.value!!
+                if (authViewModel.fcmMessageMetadata.value != null) {
+                    val data = authViewModel.fcmMessageMetadata.value!!
 
                     "MainChat/${data.senderId}/${data.chatId}"
 
@@ -83,7 +83,7 @@ class MainActivity : ComponentActivity() {
                 DisposableEffect(Unit) {
                     val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
 
-                        chatsViewModel.checkAuthStatus(firebaseAuth.currentUser)
+                        authViewModel.checkAuthStatus(firebaseAuth.currentUser)
                     }
 
                     auth.addAuthStateListener(listener)
@@ -94,7 +94,7 @@ class MainActivity : ComponentActivity() {
                 }
 
 
-                ChatAppRoot(chatsViewModel, startDestination)
+                ChatAppRoot(authViewModel, startDestination)
             }
         }
 
@@ -126,11 +126,11 @@ class MainActivity : ComponentActivity() {
                     intent.getParcelableExtra("fcmMessage")
                 }
 
-                chatsViewModel.setFcmMessageMetaData(metaData)
+                authViewModel.setFcmMessageMetaData(metaData)
             }
 
             CALL_HISTORY_INTENT -> {
-                chatsViewModel.moveToCallHistory(true)
+                authViewModel.moveToCallHistory(true)
             }
 
             else -> {}
@@ -140,10 +140,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ChatAppRoot(viewModel: ChatsViewModel, startDestination: String) {
+fun ChatAppRoot(authViewModel:  AuthViewModel, startDestination: String) {
     val rootNavController = rememberNavController()
 
-    val authState by viewModel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
 
     Box(
         modifier = Modifier
@@ -160,12 +160,12 @@ fun ChatAppRoot(viewModel: ChatsViewModel, startDestination: String) {
             composable(route = "Main")
             {
 
-                MainNavigationHost(viewModel = viewModel, startDestination)
+                MainNavigationHost(authViewModel = authViewModel, startDestination)
             }
 
             composable("Auth") {
 
-                AuthNavigationHost(viewModel = viewModel)
+                AuthNavigationHost(authViewModel = authViewModel)
             }
 
         }

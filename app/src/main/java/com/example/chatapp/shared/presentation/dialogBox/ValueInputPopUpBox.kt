@@ -39,7 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.example.chatapp.profile_feature.presentation.isKeyboardVisible
 import com.example.chatapp.profile_feature.presentation.onSaveOrCancel
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.delay
 
 // used in profile screen for inputting values like name
@@ -47,7 +47,7 @@ import kotlinx.coroutines.delay
 fun PopUpBox(
     valueDescription: String,
     profileValue: String,
-    viewmodel: ChatsViewModel,
+    globalMessageListenerViewModel:  GlobalMessageListenerViewModel,
     onDismiss: (expanded: Boolean) -> Unit
 ) {
 
@@ -86,7 +86,6 @@ fun PopUpBox(
                 .imePadding()
                 .clickable {
                     onDismiss(false)
-//                    profileValueNew = ""
                 },
             contentAlignment = if (isKeyboardVisible) Alignment.Center else Alignment.BottomCenter
         ) {
@@ -123,12 +122,12 @@ fun PopUpBox(
                         keyboardActions = KeyboardActions(
                             onDone = {
 
-                                viewmodel.updateLoadingIndicator(true)
+                                globalMessageListenerViewModel.updateLoadingIndicator(true)
 
                                 onSaveOrCancel(
                                     valueDescription,
                                     profileValueNew,
-                                    viewmodel,
+                                    globalMessageListenerViewModel,
                                     context,
                                 )
                                 keyboardController?.hide()
@@ -160,12 +159,12 @@ fun PopUpBox(
 
                                 if (profileValueNew.isNotEmpty()){
 
-                                    viewmodel.updateLoadingIndicator(true)
+                                    globalMessageListenerViewModel.updateLoadingIndicator(true)
 
                                     onSaveOrCancel(
                                         valueDescription,
                                         profileValueNew,
-                                        viewmodel,
+                                        globalMessageListenerViewModel,
                                         context,
                                     )
                                     profileValueNew = ""

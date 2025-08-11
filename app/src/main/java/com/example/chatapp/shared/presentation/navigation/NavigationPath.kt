@@ -46,17 +46,17 @@ import com.example.chatapp.chat_feature.presentation.MainChatScreen
 import com.example.chatapp.auth_feature.presentation.screens.ForgotPasswordScreen
 import com.example.chatapp.auth_feature.presentation.screens.SignInScreenUI
 import com.example.chatapp.auth_feature.presentation.screens.SignUpScreenUI
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 import com.example.chatapp.chat_feature.presentation.AllChatScreen
 import com.example.chatapp.call_feature.presentation.call_history_screen.CallHistoryScreen
 import com.example.chatapp.profile_feature.presentation.ProfileSettingScreen
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 
 
 // Authentication screen navigation
 @Composable
 fun AuthNavigationHost(
-    viewModel: ChatsViewModel
+    authViewModel:  AuthViewModel
 ) {
     val navController = rememberNavController()
 
@@ -73,15 +73,15 @@ fun AuthNavigationHost(
         {
 
             composable("SignIn") {
-                SignInScreenUI(viewModel, navController)
+                SignInScreenUI(authViewModel, navController)
             }
 
             composable("SignUp") {
-                SignUpScreenUI(viewModel, navController)
+                SignUpScreenUI(authViewModel, navController)
             }
 
             composable("forgotPwd") {
-                ForgotPasswordScreen(viewModel)
+                ForgotPasswordScreen(authViewModel)
             }
         }
     }
@@ -93,7 +93,7 @@ fun AuthNavigationHost(
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MainNavigationHost(
-    viewModel: ChatsViewModel,
+    authViewModel:  AuthViewModel,
     startDestination: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel = hiltViewModel()
 ) {
@@ -101,11 +101,11 @@ fun MainNavigationHost(
     val navController = rememberNavController()
 
 
-    val messageFcmMetadata by viewModel.fcmMessageMetadata.collectAsState()
+    val messageFcmMetadata by authViewModel.fcmMessageMetadata.collectAsState()
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val isCallHistoryActive by viewModel.callHistoryScreenActive.collectAsState()
-    val moveToCallHistory by viewModel.moveToCallHistory.collectAsState()
+    val isCallHistoryActive by authViewModel.callHistoryScreenActive.collectAsState()
+    val moveToCallHistory by authViewModel.moveToCallHistory.collectAsState()
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
 
@@ -119,7 +119,7 @@ fun MainNavigationHost(
             if (currentChatId != data.chatId) {
 
                 navController.navigate("MainChat/${data.senderId}/${data.chatId}")
-                viewModel.setFcmMessageMetaData(null)
+                authViewModel.setFcmMessageMetaData(null)
             }
         }
     }
@@ -187,7 +187,6 @@ fun MainNavigationHost(
 
             composable(Screen.ProfileScreen.route) {
                 ProfileSettingScreen(
-                    viewModel,
                     navController,
                     paddingValue,
                     globalMessageListenerViewModel
@@ -195,7 +194,7 @@ fun MainNavigationHost(
             }
 
             composable(Screen.CallHistoryScreen.route) {
-                CallHistoryScreen(globalMessageListenerViewModel, viewModel)
+                CallHistoryScreen(globalMessageListenerViewModel, authViewModel)
             }
 
             composable("FriendListScreen") {
@@ -203,11 +202,11 @@ fun MainNavigationHost(
             }
 
             composable("changePassword") {
-                ForgotPasswordScreen(viewModel)
+                ForgotPasswordScreen(authViewModel)
             }
 
             composable("changeEmail") {
-                ChangeEmailAddressScreen(viewModel)
+                ChangeEmailAddressScreen(authViewModel)
             }
 
             composable(

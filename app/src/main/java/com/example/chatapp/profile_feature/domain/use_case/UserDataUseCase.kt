@@ -4,5 +4,7 @@ data class UserDataUseCase(
     val getUserData: GetUserData,
     val syncUserData: SyncUserData,
     val clearLocalDbUseCase: ClearLocalDbUseCase,
-    val fetchUserDataOnce: FetchUserDataOnce
+    val fetchUserDataOnce: FetchUserDataOnce,
+    val updateUserData: UpdateUserData,
+    val updateStoredEmail: UpdateStoredEmail
 )

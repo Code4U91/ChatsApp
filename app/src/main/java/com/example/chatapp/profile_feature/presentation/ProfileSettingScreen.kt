@@ -64,7 +64,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import com.example.chatapp.profile_feature.domain.model.CurrentUser
 import com.example.chatapp.shared.presentation.dialogBox.LogOutPopUpBox
 import com.example.chatapp.shared.presentation.dialogBox.PopUpBox
@@ -75,7 +74,6 @@ import kotlinx.coroutines.launch
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun ProfileSettingScreen(
-    viewmodel: ChatsViewModel,
     navController: NavHostController,
     paddingValue: PaddingValues,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel
@@ -85,14 +83,14 @@ fun ProfileSettingScreen(
 
     val userData by globalMessageListenerViewModel.userData.collectAsState()
 
-    val loadingIndicator by viewmodel.loadingIndicator.collectAsState()
+    val loadingIndicator by globalMessageListenerViewModel.loadingIndicator.collectAsState()
 
     DisposableEffect(userData) {
 
         globalMessageListenerViewModel.closeVisibleFriendsListener()
 
         userData?.email?.let { currentEmailInDBb ->
-            viewmodel.checkAndUpdateEmailOnFireStore(currentEmailInDBb)
+            globalMessageListenerViewModel.updateEmailOnIfChanged(currentEmailInDBb)
         }
 
         globalMessageListenerViewModel.syncUserData()
@@ -158,8 +156,8 @@ fun ProfileSettingScreen(
                             secondaryIcon = item.secondaryIcon,
                             itemDescription = item.itemDescription,
                             itemValue = item.itemValue,
-                            viewmodel = viewmodel,
                             navController = navController,
+                            globalMessageListenerViewModel = globalMessageListenerViewModel
                         )
 
                         if (index != profileItems.lastIndex) {
@@ -186,7 +184,7 @@ fun ProfileSettingScreen(
                         secondaryIcon = Icons.Default.ChevronRight,
                         itemDescription = "Password",
                         itemValue = "",
-                        viewmodel = viewmodel,
+                        globalMessageListenerViewModel,
                         navController
                     )
                 }
@@ -204,7 +202,7 @@ fun ProfileSettingScreen(
                     PopUpBox(
                         valueDescription = "Image URL",
                         profileValue = userData?.photoUrl.orEmpty(),
-                        viewmodel = viewmodel
+                        globalMessageListenerViewModel =  globalMessageListenerViewModel
                     ) {
                         expandEditImg = it
                     }
@@ -331,7 +329,7 @@ fun ProfileComponent(
     secondaryIcon: ImageVector,
     itemDescription: String,
     itemValue: String,
-    viewmodel: ChatsViewModel,
+    globalMessageListenerViewModel: GlobalMessageListenerViewModel,
     navController: NavHostController,
 ) {
 
@@ -415,7 +413,7 @@ fun ProfileComponent(
     }
 
     if (expanded) {
-        PopUpBox(itemDescription, itemValue, viewmodel)
+        PopUpBox(itemDescription, itemValue,globalMessageListenerViewModel )
         {
             expanded = it
         }
@@ -428,7 +426,7 @@ fun ProfileComponent(
 fun onSaveOrCancel(
     valueDescription: String,
     profileValueNew: String,
-    viewmodel: ChatsViewModel,
+    viewmodel:  GlobalMessageListenerViewModel,
     context: Context,
 ) {
 

@@ -26,12 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 import com.example.chatapp.core.util.checkEmailPattern
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 
 @Composable
- fun ChangeEmailAddressScreen(viewModel: ChatsViewModel) {
+ fun ChangeEmailAddressScreen(authViewModel:  AuthViewModel) {
 
     var newEmail by rememberSaveable {
         mutableStateOf("")
@@ -131,7 +131,7 @@ import kotlinx.coroutines.delay
                         if (isEmailValid)
                         {
 
-                            viewModel.updateUserEmail(newEmail,
+                            authViewModel.changeUserEmail(newEmail,
                                 onSuccess = {
                                     Toast.makeText(context, "Verification email sent to your new email.", Toast.LENGTH_LONG).show()
                                 },

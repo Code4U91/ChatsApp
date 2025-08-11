@@ -9,6 +9,8 @@ import com.example.chatapp.profile_feature.domain.use_case.ClearLocalDbUseCase
 import com.example.chatapp.profile_feature.domain.use_case.FetchUserDataOnce
 import com.example.chatapp.profile_feature.domain.use_case.GetUserData
 import com.example.chatapp.profile_feature.domain.use_case.SyncUserData
+import com.example.chatapp.profile_feature.domain.use_case.UpdateStoredEmail
+import com.example.chatapp.profile_feature.domain.use_case.UpdateUserData
 import com.example.chatapp.profile_feature.domain.use_case.UserDataUseCase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -59,7 +61,9 @@ object ProfileModule {
             getUserData = GetUserData(localProfileRepo),
             syncUserData = SyncUserData(localProfileRepo, remoteProfileRepo),
             clearLocalDbUseCase = ClearLocalDbUseCase(localProfileRepo),
-            fetchUserDataOnce = FetchUserDataOnce(remoteProfileRepo,localProfileRepo)
+            fetchUserDataOnce = FetchUserDataOnce(remoteProfileRepo,localProfileRepo),
+            updateUserData = UpdateUserData(remoteProfileRepo),
+            updateStoredEmail = UpdateStoredEmail(remoteProfileRepo)
         )
     }
 
