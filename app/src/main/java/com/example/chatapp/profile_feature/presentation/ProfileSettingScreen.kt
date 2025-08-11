@@ -428,7 +428,7 @@ fun ProfileComponent(
 fun onSaveOrCancel(
     valueDescription: String,
     profileValueNew: String,
-    viewmodel: ChatsViewModel,
+    viewmodel:  GlobalMessageListenerViewModel,
     context: Context,
 ) {
 

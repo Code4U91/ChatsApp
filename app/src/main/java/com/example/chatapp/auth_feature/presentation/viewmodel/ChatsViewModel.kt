@@ -150,102 +150,7 @@ class ChatsViewModel @Inject constructor(
         onClick(response)
     }
 
-    // updates basic user data in firestore database and firebase auth
-    // migrate to use case and put it in profile feature
-    fun updateUserData(
-        newData: Map<String, Any?>,
-        onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
 
-        // move to use case
-        val user = authUseCase.getCurrentUser()
-        val name = newData["name"] as? String
-        val photoUrl = newData["photoUrl"] as? String
-        val about = newData["about"] as? String
-
-        user?.let {
-
-            if (name != null) {
-                val profileUpdates = userProfileChangeRequest {
-                    displayName = name
-                }
-                updateProfile(
-                    it,
-                    profileUpdates,
-                    newData,
-                    onSuccess = { onSuccess() },
-                    onFailure = { exception -> onFailure(exception) }
-                )
-            }
-
-            if (photoUrl != null) {
-
-                val profileUpdates = userProfileChangeRequest {
-                    photoUri = photoUrl.toUri()
-                }
-
-                updateProfile(
-                    it,
-                    profileUpdates,
-                    newData,
-                    onSuccess = { onSuccess() },
-                    onFailure = { exception -> onFailure(exception) }
-                )
-            }
-
-            if (about != null) {
-                uploadInDb(
-                    mapOf("about" to about),
-                    user = it,
-                    onSuccess = { onSuccess() },
-                    onFailure = { exception -> onFailure(exception) }
-                )
-            }
-        }
-
-    }
-
-    // uploads the user data on both firestore database and firebase auth
-    // move to use case
-    private fun updateProfile(
-        user: FirebaseUser,
-        profileUpdates: UserProfileChangeRequest,
-        newData: Map<String, Any?>,
-        onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
-        user.updateProfile(profileUpdates).addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-
-                uploadInDb(
-                    newData,
-                    user,
-                    onSuccess = { onSuccess() },
-                    onFailure = { exception -> onFailure(exception) }
-                )
-            } else {
-                onFailure(Exception(task.exception))
-            }
-        }
-
-    }
-
-    private fun uploadInDb(
-        newData: Map<String, Any?>,
-        user: FirebaseUser,
-        onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
-        firestoreDb.collection(USERS_COLLECTION).document(user.uid)
-            .update(newData)
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener { exception ->
-                onFailure(exception)
-            }
-    }
 
     fun updateUserEmail(
         newEmail: String,
@@ -291,6 +196,22 @@ class ChatsViewModel @Inject constructor(
 
         }
 
+    }
+
+    private fun uploadInDb(
+        newData: Map<String, Any?>,
+        user: FirebaseUser,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        firestoreDb.collection(USERS_COLLECTION).document(user.uid)
+            .update(newData)
+            .addOnSuccessListener {
+                onSuccess()
+            }
+            .addOnFailureListener { exception ->
+                onFailure(exception)
+            }
     }
 
 

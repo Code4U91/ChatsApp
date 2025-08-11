@@ -155,6 +155,19 @@ class GlobalMessageListenerViewModel @Inject constructor(
         friendListListenerJob = null
     }
 
+    fun updateUserData(
+        newData: Map<String, Any?>,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        userDataUseCase.updateUserData(
+            newData = newData,
+            onSuccess = {onSuccess()},
+            onFailure =  {e -> onFailure(e)}
+        )
+
+    }
+
 
     private fun startGlobalListener() {
 

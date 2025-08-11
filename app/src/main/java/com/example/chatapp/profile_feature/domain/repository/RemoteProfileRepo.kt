@@ -5,9 +5,15 @@ import kotlinx.coroutines.flow.Flow
 
 interface RemoteProfileRepo {
 
-    fun fetchUserData() : Flow<UserData?>
+    fun fetchUserData(): Flow<UserData?>
 
-    suspend fun oneTimeUserDataFetch() : UserData?
+    suspend fun oneTimeUserDataFetch(): UserData?
+
+    fun updateUserData(
+        newData: Map<String, Any?>,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    )
 
 
 }
