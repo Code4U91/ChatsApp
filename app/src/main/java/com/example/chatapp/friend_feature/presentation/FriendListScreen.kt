@@ -255,7 +255,7 @@ fun FriendListScreen(
                 // composes profile items of all fetch friends
                 itemsIndexed(
                     items = filteredFriendList,
-                    key = { _, friend -> friend.name }) { index, friend ->
+                    key = { _, friend -> friend.uid }) { index, friend ->
 
                     val isSelected = friendDeleteList.contains(friend.uid)
                     val color =
