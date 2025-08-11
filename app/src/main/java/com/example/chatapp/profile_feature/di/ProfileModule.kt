@@ -6,7 +6,6 @@ import com.example.chatapp.profile_feature.data.remote_source.RemoteProfileRepoI
 import com.example.chatapp.profile_feature.domain.repository.LocalProfileRepo
 import com.example.chatapp.profile_feature.domain.repository.RemoteProfileRepo
 import com.example.chatapp.profile_feature.domain.use_case.ClearLocalDbUseCase
-import com.example.chatapp.profile_feature.domain.use_case.ClearUserDataListener
 import com.example.chatapp.profile_feature.domain.use_case.FetchUserDataOnce
 import com.example.chatapp.profile_feature.domain.use_case.GetUserData
 import com.example.chatapp.profile_feature.domain.use_case.SyncUserData
@@ -60,7 +59,6 @@ object ProfileModule {
             getUserData = GetUserData(localProfileRepo),
             syncUserData = SyncUserData(localProfileRepo, remoteProfileRepo),
             clearLocalDbUseCase = ClearLocalDbUseCase(localProfileRepo),
-            clearUserDataListener = ClearUserDataListener(remoteProfileRepo),
             fetchUserDataOnce = FetchUserDataOnce(remoteProfileRepo,localProfileRepo)
         )
     }

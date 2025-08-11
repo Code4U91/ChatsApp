@@ -7,8 +7,6 @@ interface RemoteProfileRepo {
 
     fun fetchUserData() : Flow<UserData?>
 
-    fun clearProfileUserDataListener()
-
     suspend fun oneTimeUserDataFetch() : UserData?
 
 

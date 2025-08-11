@@ -22,41 +22,38 @@ class RemoteProfileRepoImpl(
 
     override fun fetchUserData(): Flow<UserData?> = callbackFlow {
 
-        auth.currentUser?.let { user ->
+        val user = auth.currentUser
 
-            val userRef = firestoreDb.collection(USERS_COLLECTION)
-                .document(user.uid)
+        if(user == null){
+            close()
+            return@callbackFlow
+        }
 
-            listener = userRef.addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    return@addSnapshotListener
-                }
+        val userRef = firestoreDb.collection(USERS_COLLECTION)
+            .document(user.uid)
 
-                if (snapshot != null && snapshot.exists()) {
-
-                    val fetchedUserData = snapshot.toObject(UserData::class.java)
-
-                    @Suppress("UNCHECKED_CAST")
-                    val fcmTokens = snapshot.get("fcmTokens") as? List<String> ?: emptyList()
-
-                    val userData = fetchedUserData?.copy(
-                        fcmTokens = fcmTokens
-                    )
-                    trySend(userData)
-                }
+        listener = userRef.addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                return@addSnapshotListener
             }
 
-            awaitClose {
-                listener?.remove()
+            if (snapshot != null && snapshot.exists()) {
+
+                val fetchedUserData = snapshot.toObject(UserData::class.java)
+
+                @Suppress("UNCHECKED_CAST")
+                val fcmTokens = snapshot.get("fcmTokens") as? List<String> ?: emptyList()
+
+                val userData = fetchedUserData?.copy(
+                    fcmTokens = fcmTokens
+                )
+                trySend(userData)
             }
+        }
 
-        } ?: close()
-    }
-
-    override fun clearProfileUserDataListener() {
-
-        listener?.remove()
-        listener = null
+        awaitClose {
+            listener?.remove()
+        }
     }
 
     override suspend fun oneTimeUserDataFetch(): UserData? {

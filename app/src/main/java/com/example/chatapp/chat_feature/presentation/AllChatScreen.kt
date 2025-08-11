@@ -109,7 +109,6 @@ fun AllChatScreen(
             snapshotFlow {
                 lazyListState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
 
-                    Log.i("VISIBLE_FRIEND_ALL", visibleChatList.getOrNull(itemInfo.index)?.otherUserId.toString())
 
                     visibleChatList.getOrNull(itemInfo.index)?.otherUserId
 
@@ -118,6 +117,9 @@ fun AllChatScreen(
                 .debounce(200)
                 .distinctUntilChanged()
                 .collect { visibleIds ->
+
+                    Log.i("VISIBLE_FRIEND_ALL",  visibleIds.toString())
+
                     globalMessageListenerViewModel.updateVisibleFriendIds(visibleIds.toSet())
                 }
         }

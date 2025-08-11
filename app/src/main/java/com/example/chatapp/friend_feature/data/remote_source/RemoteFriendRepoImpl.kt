@@ -27,6 +27,11 @@ class RemoteFriendRepoImpl(
     override fun syncOnlyVisibleFriendIds(visibleFriendIds: Set<String>): Flow<FriendData> =
         callbackFlow {
 
+            if(visibleFriendIds.isEmpty()){
+                close()
+                return@callbackFlow
+            }
+
             Log.i("VISIBLE_FRIEND_REPO", visibleFriendIds.toString())
 
             val user = auth.currentUser
@@ -84,6 +89,18 @@ class RemoteFriendRepoImpl(
 
             }
         }
+
+    override suspend fun clearFriendDataListeners() {
+
+        mutex.withLock {
+            friendListeners.forEach { (_, registration) ->
+                registration.remove()
+            }
+
+            friendListeners.clear()
+        }
+
+    }
 
     override suspend fun fetchFriendDataById(id: String): FriendData? {
 
@@ -172,6 +189,8 @@ class RemoteFriendRepoImpl(
     }
 
 
+
+
     override fun deleteFriend(friendIds: Set<String>) {
 
         auth.currentUser?.let { user ->
@@ -192,18 +211,6 @@ class RemoteFriendRepoImpl(
                 batch.commit()
             }
         } ?: return
-
-    }
-
-    override suspend fun clearFriendDataListeners() {
-
-        mutex.withLock {
-            friendListeners.forEach { (_, registration) ->
-                registration.remove()
-            }
-
-            friendListeners.clear()
-        }
 
     }
 

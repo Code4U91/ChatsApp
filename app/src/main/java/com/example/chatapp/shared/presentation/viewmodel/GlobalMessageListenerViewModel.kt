@@ -125,16 +125,14 @@ class GlobalMessageListenerViewModel @Inject constructor(
                 .collect { currentVisibleIds ->
                     visibleFriendSyncJob?.cancel()
 
-                    if (currentVisibleIds.isNotEmpty()) {
+                    visibleFriendSyncJob = launch {
 
-                        visibleFriendSyncJob = launch {
+                        Log.i("VISIBLE_FRIEND_OB", currentVisibleIds.toString())
 
-                            Log.i("VISIBLE_FRIEND_OB", currentVisibleIds.toString())
+                        friendUseCase.syncVisibleFriendData(currentVisibleIds)
 
-                            friendUseCase.syncVisibleFriendData(currentVisibleIds)
-
-                        }
                     }
+
 
                 }
         }
@@ -143,6 +141,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
     fun closeVisibleFriendsListener() {
         visibleFriendSyncJob?.cancel()
         visibleFriendSyncJob = null
+        _visibleFriendIds.update { emptySet() }
     }
 
     fun startFriendListListener() {
@@ -367,9 +366,13 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
         viewModelScope.launch {
 
+            stopUserDataSync()
+            stopFriendListListener()
+            closeVisibleFriendsListener()
+
             messageUseCase.clearAllChatsAndMessageListeners()
-            userDataUseCase.clearUserDataListener()
             callHistoryUseCase.clearCallHistoryListener()
+
             authUseCase.signOutUseCase()
             delay(300)
             userDataUseCase.clearLocalDbUseCase()
@@ -380,6 +383,7 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
 
     override fun onCleared() {
+
 
         Log.i("TimesEx", "OnDestroy")
         super.onCleared()
