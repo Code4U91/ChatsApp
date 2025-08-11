@@ -27,12 +27,9 @@ class RemoteFriendRepoImpl(
     override fun syncOnlyVisibleFriendIds(visibleFriendIds: Set<String>): Flow<FriendData> =
         callbackFlow {
 
-            if(visibleFriendIds.isEmpty()){
-                close()
-                return@callbackFlow
-            }
+            val cleanedIds = visibleFriendIds.filter { it.isNotBlank() }.toSet()
 
-            Log.i("VISIBLE_FRIEND_REPO", visibleFriendIds.toString())
+            Log.i("VISIBLE_FRIEND_REPO",  cleanedIds.toString())
 
             val user = auth.currentUser
 
@@ -45,8 +42,8 @@ class RemoteFriendRepoImpl(
             mutex.withLock {
                 val current = friendListeners.keys
 
-                val toRemove = current - visibleFriendIds
-                val toAdd = visibleFriendIds - current
+                val toRemove = current -  cleanedIds
+                val toAdd = cleanedIds - current
 
                 toRemove.forEach { id ->
 
