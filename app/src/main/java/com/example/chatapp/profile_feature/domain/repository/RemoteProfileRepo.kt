@@ -15,5 +15,9 @@ interface RemoteProfileRepo {
         onFailure: (Exception) -> Unit
     )
 
+    fun checkAndUpdateEmailOnFireStore(
+        currentEmailInDb: String,
+    )
+
 
 }

@@ -161,6 +161,31 @@ class RemoteProfileRepoImpl(
 
     }
 
+    override fun checkAndUpdateEmailOnFireStore(
+        currentEmailInDb: String,
+    ) {
+        val user =  auth.currentUser ?: return
+
+        user.let { currentUser ->
+
+            val currentEmail = user.email
+
+            if (currentEmail != currentEmailInDb) {
+                // update in db
+                val userData = mapOf("email" to currentEmail)
+
+                uploadInDb(
+                    userData,
+                    currentUser,
+                    onSuccess = {},
+                    onFailure = {}
+                )
+            }
+
+        }
+
+    }
+
     private fun uploadInDb(
         newData: Map<String, Any?>,
         user: FirebaseUser,

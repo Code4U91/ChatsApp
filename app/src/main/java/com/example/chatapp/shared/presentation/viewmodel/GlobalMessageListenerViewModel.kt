@@ -42,6 +42,10 @@ class GlobalMessageListenerViewModel @Inject constructor(
 ) : ViewModel() {
 
 
+    private var _loadingIndicator = MutableStateFlow(false)
+    val loadingIndicator = _loadingIndicator.asStateFlow()
+
+
     private val _currentOpenChatId = MutableStateFlow<String?>(null)
     val currentOpenChatId = _currentOpenChatId.asStateFlow()
 
@@ -167,6 +171,15 @@ class GlobalMessageListenerViewModel @Inject constructor(
         )
 
     }
+
+    fun updateEmailOnIfChanged(email : String){
+        userDataUseCase.updateStoredEmail(email)
+    }
+
+    fun updateLoadingIndicator(state: Boolean) {
+        _loadingIndicator.value = state
+    }
+
 
 
     private fun startGlobalListener() {

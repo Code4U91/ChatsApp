@@ -59,19 +59,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 import com.example.chatapp.call_feature.domain.model.Call
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
 import com.example.chatapp.chat_feature.presentation.DateChip
 import com.example.chatapp.chat_feature.presentation.VideoCallButton
 import com.example.chatapp.chat_feature.presentation.VoiceCallButton
-import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
+import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.core.util.CALL_INTENT
 import com.example.chatapp.core.util.formatDurationText
 import com.example.chatapp.core.util.formatTimestampToDateTime
 import com.example.chatapp.core.util.getDateLabelForMessage
-import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.core.util.toLocalDate
+import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
@@ -81,16 +81,16 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 fun CallHistoryScreen(
     globalMessageListenerViewModel: GlobalMessageListenerViewModel,
-    chatsViewModel: ChatsViewModel
+    authViewModel: AuthViewModel
 ) {
 
 
     DisposableEffect(Unit) {
 
-        chatsViewModel.setHistoryScreenActive(true)
+        authViewModel.setHistoryScreenActive(true)
 
         onDispose {
-            chatsViewModel.setHistoryScreenActive(false)
+            authViewModel.setHistoryScreenActive(false)
         }
     }
 

@@ -52,18 +52,18 @@ import androidx.navigation.NavHostController
 import com.example.chatapp.R
 import com.example.chatapp.core.util.checkEmailPattern
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 
 
 @Composable
 fun SignInScreenUI(
-    viewmodel: ChatsViewModel,
+    authViewModel:  AuthViewModel,
     navController: NavHostController,
 ) {
 
     val context = LocalContext.current
     val activityContext = LocalActivity.current
-    val authState by viewmodel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
 
     LaunchedEffect(authState) {
 
@@ -74,7 +74,7 @@ fun SignInScreenUI(
                 Toast.LENGTH_SHORT
             ).show()
 
-            viewmodel.updateAuthState(AuthState.Unauthenticated) // clearing up error msg
+            authViewModel.updateAuthState(AuthState.Unauthenticated) // clearing up error msg
         }
 
     }
@@ -108,7 +108,7 @@ fun SignInScreenUI(
                         fontWeight = FontWeight.Bold
                     )
 
-                    LoginCardUi(viewmodel, activityContext, navController, authState, context)
+                    LoginCardUi(authViewModel, activityContext, navController, authState, context)
 
                 }
 
@@ -128,7 +128,7 @@ fun SignInScreenUI(
 
 @Composable
 fun LoginCardUi(
-    viewmodel: ChatsViewModel,
+    authViewModel:  AuthViewModel,
     activityContext: Activity?,
     navController: NavHostController,
     authState: AuthState,
@@ -254,7 +254,7 @@ fun LoginCardUi(
                 onClick = {
 
                     if (isEmailValid && password.length >= 6) {
-                        viewmodel.signInUsingEmailAndPwd(email, password)
+                        authViewModel.signInUsingEmailAndPwd(email, password)
                     } else {
                         Toast.makeText(
                             context,
@@ -299,7 +299,7 @@ fun LoginCardUi(
 
             Button(
                 onClick = {
-                    viewmodel.signInUsingGoogle(activityContext)
+                    authViewModel.signInUsingGoogle(activityContext)
                 },
                 enabled = authState != AuthState.Loading,
                 modifier = Modifier.fillMaxWidth()

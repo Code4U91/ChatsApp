@@ -26,12 +26,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 import com.example.chatapp.core.util.checkEmailPattern
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
 import kotlinx.coroutines.delay
 
 @Composable
-fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
+fun ForgotPasswordScreen(authViewModel:  AuthViewModel) {
 
     var email by rememberSaveable {
         mutableStateOf("")
@@ -129,7 +129,7 @@ fun ForgotPasswordScreen(viewModel: ChatsViewModel) {
 
                         if (isEmailValid)
                         {
-                            viewModel.resetPasswordUsingEmail(email)
+                            authViewModel.resetPasswordUsingEmail(email)
                             {response ->
 
                                 if (response == "0")

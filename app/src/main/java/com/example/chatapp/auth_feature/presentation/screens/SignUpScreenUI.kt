@@ -46,16 +46,16 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.core.util.checkEmailPattern
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
-import com.example.chatapp.auth_feature.presentation.viewmodel.ChatsViewModel
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 
 @Composable
 fun SignUpScreenUI(
-    viewmodel: ChatsViewModel,
+    authViewModel:  AuthViewModel,
     navController: NavHostController
 ) {
 
     val context = LocalContext.current
-    val authState by viewmodel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsState()
 
 
     LaunchedEffect(authState) {
@@ -68,7 +68,7 @@ fun SignUpScreenUI(
                 Toast.LENGTH_SHORT
             ).show()
 
-            viewmodel.updateAuthState(AuthState.Unauthenticated) // clearing up error msg
+            authViewModel.updateAuthState(AuthState.Unauthenticated) // clearing up error msg
         }
 
     }
@@ -103,7 +103,7 @@ fun SignUpScreenUI(
                         fontWeight = FontWeight.Bold
                     )
 
-                    SignUpCard(viewmodel, authState, context, navController)
+                    SignUpCard(authViewModel, authState, context, navController)
 
 
                 }
@@ -121,7 +121,7 @@ fun SignUpScreenUI(
 
 @Composable
 fun SignUpCard(
-    viewmodel: ChatsViewModel,
+    authViewModel:  AuthViewModel,
     authState: AuthState,
     context: Context,
     navController: NavHostController
@@ -266,7 +266,7 @@ fun SignUpCard(
             Button(
                 onClick = {
                     if (isEmailValid && password.length >= 6 && userName.isNotEmpty()) {
-                        viewmodel.signUpUsingEmailAndPwd(email, password, userName)
+                        authViewModel.signUpUsingEmailAndPwd(email, password, userName)
 
                     } else {
                         Toast.makeText(
