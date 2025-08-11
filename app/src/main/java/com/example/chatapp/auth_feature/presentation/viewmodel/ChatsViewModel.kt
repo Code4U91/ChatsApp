@@ -259,7 +259,7 @@ class ChatsViewModel @Inject constructor(
             user.verifyBeforeUpdateEmail(newEmail).addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     onSuccess()
-                    // signOut()
+
                 } else {
                     onFailure(task.exception?.message)
                 }

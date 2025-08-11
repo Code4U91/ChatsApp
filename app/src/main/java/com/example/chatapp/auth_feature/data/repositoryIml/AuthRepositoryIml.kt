@@ -220,8 +220,6 @@ class AuthRepositoryIml(
         val user = auth.currentUser ?: return
 
         val currentToken = firebaseMessaging.token.await()
-        // save token locally using datastore
-        // LocalFcmTokenManager.saveToken(context, currentToken)
 
         val userDoc = firestoreDb.collection(USERS_COLLECTION).document(user.uid)
 
