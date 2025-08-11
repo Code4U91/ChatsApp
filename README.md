@@ -9,18 +9,23 @@ Firebase FCM is used as call invitation.
 Supports foreground service enabling call to continue even if the app is closed and user can return to call screen anytime by clicking on the ongoing call notification.
 Uses Agora SDK for handling voice and video call.
 
+# Recent Updates
+
+1. Migrated most of the project to a feature-based modular clean architecture.
+2. Optimized listeners for better performance and scalability.
+3. Added Room database for local caching.
+
+
 # future development and fixes to be done:
 1. Enable group call.
 2. Add group chat.
-3. Fix the issue where notification is dismissable even though it was set as ongoing and ran using startForeground, make it undismissable till the call ends.
-4. Increase fuildity of call screen ui and may be use call state instead, currently when the call ends for some reason due to delay or other reason for a split second user can see a UI which are shown when the remote user is not connected or call not accepted.
-6. Improve UI look, provide UI customization options
-7. Update firebase rules for better protection
-8. Add end to to end Encryption 
+3. Improve UI look, provide UI customization options
+4. Update firebase rules for better protection
+5. Add end to to end Encryption 
 
 
 # Technology and libraries used : 
-Kotlin, Firebase, Hilt, Jetpack Compose, Android SDK, Agora SDK, Ktor,
+Kotlin, Room databse, Firebase, Hilt, Jetpack Compose, Android SDK, Agora SDK, Ktor,
 
 # App images :
 # Sign in and Sign up screen
