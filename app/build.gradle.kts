@@ -133,6 +133,11 @@ dependencies {
 
     implementation (libs.firebase.messaging)
 
+    // Import the Firebase BoM
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics) // firebase analytics
+
+
     //agora for video call
    // implementation ("io.agora.rtc:full-sdk:4.5.1")
 
