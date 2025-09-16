@@ -124,13 +124,16 @@ class FirebaseMessagingService : FirebaseMessagingService() {
                 )
 
                 // If the call ends before use picks or call has already timed out
-                listenToCallStatus(callId, notificationId = callNotificationId, onCallMissed = {
+                listenToCallStatus(
+                    callId,
+                    notificationId = callNotificationId,
+                    onCallMissed = {
 
-                    agoraRepo.declineIncomingCall(true) // may not need
+                   // agoraRepo.declineIncomingCall(true) // may not need
                     // for closing the call screen ui when missed
-                    showMissedCallNotification(senderName, callType, callNotificationId)
+                    showMissedCallNotification(senderName, callType, callNotificationId) },
 
-                }, onIncomingCall = {
+                    onIncomingCall = {
 
                     ringtoneUseCase.playIncomingRingtone()
 

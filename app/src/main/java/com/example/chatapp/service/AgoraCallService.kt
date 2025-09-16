@@ -215,28 +215,6 @@ class AgoraCallService : LifecycleService() {
 
 
                         }
-                        //else {
-//
-//                            // check if the call gets canceled before the receiver picks it
-//                            // happens if the user calls and before receiver picks the call caller cuts it
-//                            // in that case close call screen on receiver side
-//                            // receiver can't join if call isn't picked so join is false
-//                            // checked by the receiver, i.e isCaller false
-//
-//                            callDocId?.let {
-//                                val listenerForDeclineByCaller =
-//                                    callSessionUpdaterRepoIml.checkAndUpdateCurrentCall(callId = it)
-//                                    {
-//
-//                                        agoraRepo.declineIncomingCall(true) // helper flag to update the ui, listened by callViewmodel
-//
-//                                    }
-//
-//                                listenerRegistration.add(listenerForDeclineByCaller)
-//                            }
-//
-//
-//                        }
 
 
                     }
