@@ -106,21 +106,12 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
-    fun updateFcmTokenIfNeed() {
+    // APP
+
+    private fun listenToRemoteCallHistory() {
         viewModelScope.launch {
-
-            val allFcmTokens = userData.filterNotNull().first().allFcmToken
-
-            if (allFcmTokens.isNotEmpty()) {
-                authUseCase.updateFcmTokenIfNeeded(allFcmTokens)
-            }
+            callHistoryUseCase.syncCallHistoryUseCase()
         }
-    }
-
-    fun updateVisibleFriendIds(visibleIds: Set<String>) {
-        _visibleFriendIds.update { visibleIds }
-
-        Log.i("VISIBLE_FRIEND_UPDATE", visibleIds.toString())
     }
 
     private fun observeVisibleFriends() {
@@ -142,45 +133,16 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
-    fun closeVisibleFriendsListener() {
-        visibleFriendSyncJob?.cancel()
-        visibleFriendSyncJob = null
-        _visibleFriendIds.update { emptySet() }
+    private fun updateFcmTokenIfNeed() {
+        viewModelScope.launch {
+
+            val allFcmTokens = userData.filterNotNull().first().allFcmToken
+
+            if (allFcmTokens.isNotEmpty()) {
+                authUseCase.updateFcmTokenIfNeeded(allFcmTokens)
+            }
+        }
     }
-
-    fun startFriendListListener() {
-
-        friendListListenerJob = friendUseCase.getAndSaveAllFriendList(viewModelScope)
-
-    }
-
-    fun stopFriendListListener() {
-        friendListListenerJob?.cancel()
-        friendListListenerJob = null
-    }
-
-    fun updateUserData(
-        newData: Map<String, Any?>,
-        onSuccess: () -> Unit,
-        onFailure: (Exception) -> Unit
-    ) {
-        userDataUseCase.updateUserData(
-            newData = newData,
-            onSuccess = {onSuccess()},
-            onFailure =  {e -> onFailure(e)}
-        )
-
-    }
-
-    fun updateEmailOnIfChanged(email : String){
-        userDataUseCase.updateStoredEmail(email)
-    }
-
-    fun updateLoadingIndicator(state: Boolean) {
-        _loadingIndicator.value = state
-    }
-
-
 
     private fun startGlobalListener() {
 
@@ -191,11 +153,122 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
+    private fun setOnlineStatus(status: Boolean = true) {
 
-    fun listenToRemoteCallHistory() {
+        onlineStatusUseCase.setOnlineStatus(status)
+    }
+
+    private fun fetchUserData() {
+
         viewModelScope.launch {
-            callHistoryUseCase.syncCallHistoryUseCase()
+            userDataUseCase.fetchUserDataOnce()
         }
+    }
+
+    // SHARED
+
+    fun updateVisibleFriendIds(visibleIds: Set<String>) {
+        _visibleFriendIds.update { visibleIds }
+
+        Log.i("VISIBLE_FRIEND_UPDATE", visibleIds.toString())
+    }
+
+    fun closeVisibleFriendsListener() {
+        visibleFriendSyncJob?.cancel()
+        visibleFriendSyncJob = null
+        _visibleFriendIds.update { emptySet() }
+    }
+
+    // get the friend from the local db, if doesn't exist then add that friend
+    fun getOrFetchFriend(friendId: String): StateFlow<Friend?> {
+
+        return friendFlows.getOrPut(friendId) {
+            friendUseCase.getFriendDataById(friendId)
+                .onEach { friend ->
+                    if (friend == null) {
+                        addNewFriend(friendId, {}, { e ->
+                            Log.i("FRIEND_ADD", e)
+                        })
+                        Log.i("FRIEND_ADD", "times called")
+                    }
+                }
+                .stateIn(
+                    scope = viewModelScope,
+                    started = SharingStarted.Companion.WhileSubscribed(5000),
+                    initialValue = null
+                )
+        }
+    }
+
+    fun setCurrentOpenChatId(chatId: String?) {
+        if (_currentOpenChatId.value != chatId) {
+            _currentOpenChatId.value = chatId
+        }
+
+    }
+
+    fun calculateChatId(otherId: String): String? {
+
+        return authUseCase.getCurrentUser()?.let { user ->
+            messageUseCase.calculateChatId(user.uid, otherId)
+        }
+    }
+
+
+    // PROFILE SCREEN
+
+    fun updateUserData(
+        newData: Map<String, Any?>,
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        userDataUseCase.updateUserData(
+            newData = newData,
+            onSuccess = { onSuccess() },
+            onFailure = { e -> onFailure(e) }
+        )
+
+    }
+
+    fun updateEmailOnIfChanged(email: String) {
+        userDataUseCase.updateStoredEmail(email)
+    }
+
+    fun updateLoadingIndicator(state: Boolean) {
+        _loadingIndicator.value = state
+    }
+
+    fun syncUserData() {
+
+        userDataSyncJob = viewModelScope.launch {
+            userDataUseCase.syncUserData()
+        }
+
+    }
+
+    fun stopUserDataSync() {
+        userDataSyncJob?.cancel()
+        userDataSyncJob = null
+    }
+
+
+    // CHAT SCREEN
+
+    fun getMessage(chatId: String): Flow<List<Message>> {
+
+        return messageFlows.getOrPut(chatId) {
+            messageUseCase.getMessage(chatId)
+                .stateIn(
+                    viewModelScope,
+                    SharingStarted.Companion.WhileSubscribed(5000),
+                    emptyList()
+                )
+        }
+    }
+
+    fun setActiveChat(chatId: String) {
+
+        onlineStatusUseCase.setActiveChatUseCase(chatId)
     }
 
     fun loadMessagesOnceForOldChat(chatId: String) {
@@ -217,92 +290,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
         }
     }
 
-
-    fun getOrFetchFriend(friendId: String): StateFlow<Friend?> {
-
-        return friendFlows.getOrPut(friendId) {
-            friendUseCase.getFriendDataById(friendId)
-                .onEach { friend ->
-                    if (friend == null) {
-                        addNewFriend(friendId, {}, { e ->
-                            Log.i("FRIEND_ADD", e)
-                        })
-                        Log.i("FRIEND_ADD", "times called")
-                    }
-                }
-                .stateIn(
-                    scope = viewModelScope,
-                    started = SharingStarted.Companion.WhileSubscribed(5000),
-                    initialValue = null
-                )
-        }
-    }
-
-    fun getMessage(chatId: String): Flow<List<Message>> {
-
-        return messageFlows.getOrPut(chatId) {
-            messageUseCase.getMessage(chatId)
-                .stateIn(
-                    viewModelScope,
-                    SharingStarted.Companion.WhileSubscribed(5000),
-                    emptyList()
-                )
-        }
-    }
-
-    fun fetchUserData() {
-
-        viewModelScope.launch {
-            userDataUseCase.fetchUserDataOnce()
-        }
-    }
-
-
-    fun syncUserData() {
-
-        userDataSyncJob = viewModelScope.launch {
-            userDataUseCase.syncUserData()
-        }
-
-    }
-
-    fun stopUserDataSync() {
-        userDataSyncJob?.cancel()
-        userDataSyncJob = null
-    }
-
-    fun addNewFriend(
-        friendUserId: String,
-        onSuccess: () -> Unit,
-        onFailure: (message: String) -> Unit
-    ) {
-
-        friendUseCase.addFriend(
-            friendUserId,
-            onSuccess = { onSuccess() },
-            onFailure = { e -> onFailure(e.message.orEmpty()) })
-
-    }
-
-    private fun setOnlineStatus(status: Boolean = true) {
-
-        onlineStatusUseCase.setOnlineStatus(status)
-    }
-
-    fun setCurrentOpenChatId(chatId: String?) {
-        if (_currentOpenChatId.value != chatId) {
-            _currentOpenChatId.value = chatId
-        }
-
-    }
-
-    fun calculateChatId(otherId: String): String? {
-
-        return authUseCase.getCurrentUser()?.let { user ->
-            messageUseCase.calculateChatId(user.uid, otherId)
-        }
-    }
-
     fun fetchOnlineStatus(
         userId: String,
         onStatusChanged: (Long) -> Unit
@@ -314,19 +301,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
                 onStatusChanged(onlineStatus)
             },
         )
-
-    }
-
-    fun setActiveChat(chatId: String) {
-
-        onlineStatusUseCase.setActiveChatUseCase(chatId)
-    }
-
-    fun deleteFriend(friendIds: Set<String>) {
-
-        viewModelScope.launch {
-            friendUseCase.deleteFriend(friendIds)
-        }
 
     }
 
@@ -384,8 +358,42 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
     }
 
+    // FRIEND SCREEN
 
-    // signing out from this viewmodel instead of chatsViewModel because
+    fun startFriendListListener() {
+
+        friendListListenerJob = friendUseCase.getAndSaveAllFriendList(viewModelScope)
+
+    }
+
+    fun stopFriendListListener() {
+        friendListListenerJob?.cancel()
+        friendListListenerJob = null
+    }
+
+    fun addNewFriend(
+        friendUserId: String,
+        onSuccess: () -> Unit,
+        onFailure: (message: String) -> Unit
+    ) {
+
+        friendUseCase.addFriend(
+            friendUserId,
+            onSuccess = { onSuccess() },
+            onFailure = { e -> onFailure(e.message.orEmpty()) })
+
+    }
+
+    fun deleteFriend(friendIds: Set<String>) {
+
+        viewModelScope.launch {
+            friendUseCase.deleteFriend(friendIds)
+        }
+
+    }
+
+
+    // signing out from this viewmodel instead of authViewModel because
     // there's minute delay between the stopping of listener (userData) when using signOut() from
     // chatsViewModel which then causes room to re-fill the user data just after logout is clicked
     fun signOut() {
@@ -409,7 +417,6 @@ class GlobalMessageListenerViewModel @Inject constructor(
 
 
     override fun onCleared() {
-
 
         Log.i("TimesEx", "OnDestroy")
         super.onCleared()
