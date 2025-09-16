@@ -5,7 +5,6 @@ import android.content.Context
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -50,14 +50,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.chatapp.R
-import com.example.chatapp.core.util.checkEmailPattern
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
+import com.example.chatapp.core.util.checkEmailPattern
 
 
 @Composable
 fun SignInScreenUI(
-    authViewModel:  AuthViewModel,
+    authViewModel: AuthViewModel,
     navController: NavHostController,
 ) {
 
@@ -128,7 +128,7 @@ fun SignInScreenUI(
 
 @Composable
 fun LoginCardUi(
-    authViewModel:  AuthViewModel,
+    authViewModel: AuthViewModel,
     activityContext: Activity?,
     navController: NavHostController,
     authState: AuthState,
@@ -185,9 +185,9 @@ fun LoginCardUi(
                     modifier = Modifier.fillMaxWidth(),
                     value = email,
                     onValueChange =
-                    {
-                        email = it
-                    },
+                        {
+                            email = it
+                        },
                     shape = RoundedCornerShape(20.dp),
                     singleLine = true,
 
@@ -206,9 +206,9 @@ fun LoginCardUi(
                     modifier = Modifier.fillMaxWidth(),
                     value = password,
                     onValueChange =
-                    {
-                        password = it
-                    },
+                        {
+                            password = it
+                        },
                     shape = RoundedCornerShape(20.dp),
                     singleLine = true,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -230,13 +230,17 @@ fun LoginCardUi(
                         .padding(top = 4.dp),
                     contentAlignment = Alignment.CenterEnd
                 ) {
-                    Text(
-                        text = "Forgot password?",
-                        fontSize = 14.sp,
-                        modifier = Modifier.clickable {
-                            navController.navigate("forgotPwd")
-                        }
-                    )
+
+                    TextButton(onClick = {
+                        navController.navigate("forgotPwd")
+                    }) {
+
+                        Text(
+                            text = "Forgot password?",
+                            fontSize = 14.sp
+                        )
+                    }
+
                 }
 
             }
@@ -277,18 +281,19 @@ fun LoginCardUi(
 
             Spacer(modifier = Modifier.height(10.dp))
 
-            Text(
-                text = "Create an account",
-                fontSize = 14.sp,
-                modifier = Modifier.clickable {
-
-                    if (authState != AuthState.Loading) {
-                        password = ""
-                        navController.navigate("SignUp")
-                    }
-
+            TextButton(onClick = {
+                if (authState != AuthState.Loading) {
+                    password = ""
+                    navController.navigate("SignUp")
                 }
-            )
+            }) {
+                Text(
+                    text = "Create an account",
+                    fontSize = 14.sp
+                )
+            }
+
+
 
             Spacer(modifier = Modifier.height(10.dp))
 
