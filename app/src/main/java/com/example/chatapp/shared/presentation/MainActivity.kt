@@ -19,15 +19,15 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
+import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
+import com.example.chatapp.core.model.MessageFcmMetadata
 import com.example.chatapp.core.util.CALL_HISTORY_INTENT
 import com.example.chatapp.core.util.MESSAGE_FCM_INTENT
 import com.example.chatapp.shared.presentation.navigation.AuthNavigationHost
 import com.example.chatapp.shared.presentation.navigation.MainNavigationHost
 import com.example.chatapp.shared.presentation.navigation.Screen
 import com.example.chatapp.ui.theme.ChatsAppTheme
-import com.example.chatapp.auth_feature.presentation.viewmodel.AuthState
-import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
-import com.example.chatapp.core.model.MessageFcmMetadata
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -140,7 +140,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun ChatAppRoot(authViewModel:  AuthViewModel, startDestination: String) {
+fun ChatAppRoot(
+    authViewModel: AuthViewModel,
+    startDestination: String
+) {
     val rootNavController = rememberNavController()
 
     val authState by authViewModel.authState.collectAsState()
