@@ -190,6 +190,11 @@ class GlobalMessageListenerRepoImpl(
                         doc.get("participantsPhotoUrl") as? Map<String, String>
                     val otherUserPhotoUrl = participantsPhotoUrl?.get(otherId)
 
+                    Log.i(
+                        "OTHER_USER_NAME",
+                        "$otherUserName"
+                    )
+
                     ChatData(
                         chatId = doc.id,
                         otherUserId = otherId,
