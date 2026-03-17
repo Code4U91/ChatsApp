@@ -7,7 +7,7 @@ fun ChatEntity.toDomain() = Chat(
     chatId = chatId,
     otherUserId = otherUserId,
     lastMessageTimeInMills = lastMessageTimeInMills,
-    otherUserName = otherUserId,
+    otherUserName = otherUserName,
     profileUrl = profileUrl
 )
 
