@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -93,10 +94,11 @@ fun AllChatScreen(
     val filteredActiveChatList = remember(searchQuery, activeChatList) {
         activeChatList.filter {
             it.otherUserName.trim().contains(searchQuery.trim(), ignoreCase = true)
-        }
+        }.sortedBy { it.otherUserName.lowercase() }
     }
 
-    val visibleChatList = if(!showSearchBar) activeChatList else filteredActiveChatList
+
+    val visibleChatList = if(!showSearchBar && !searchQuery.isEmpty()) activeChatList else filteredActiveChatList
 
     val lazyListState = rememberLazyListState()
 
@@ -130,6 +132,10 @@ fun AllChatScreen(
         delay(1000)
         showEmptyState = true
 
+    }
+
+    BackHandler  (enabled = showSearchBar){
+        showSearchBar = false
     }
 
 
