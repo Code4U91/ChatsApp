@@ -44,7 +44,10 @@ class GlobalMessageListenerRepoImpl(
 
             chatListListener = fetchCurrentUserParticipantChats(user) { chatList ->
 
-                // Only attach listeners to top active chats
+                // TODO: Only attach listeners to top active chats
+                // this below code is attaching every top recent chats with a listener
+                // should only listen to visbile chats only
+                // currently we are only attaching visible chat for its account data listining only
                 val topChats = chatList.sortedByDescending { it.lastMessageTimeStamp }.take(
                     MAX_ACTIVE_CHAT_LISTENERS
                 )
