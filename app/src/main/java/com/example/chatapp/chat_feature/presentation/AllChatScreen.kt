@@ -98,7 +98,8 @@ fun AllChatScreen(
     }
 
 
-    val visibleChatList = if(!showSearchBar && !searchQuery.isEmpty()) activeChatList else filteredActiveChatList
+    val visibleChatList = if (searchQuery.isEmpty()) activeChatList else filteredActiveChatList
+
 
     val lazyListState = rememberLazyListState()
 
@@ -106,7 +107,7 @@ fun AllChatScreen(
 
     LaunchedEffect(lazyListState, visibleChatList) {
 
-        if(visibleChatList.isNotEmpty()){
+        if (visibleChatList.isNotEmpty()) {
 
             snapshotFlow {
                 lazyListState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
@@ -120,7 +121,7 @@ fun AllChatScreen(
                 .distinctUntilChanged()
                 .collect { visibleIds ->
 
-                    Log.i("VISIBLE_FRIEND_ALL",  visibleIds.toString())
+                    Log.i("VISIBLE_FRIEND_ALL", visibleIds.toString())
 
                     globalMessageListenerViewModel.updateVisibleFriendIds(visibleIds.toSet())
                 }
@@ -134,8 +135,9 @@ fun AllChatScreen(
 
     }
 
-    BackHandler  (enabled = showSearchBar){
+    BackHandler(enabled = showSearchBar) {
         showSearchBar = false
+        searchQuery = ""
     }
 
 
@@ -211,10 +213,12 @@ fun AllChatScreen(
 
                         ) {
 
+
                             itemsIndexed(
-                                items =  visibleChatList,
+                                items = visibleChatList,
                                 key = { _, chat -> chat.chatId }
-                            ) { index, chat ->
+                            ) { _, chat ->
+
 
                                 val friendData by globalMessageListenerViewModel
                                     .getOrFetchFriend(chat.otherUserId)
@@ -282,7 +286,7 @@ fun ChatItemAndFriendListItem(
 
     LaunchedEffect(chatId) {
 
-        if(messages.isEmpty()){
+        if (messages.isEmpty()) {
             globalMessageListenerViewModel.loadMessagesOnceForOldChat(chatId)
         }
     }
