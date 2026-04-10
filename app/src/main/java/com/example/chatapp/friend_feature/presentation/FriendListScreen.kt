@@ -50,7 +50,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
 import com.example.chatapp.chat_feature.presentation.ChatItemAndFriendListItem
-import com.example.chatapp.friend_feature.presentation.FriendScreenUiItem
 import com.example.chatapp.shared.presentation.dialogBox.AddFriendDialogBox
 import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 
