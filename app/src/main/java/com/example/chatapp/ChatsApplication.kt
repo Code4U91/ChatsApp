@@ -29,7 +29,7 @@ class ChatsApplication : Application(), DefaultLifecycleObserver {
 
         createNotificationChannel()
 
-        ProcessLifecycleOwner.Companion.get().lifecycle.addObserver(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
     }
 
     // setting online status state when user minimizes the app

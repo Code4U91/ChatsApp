@@ -52,6 +52,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil3.compose.AsyncImage
@@ -68,6 +69,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 
+
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class, FlowPreview::class)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
@@ -78,8 +80,10 @@ fun AllChatScreen(
 
     requestPerm()
 
-    // provides all the chat id's where the current user is an participate and also fetch id's of its members
-    val activeChatList by globalMessageListenerViewModel.activeChats.collectAsState()
+    // provides all the chat ids where the current user is a participant and also fetch id's of its members
+    val activeChatList by globalMessageListenerViewModel
+        .activeChats
+        .collectAsStateWithLifecycle()
 
 
     var searchQuery by rememberSaveable {
@@ -281,8 +285,11 @@ fun ChatItemAndFriendListItem(
     selectedForDeletion: (String) -> Unit,
 ) {
 
-    val messages by globalMessageListenerViewModel.getMessage(chatId)
-        .collectAsState(initial = emptyList())
+    val messages by globalMessageListenerViewModel
+        .getMessage(chatId)
+        .collectAsStateWithLifecycle(
+            initialValue = emptyList()
+        )
 
     LaunchedEffect(chatId) {
 
