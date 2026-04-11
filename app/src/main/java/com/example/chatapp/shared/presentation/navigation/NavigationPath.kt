@@ -22,7 +22,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -38,17 +38,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import coil3.compose.rememberAsyncImagePainter
-import com.example.chatapp.core.util.AUTH_GRAPH_ROUTE
-import com.example.chatapp.core.util.MAIN_GRAPH_ROUTE
 import com.example.chatapp.auth_feature.presentation.screens.ChangeEmailAddressScreen
-import com.example.chatapp.friend_feature.presentation.FriendListScreen
-import com.example.chatapp.chat_feature.presentation.MainChatScreen
 import com.example.chatapp.auth_feature.presentation.screens.ForgotPasswordScreen
 import com.example.chatapp.auth_feature.presentation.screens.SignInScreenUI
 import com.example.chatapp.auth_feature.presentation.screens.SignUpScreenUI
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
-import com.example.chatapp.chat_feature.presentation.AllChatScreen
 import com.example.chatapp.call_feature.presentation.call_history_screen.CallHistoryScreen
+import com.example.chatapp.chat_feature.presentation.AllChatScreen
+import com.example.chatapp.chat_feature.presentation.MainChatScreen
+import com.example.chatapp.core.util.AUTH_GRAPH_ROUTE
+import com.example.chatapp.core.util.MAIN_GRAPH_ROUTE
+import com.example.chatapp.friend_feature.presentation.FriendListScreen
 import com.example.chatapp.profile_feature.presentation.ProfileSettingScreen
 import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerViewModel
 
@@ -56,7 +56,7 @@ import com.example.chatapp.shared.presentation.viewmodel.GlobalMessageListenerVi
 // Authentication screen navigation
 @Composable
 fun AuthNavigationHost(
-    authViewModel:  AuthViewModel
+    authViewModel: AuthViewModel
 ) {
     val navController = rememberNavController()
 
@@ -93,7 +93,7 @@ fun AuthNavigationHost(
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun MainNavigationHost(
-    authViewModel:  AuthViewModel,
+    authViewModel: AuthViewModel,
     startDestination: String,
     globalMessageListenerViewModel: GlobalMessageListenerViewModel = hiltViewModel()
 ) {
@@ -101,11 +101,20 @@ fun MainNavigationHost(
     val navController = rememberNavController()
 
 
-    val messageFcmMetadata by authViewModel.fcmMessageMetadata.collectAsState()
+    val messageFcmMetadata by authViewModel
+        .fcmMessageMetadata
+        .collectAsStateWithLifecycle()
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
-    val isCallHistoryActive by authViewModel.callHistoryScreenActive.collectAsState()
-    val moveToCallHistory by authViewModel.moveToCallHistory.collectAsState()
+
+    val isCallHistoryActive by authViewModel
+        .callHistoryScreenActive
+        .collectAsStateWithLifecycle()
+
+    val moveToCallHistory by authViewModel
+        .moveToCallHistory
+        .collectAsStateWithLifecycle()
 
     val currentChatId = currentBackStackEntry?.arguments?.getString("chatId")
 
@@ -249,7 +258,9 @@ fun BottomNavigationBar(
     val currentRoute = currentBackStackEntry?.destination?.route
 
 
-    val userData by globalMessageListenerViewModel.userData.collectAsState()
+    val userData by globalMessageListenerViewModel
+        .userData
+        .collectAsStateWithLifecycle()
 
 
     NavigationBar {

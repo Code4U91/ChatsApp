@@ -42,7 +42,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -62,6 +61,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.profile_feature.domain.model.CurrentUser
@@ -81,9 +81,9 @@ fun ProfileSettingScreen(
 
     // this screen needs a major update, looks messy right now
 
-    val userData by globalMessageListenerViewModel.userData.collectAsState()
+    val userData by globalMessageListenerViewModel.userData.collectAsStateWithLifecycle()
 
-    val loadingIndicator by globalMessageListenerViewModel.loadingIndicator.collectAsState()
+    val loadingIndicator by globalMessageListenerViewModel.loadingIndicator.collectAsStateWithLifecycle()
 
     DisposableEffect(userData) {
 

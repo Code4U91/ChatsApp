@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -47,6 +46,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.chatapp.call_feature.presentation.call_history_screen.TopAppBarTemplate
 import com.example.chatapp.chat_feature.presentation.ChatItemAndFriendListItem
@@ -83,7 +83,9 @@ fun FriendListScreen(
         mutableStateOf(false)
     }
 
-    val friendList by globalMessageListenerViewModel.friendList.collectAsState()
+    val friendList by globalMessageListenerViewModel
+        .friendList
+        .collectAsStateWithLifecycle()
 
 
 
@@ -260,7 +262,7 @@ fun FriendListScreen(
                 // composes profile items of all fetch friends
                 itemsIndexed(
                     items = filteredFriendList,
-                    key = { _, friend -> friend.uid }) { index, friend ->
+                    key = { _, friend -> friend.uid }) { _, friend ->
 
                     val isSelected = friendDeleteList.contains(friend.uid)
                     val color =

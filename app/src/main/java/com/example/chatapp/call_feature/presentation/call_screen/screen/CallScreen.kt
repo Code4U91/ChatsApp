@@ -36,7 +36,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -47,13 +46,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.rememberAsyncImagePainter
 import com.example.chatapp.call_feature.presentation.call_screen.state.CallEvent
 import com.example.chatapp.call_feature.presentation.call_screen.state.CallUIState
 import com.example.chatapp.call_feature.presentation.call_screen.viewmodel.CallViewModel
-import com.example.chatapp.core.util.formatCallDuration
-import com.example.chatapp.core.model.CallMetadata
 import com.example.chatapp.chat_feature.presentation.requestPerm
+import com.example.chatapp.core.model.CallMetadata
+import com.example.chatapp.core.util.formatCallDuration
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 
 // Active call screen
@@ -63,8 +63,8 @@ fun CallScreen(
     callViewModel: CallViewModel
 ) {
 
-    val callState by callViewModel.uiState.collectAsState()
-    val callEvent by callViewModel.callEvent.collectAsState()
+    val callState by callViewModel.uiState.collectAsStateWithLifecycle()
+    val callEvent by callViewModel.callEvent.collectAsStateWithLifecycle()
 
     callState.callMetadata?.let { callMetadata ->
 
@@ -97,8 +97,8 @@ fun StartVoiceCall(
     callEvent: CallEvent
 ) {
 
-    val isJoined by callViewModel.isJoined.collectAsState()
-    val callDuration by callViewModel.callDuration.collectAsState()
+    val isJoined by callViewModel.isJoined.collectAsStateWithLifecycle()
+    val callDuration by callViewModel.callDuration.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
 
@@ -261,9 +261,9 @@ fun StartVideoCall(
 ) {
 
     val context = LocalContext.current
-    val isJoined by callViewModel.isJoined.collectAsState()
-    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsState() // remote user numeric id
-    val callDuration by callViewModel.callDuration.collectAsState()
+    val isJoined by callViewModel.isJoined.collectAsStateWithLifecycle()
+    val remoteUserJoined by callViewModel.remoteUserJoined.collectAsStateWithLifecycle() // remote user numeric id
+    val callDuration by callViewModel.callDuration.collectAsStateWithLifecycle()
 
 
 

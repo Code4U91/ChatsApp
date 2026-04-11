@@ -39,7 +39,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +57,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.example.chatapp.auth_feature.presentation.viewmodel.AuthViewModel
 import com.example.chatapp.call_feature.domain.model.Call
@@ -102,7 +102,7 @@ fun CallHistoryScreen(
         mutableStateOf(false)
     }
 
-    val callList by globalMessageListenerViewModel.callHistory.collectAsState()
+    val callList by globalMessageListenerViewModel.callHistory.collectAsStateWithLifecycle()
 
 
     val filteredCallList = callList.filter {
@@ -211,7 +211,7 @@ fun CallLazyColumn(
 ) {
 
     val context = LocalContext.current
-    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
+    val currentUserData by globalMessageListenerViewModel.userData.collectAsStateWithLifecycle()
 
     LaunchedEffect(listState, callListData) {
 
@@ -304,7 +304,9 @@ fun CallListItem(
     startCall: (photoUrl : String) -> Unit
 ) {
 
-    val friendData  by globalMessageListenerViewModel.getOrFetchFriend(callData.otherUserId).collectAsState()
+    val friendData  by globalMessageListenerViewModel
+        .getOrFetchFriend(callData.otherUserId)
+        .collectAsStateWithLifecycle()
 
     val time by remember {
         mutableStateOf(formatTimestampToDateTime(callData.callStartTime))

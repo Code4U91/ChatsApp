@@ -13,9 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -146,7 +146,7 @@ fun ChatAppRoot(
 ) {
     val rootNavController = rememberNavController()
 
-    val authState by authViewModel.authState.collectAsState()
+    val authState by authViewModel.authState.collectAsStateWithLifecycle()
 
     Box(
         modifier = Modifier

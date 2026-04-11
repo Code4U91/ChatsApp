@@ -51,7 +51,6 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -69,6 +68,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import coil3.compose.AsyncImage
 import com.example.chatapp.call_feature.presentation.call_screen.activity.CallActivity
@@ -101,12 +101,18 @@ fun MainChatScreen(
     }
 
 
-    val messageList by globalMessageListenerViewModel.getMessage(fetchedChatId).collectAsState(initial = emptyList())
+    val messageList by globalMessageListenerViewModel
+        .getMessage(fetchedChatId)
+        .collectAsStateWithLifecycle(initialValue = emptyList())
 
-    val friendData  by globalMessageListenerViewModel.getOrFetchFriend(otherId).collectAsState()
+    val friendData by globalMessageListenerViewModel
+        .getOrFetchFriend(otherId)
+        .collectAsStateWithLifecycle()
 
 
-    val currentUserData by globalMessageListenerViewModel.userData.collectAsState()
+    val currentUserData by globalMessageListenerViewModel
+        .userData
+        .collectAsStateWithLifecycle()
 
     var messageDeletionSet by rememberSaveable {
         mutableStateOf<Set<String>>(emptySet())
@@ -115,7 +121,9 @@ fun MainChatScreen(
     val isDeleteBarOn = messageDeletionSet.isNotEmpty()
 
 
-    val currentChatId by globalMessageListenerViewModel.currentOpenChatId.collectAsState()
+    val currentChatId by globalMessageListenerViewModel
+        .currentOpenChatId
+        .collectAsStateWithLifecycle()
 
     val chatId by remember {
         mutableStateOf(fetchedChatId.ifEmpty {
@@ -157,9 +165,8 @@ fun MainChatScreen(
 
     LaunchedEffect(key1 = chatId) {
         globalMessageListenerViewModel.setActiveChat(chatId)
-        globalMessageListenerViewModel.updateVisibleFriendIds( setOf(otherId))
+        globalMessageListenerViewModel.updateVisibleFriendIds(setOf(otherId))
     }
-
 
 
     // marks message as seen on past message received while the app was on pause/stop etc
@@ -170,7 +177,7 @@ fun MainChatScreen(
                 globalMessageListenerViewModel.setActiveChat(chatId)
                 // checks if the message has unseen status message
                 if (globalMessageListenerViewModel.hasUnseenMessages(
-                    messageList
+                        messageList
                     ) && currentChatId == chatId && appInstance.isInForeground
                 ) {
                     globalMessageListenerViewModel.markAllMessageAsSeen(chatId, otherId)
@@ -293,7 +300,7 @@ fun MainChatScreen(
                                     )
 
                                     val intent = Intent(context, CallActivity::class.java).apply {
-                                         this.action = CALL_INTENT
+                                        this.action = CALL_INTENT
                                         putExtra("call_metadata", callMetaData)
                                     }
 
@@ -379,7 +386,8 @@ fun MainChatScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 10.dp)
-                    .imePadding()
+                    .imePadding(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
 
                 OutlinedTextField(
@@ -400,7 +408,7 @@ fun MainChatScreen(
 
                         // sends or uploads the message
                         // if the chat already exists uses chatId (if not empty)
-                        // if chat already doesn't exists creates new chat user otherId
+                        // if chat already doesn't exist's creates new chat user otherId
                         if (messageText.isNotEmpty()) {
 
                             globalMessageListenerViewModel.sendMessageToOneFriend(
@@ -413,13 +421,13 @@ fun MainChatScreen(
                             messageText = ""
                         }
 
-                    },
-                    modifier = Modifier.align(Alignment.Bottom),
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send message button",
-                        modifier = Modifier.size(40.dp)
+                        modifier = Modifier
+                            .size(40.dp)
                     )
                 }
             }
