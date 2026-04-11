@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.ChatApp" parent="android:Theme.Material.Light.NoActionBar">
+
+        <!-- Splash background -->
+        <item name="android:windowSplashScreenBackground">#0F172A</item>
+
+        <!-- Your app icon -->
+        <item name="android:windowSplashScreenAnimatedIcon">@mipmap/app_main_icon</item>
+
+        <!-- Remove that ugly circle -->
+        <item name="android:windowSplashScreenIconBackgroundColor">@android:color/transparent</item>
+
+
+    </style>
+</resources>
