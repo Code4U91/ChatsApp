@@ -1,0 +1,10 @@
+package com.code4u.chatsapp.profile_feature.domain.use_case
+
+data class UserDataUseCase(
+    val getUserData: GetUserData,
+    val syncUserData: SyncUserData,
+    val clearLocalDbUseCase: ClearLocalDbUseCase,
+    val fetchUserDataOnce: FetchUserDataOnce,
+    val updateUserData: UpdateUserData,
+    val updateStoredEmail: UpdateStoredEmail
+)

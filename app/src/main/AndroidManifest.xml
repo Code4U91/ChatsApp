@@ -2,24 +2,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-feature
-        android:name="android.hardware.camera"
-        android:required="false" />
-
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.BLUETOOTH" />
-    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" /> <!-- For Android 12.0 or higher, the following permissions are also required -->
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
@@ -32,19 +19,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.ChatApp"
         tools:targetApi="31">
-        <activity
-            android:name=".call_feature.presentation.call_screen.activity.CallActivity"
-            android:exported="false"
-            android:showOnLockScreen="true"
-            android:turnScreenOn="true"
-            android:label="@string/title_activity_call"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.ChatApp" />
 
-        <service
-            android:name=".service.AgoraCallService"
-            android:exported="false"
-            android:foregroundServiceType="camera|microphone" />
+
         <service
             android:name=".service.FirebaseMessagingService"
             android:exported="false">
@@ -56,7 +32,6 @@
         <activity
             android:name=".shared.presentation.MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:launchMode="singleTop"
             android:theme="@style/Theme.ChatApp"
             android:windowSoftInputMode="adjustResize">

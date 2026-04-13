@@ -1,0 +1,86 @@
+package com.code4u.chatsapp
+
+import android.app.Application
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.code4u.chatsapp.auth_feature.domain.usecase.online_state_case.OnlineStatusUseCase
+import com.code4u.chatsapp.core.util.CALL_CHANNEL_NOTIFICATION_NAME_ID
+import com.code4u.chatsapp.core.util.CALL_FCM_NOTIFICATION_CHANNEL_STRING
+import com.code4u.chatsapp.core.util.MESSAGE_FCM_CHANNEL_STRING
+import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
+
+@HiltAndroidApp
+class ChatsApplication : Application(), DefaultLifecycleObserver {
+
+    @Inject
+    lateinit var onlineStatusUseCase: OnlineStatusUseCase
+
+
+    var isInForeground = false
+
+
+    override fun onCreate() {
+        super<Application>.onCreate()
+
+        createNotificationChannel()
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+    }
+
+    // setting online status state when user minimizes the app
+    override fun onStart(owner: LifecycleOwner) {
+        super.onStart(owner) // can remove contains empty default implementation
+
+        isInForeground = true
+        onlineStatusUseCase.setOnlineStatus(true)
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        super.onStop(owner)
+
+        isInForeground = false
+        onlineStatusUseCase.setOnlineStatus(false)
+    }
+
+    private fun createNotificationChannel() {
+
+
+        val callServiceChannel = NotificationChannel(
+            CALL_CHANNEL_NOTIFICATION_NAME_ID,
+            "Call Channel",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+        }
+
+        val callFcmChannel = NotificationChannel(
+            CALL_FCM_NOTIFICATION_CHANNEL_STRING,
+            "Incoming Calls",
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply {
+            description = "Incoming call notification"
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+
+        }
+
+        val messageFcmChannel = NotificationChannel(
+            MESSAGE_FCM_CHANNEL_STRING,
+            "Default Channel",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+
+
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannels(
+            listOf(callServiceChannel, callFcmChannel, messageFcmChannel)
+        )
+
+
+    }
+
+
+}

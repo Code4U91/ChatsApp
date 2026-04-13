@@ -13,13 +13,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.chatapp"
-    compileSdk = 35
+    namespace = "com.code4u.chatsapp"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.chatapp"
+        applicationId = "com.code4u.chatsapp"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
         versionName = "1.0"
 
@@ -31,7 +31,7 @@ android {
         val localProperties = Properties().apply {
             load(rootProject.file("local.properties").inputStream())
         }
-        val agoraAppId = localProperties.getProperty("AGORA_APP_ID") ?: ""
+        val agoraAppId = localProperties.getProperty("AGORA_APP_ID") ?: "EMPTY"
 
         buildConfigField("String", "AGORA_APP_ID", agoraAppId)
 
@@ -39,9 +39,9 @@ android {
         // tested on android version 9 huawei y9
         // canceled for testing it on emulators
         // ABI Filtering - Keep only necessary architectures
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
-        }
+//        ndk {
+//            abiFilters += listOf("armeabi-v7a", "arm64-v8a") // Exclude x86 and x86_64
+//        }
 
         buildFeatures {
             buildConfig = true  // Enable BuildConfig generation
@@ -52,11 +52,14 @@ android {
 
     buildTypes {
         release {
+
             isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
     compileOptions {

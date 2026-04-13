@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ChatApp</string>
+    <string name="app_name">ChatsApp</string>
     <string name="callDecline">decline</string>
     <string name="callAccept">accept</string>
     <string name="title_activity_call">CallActivity</string>
