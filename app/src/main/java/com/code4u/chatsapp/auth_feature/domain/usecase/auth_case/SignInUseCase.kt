@@ -1,0 +1,39 @@
+package com.code4u.chatsapp.auth_feature.domain.usecase.auth_case
+
+import android.app.Activity
+import com.code4u.chatsapp.auth_feature.domain.repository.AuthRepository
+
+class SignInUseCase (
+    private val authRepository: AuthRepository
+) {
+    
+    suspend operator fun invoke(
+        activity: Activity?,
+        withEmailAndPwd : Boolean,
+        email : String,
+        password : String,
+        onSuccess : () -> Unit,
+        onFailure: (Exception) -> Unit){
+        
+        if(withEmailAndPwd){
+
+            activity?.let {
+                val token = authRepository.signInWithGoogle(it)?.idToken
+                authRepository.fireBaseAuthWithGoogle(
+                    token,
+                    onSuccess = {onSuccess},
+                    onFailure = {e -> onFailure(e) }
+                )
+            }
+
+
+        } else {
+            authRepository.signInUsingEmailAndPwd(
+                email, password,
+                onSuccess = { onSuccess },
+                onFailure =  { e -> onFailure(e) }
+            )
+        }
+        
+    }
+}

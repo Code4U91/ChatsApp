@@ -1,0 +1,24 @@
+package com.code4u.chatsapp.chat_feature.data.local_source.mapper
+
+import com.code4u.chatsapp.chat_feature.data.local_source.entity.MessageEntity
+import com.code4u.chatsapp.chat_feature.domain.model.Message
+
+fun MessageEntity.toDomain() = Message(
+    messageId = messageId,
+    chatId = chatId,
+    messageContent = messageContent,
+    receiverId = receiverId,
+    senderId = senderId,
+    status = status,
+    timeInMills = timeInMills
+)
+
+fun Message.toEntity() = MessageEntity(
+    messageId = messageId,
+    chatId = chatId,
+    messageContent = messageContent,
+    receiverId = receiverId,
+    senderId = senderId,
+    status = status,
+    timeInMills = timeInMills
+)

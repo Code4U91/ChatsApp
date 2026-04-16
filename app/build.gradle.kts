@@ -13,11 +13,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.chatapp"
+    namespace = "com.code4u.chatsapp"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.chatapp"
+        applicationId = "com.code4u.chatsapp"
         minSdk = 26
         targetSdk = 35
         versionCode = 1
