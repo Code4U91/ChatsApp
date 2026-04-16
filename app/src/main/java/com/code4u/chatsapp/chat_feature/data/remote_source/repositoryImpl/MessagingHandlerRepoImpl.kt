@@ -32,7 +32,7 @@ class MessagingHandlerRepoImpl(
             val chatId =
                 fetchedChatId.ifEmpty { chatIdCreator(currentUserId, otherUserId) }
 
-            val currentTime = Timestamp.Companion.now()
+            val currentTime = Timestamp.now()
 
             val senderChatRef = firestoreDb.collection(USERS_COLLECTION)
                 .document(currentUserId)

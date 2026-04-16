@@ -61,8 +61,8 @@ class AuthRepositoryIml(
             val result = credentialManager.getCredential(activity, request)
             val credential = result.credential
 
-            if (credential.type == GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                idToken = GoogleIdTokenCredential.Companion.createFrom(credential.data)
+            if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
+                idToken = GoogleIdTokenCredential.createFrom(credential.data)
             }
 
             return idToken
@@ -208,7 +208,7 @@ class AuthRepositoryIml(
         auth.currentUser?.verifyBeforeUpdateEmail(newEmail)?.addOnCompleteListener { task ->
 
             if (task.isSuccessful) {
-                onSuccess
+                onSuccess()
             } else {
                 onFailure(task.exception?.message)
             }

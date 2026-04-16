@@ -18,7 +18,7 @@ class SignUpUseCase(
             email =  email,
             password = password,
             userName = userName,
-            onSuccess = {onSuccess},
+            onSuccess = {onSuccess()},
             onFailure = {e -> onFailure(e)}
         )
     }

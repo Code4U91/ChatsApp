@@ -158,7 +158,7 @@ class GlobalMessageListenerRepoImpl(
     private fun fetchCurrentUserParticipantChats(
         user: FirebaseUser,
         onUpdatedChatList: (List<ChatData>) -> Unit
-    ): ListenerRegistration? {
+    ): ListenerRegistration {
 
 
         val chatRef = firestoreDb.collection(USERS_COLLECTION)

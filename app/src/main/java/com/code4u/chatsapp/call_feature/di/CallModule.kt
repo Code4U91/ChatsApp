@@ -119,7 +119,7 @@ object CallModule {
         return CallUseCase(
             startCallUseCase = StartCallUseCase(auth),
 
-            endCallUseCase = EndCallUseCase(agora),
+            endCallUseCase = EndCallUseCase(),
 
             declineCallUseCase = DeclineCallUseCase(
                 agoraSetUpRepo = agora,

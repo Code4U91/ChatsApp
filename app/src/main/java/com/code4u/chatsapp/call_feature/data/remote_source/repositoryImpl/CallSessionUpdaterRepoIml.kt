@@ -40,7 +40,7 @@ class CallSessionUpdaterRepoIml (
             "callType" to callType,
             "channelId" to channelId,
             "status" to callStatus,
-            "callStartTime" to Timestamp.Companion.now(),
+            "callStartTime" to Timestamp.now(),
             "participants" to listOf(userId, callReceiverId),
             "participantsName" to mapIdWithName
         )
@@ -67,7 +67,7 @@ class CallSessionUpdaterRepoIml (
                 {
                     val newStatus = mapOf(
                         "status" to status,
-                        "callEndTime" to Timestamp.Companion.now()
+                        "callEndTime" to Timestamp.now()
                     )
 
                     callDocRef.update(newStatus)
@@ -93,7 +93,7 @@ class CallSessionUpdaterRepoIml (
 
 
             val callEndTimeData = mapOf(
-                "callEndTime" to Timestamp.Companion.now(),
+                "callEndTime" to Timestamp.now(),
                 "status" to status
             )
             callDocRef.update(callEndTimeData)

@@ -11,7 +11,7 @@ class ChangeEmailUseCase(
         authRepository.updateUserEmail(
             email,
             onFailure = { e -> onFailure(e) },
-            onSuccess = { onSuccess }
+            onSuccess = { onSuccess() }
         )
     }
 }

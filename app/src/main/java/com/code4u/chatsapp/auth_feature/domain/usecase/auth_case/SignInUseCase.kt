@@ -21,7 +21,7 @@ class SignInUseCase (
                 val token = authRepository.signInWithGoogle(it)?.idToken
                 authRepository.fireBaseAuthWithGoogle(
                     token,
-                    onSuccess = {onSuccess},
+                    onSuccess = {onSuccess()},
                     onFailure = {e -> onFailure(e) }
                 )
             }
@@ -30,7 +30,7 @@ class SignInUseCase (
         } else {
             authRepository.signInUsingEmailAndPwd(
                 email, password,
-                onSuccess = { onSuccess },
+                onSuccess = { onSuccess() },
                 onFailure =  { e -> onFailure(e) }
             )
         }
