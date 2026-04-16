@@ -38,10 +38,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -101,7 +101,7 @@ fun AllChatScreen(
     }
 
 
-    val filteredActiveChatList = remember(searchQuery, chatState) {
+    val filteredActiveChatList = remember(searchQuery, activeChatList) {
         activeChatList.filter {
             it.otherUserName.trim().contains(searchQuery.trim(), ignoreCase = true)
         }.sortedBy { it.otherUserName.lowercase() }
@@ -110,6 +110,7 @@ fun AllChatScreen(
 
     val visibleChatList = if (searchQuery.isEmpty()) activeChatList else filteredActiveChatList
 
+    val latestList by rememberUpdatedState(visibleChatList)
 
     val lazyListState = rememberLazyListState()
 
@@ -117,11 +118,10 @@ fun AllChatScreen(
     LaunchedEffect(lazyListState) {
 
         snapshotFlow {
-            val currentList = visibleChatList
+            val layoutInfo = lazyListState.layoutInfo
 
-            lazyListState.layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
-                currentList.getOrNull(itemInfo.index)?.otherUserId
-
+            layoutInfo.visibleItemsInfo.mapNotNull { itemInfo ->
+                latestList.getOrNull(itemInfo.index)?.otherUserId
             }
         }
             .debounce(200)
@@ -237,10 +237,10 @@ fun AllChatScreen(
                                     key = { _, chat -> chat.chatId }
                                 ) { _, chat ->
 
-
+                                    // adds the chat which are not friend with the user (incoming new message -> add them to friend for now)
                                     val friendData by globalMessageListenerViewModel
                                         .getOrFetchFriend(chat.otherUserId)
-                                        .collectAsState()
+                                        .collectAsStateWithLifecycle()
 
 
                                     Log.i(

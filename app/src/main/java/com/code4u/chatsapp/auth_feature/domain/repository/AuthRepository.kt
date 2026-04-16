@@ -7,7 +7,7 @@ import com.google.firebase.auth.FirebaseUser
 interface AuthRepository {
 
 
-    suspend fun signInWithGoogle(activity: Activity): GoogleIdTokenCredential?
+    suspend fun signInWithGoogle(activity: Activity): String?
 
     suspend fun fireBaseAuthWithGoogle(
         idToken: String?,

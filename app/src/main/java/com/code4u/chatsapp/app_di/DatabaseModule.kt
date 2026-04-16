@@ -19,7 +19,7 @@ object DatabaseModule {
     fun providesDb(@ApplicationContext context: Context): LocalRoomDatabase {
 
         return Room.databaseBuilder(context, LocalRoomDatabase::class.java, "chatDbTable")
-            .fallbackToDestructiveMigration(false) // only for testing
+            //.fallbackToDestructiveMigration(false) // only for testing
             .build()
     }
 }

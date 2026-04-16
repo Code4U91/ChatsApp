@@ -33,9 +33,9 @@ class AuthRepositoryIml(
     private val context: Context,
 ) : AuthRepository {
 
-    override suspend fun signInWithGoogle(activity: Activity): GoogleIdTokenCredential? {
+    override suspend fun signInWithGoogle(activity: Activity): String? {
 
-        var idToken: GoogleIdTokenCredential? = null
+       // var idToken: GoogleIdTokenCredential? = null
 
         // only use for automatic login credential pop up
         // when on sign in page it automatically slides up and shows available google ids from which user can sign in
@@ -46,6 +46,8 @@ class AuthRepositoryIml(
 
 
         // Use this when you want to show the login option on click of the button by user
+        Log.i("WEB_CLIENT_ID", context.getString(R.string.default_web_client_id))
+
         val signInWithGoogleOption = GetSignInWithGoogleOption
             .Builder(
                 serverClientId = context.getString(R.string.default_web_client_id)
@@ -62,10 +64,11 @@ class AuthRepositoryIml(
             val credential = result.credential
 
             if (credential.type == GoogleIdTokenCredential.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL) {
-                idToken = GoogleIdTokenCredential.createFrom(credential.data)
+                val googleCredential = GoogleIdTokenCredential.createFrom(credential.data)
+                googleCredential.idToken
+            } else {
+                null
             }
-
-            return idToken
 
         } catch (e: GetCredentialException) {
             Log.e("GoogleSign", "Sign-In failed : ${e.message}")
@@ -82,10 +85,17 @@ class AuthRepositoryIml(
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
-        if (idToken == null) onFailure(Exception("Invalid token"))
+
+        if(idToken.isNullOrEmpty()) {
+            onFailure(Exception("Invalid token"))
+            return
+        }
+
 
         val credential = GoogleAuthProvider.getCredential(idToken, null)
+
         try {
+
             auth.signInWithCredential(credential).await()
 
             // uploading new user's  data to firestore
