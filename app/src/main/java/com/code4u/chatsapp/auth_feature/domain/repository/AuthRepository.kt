@@ -1,7 +1,6 @@
 package com.code4u.chatsapp.auth_feature.domain.repository
 
 import android.app.Activity
-import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseUser
 
 interface AuthRepository {
